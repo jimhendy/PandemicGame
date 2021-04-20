@@ -28,12 +28,15 @@ class Disease {
     }
 }
 
-
-function create_new_diseases(){
-    return {
-        "yellow": new Disease("yellow", 0.328),
-        "red": new Disease("red", 0.374),
-        "blue": new Disease("blue", 0.42),
-        "black": new Disease("black", 0.462)
-    }
+module.exports = {
+    create_new_diseases: function(){
+        return {
+            "yellow": new Disease("yellow", 0.328),
+            "red": new Disease("red", 0.374),
+            "blue": new Disease("blue", 0.42),
+            "black": new Disease("black", 0.462)
+        }
+    },
+    
+    Disease: Disease
 }

@@ -56,3 +56,5 @@ class Markers {
     }
 
 }
+
+module.exports = Markers

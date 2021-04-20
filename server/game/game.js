@@ -1,3 +1,10 @@
+let Markers = require("./markes")
+let  = require("./")
+let  = require("./")
+let  = require("./")
+let  = require("./")
+let InfectionDeck = require("./infection_deck")
+
 class PandemicGame {
 
     constructor(players){
@@ -16,3 +23,5 @@ class PandemicGame {
     }
 
 }
+
+module.exports = PandemicGame

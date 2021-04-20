@@ -8,3 +8,6 @@ class Role{
         this.player_cards = [];
     }
 }
+
+
+module.exports = Role

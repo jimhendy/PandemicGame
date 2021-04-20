@@ -74,3 +74,5 @@ class InfectionDeck {
 
 
 }
+
+module.exports = InfectionDeck

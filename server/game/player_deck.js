@@ -21,3 +21,5 @@ class PlayerCard {
         }
     }
 }
+
+module.exports = PlayerDeck

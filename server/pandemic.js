@@ -1,4 +1,4 @@
-const utils = require("./utils")
+const utils = require("./game/utils")
 
 class Pandemic {
     constructor(io) {

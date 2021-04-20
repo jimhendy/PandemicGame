@@ -13,8 +13,6 @@ let app = express();
 let server = http.createServer(app);
 let io = socketIO(server);
 
-utils = require("./utils.js");
-
 app.use(express.static(publicPath));
 
 server.listen(port, () => {
