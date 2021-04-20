@@ -1,0 +1,59 @@
+<html style="width: 100%; height: 100%; margin:0px;">
+
+<head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
+    <title>Pandemic</title>
+    <link rel="shortcut icon" type="image/ico" href="images/favicon.ico">
+</head>
+
+
+
+<body style="width: 100%; height: 100%; margin:0px;">
+    <div id="gameArea" style="width: 100%; height: 100%; margin:0px;"></div>
+</body>
+
+<script id="landing-screen-template" type="text/template">
+    <!-- LANDING SCREEN where user can enter details -->
+<div style="text-align:center; padding-top: 32px; width:calc(100% - 32px); height:calc(100% - 32px) margin: 0px">
+    <img class="logo" alt="my_logo" src="http://localhost:3000/images/pandemic_landing_image.jpg"
+        style="width:80%; height:50%; margin-bottom: 32px;">
+    <form id="player_details_form">
+        <input id="passcode_input" autocomplete="off" placeholder="Passcode" style="margin-bottom: 1%;">
+        </br>
+        <input id="playername_input" autocomplete="off" placeholder="Player Name" style="margin-bottom: 1%">
+        </br>
+        <button id="enter_game_button" disabled=true>Enter Game</button>
+    </form>
+</div>
+<script>
+    $('#passcode_input, #playername_input').on("keyup", test_enable_enter_button);
+    function test_enable_enter_button() {
+        if ($('#playername_input').val().length > 0 && $('#passcode_input').val().length > 0) {
+            $('#enter_game_button').prop("disabled", false);
+        } else {
+            $('#enter_game_button').prop("disabled", true);
+        }
+    }
+</script>
+</script>
+
+
+<script id="role-choice-screen-template" type="text/template">
+    <!-- User now logged in, choose a character role -->
+
+
+<div style="text-align:center; padding-top: 32px; margin:0px; width:100%; height:calc(100% - 32px)">
+    <h3>Please choose a role</h3>
+    <div id="role-choice-cards-div"></div>
+</script>
+
+
+
+<script src="js/utils.js"></script>
+<script src="js/client.js"></script>
+
+
+
+</html>

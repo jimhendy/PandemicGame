@@ -1,0 +1,42 @@
+.role-card:hover{
+    opacity: 1;
+}
+
+.role-card{
+    opacity: 0.5;
+    margin-bottom: 5px;
+    margin-right: 10px;
+    margin-left: 10px;
+    width: calc(100% - 20px);
+}
+
+.role-card-unavailable{
+    filter: grayscale(100%); 
+    opacity: 0.3;
+}
+
+.role-card-chosen{
+    opacity: 1;
+}
+
+/* Centered text */
+.centered {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.role-card-container {
+    position: relative;
+    text-align: center;
+    width: 100%;
+    margin: 0%;
+    display: flex;
+}
+
+.role-username{
+    color:#0317fc;
+    font-weight: bold;
+    font-size: 30px;
+}
