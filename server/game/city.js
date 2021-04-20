@@ -11,11 +11,12 @@ class City {
             "black": 0
         };
 
+        /*
         createImage(
             "images/Marker Research Station.png",
             ctx, this.location[0], this.location[1],
             0.02, 0.02
-        )
+        )*/
 
 
         this.img_reseach_station = null;
@@ -48,7 +49,7 @@ class City {
         var currrent_cubes = this.disease_cubes[colour];
         if (currrent_cubes < 3) {
             this.disease_cubes[colour]++;
-            this.add_cube_image(this.disease_cubes[colour], colour)
+            //this.add_cube_image(this.disease_cubes[colour], colour)
         }
         else {
             // Outbreak
@@ -96,14 +97,14 @@ class City {
         for (adj_city_name of this.adjacent_cities) {
             adj_city = cities[adj_city_name];
             if (!adj_city.adjacent_cities.includes(this.name)) {
-                console.log(this.name + " has " + adj_city_name + " as adj but not vice versa")
+                console.error(this.name + " has " + adj_city_name + " as adj but not vice versa")
             }
         }
     }
 }
 
 module.exports = {
-    create_cities: function() {
+    create_cities: function () {
         city_list = [
             new City("San Francisco", "blue", [0.074, 0.336], ["Chicago", "Tokyo", "Manila", "Los Angeles"]), // Blue
             new City("Chicago", "blue", [0.162, 0.302], ["San Francisco", "Toronto", "Atlanta", "Los Angeles", "Mexico City"]),

@@ -16,7 +16,7 @@ let io = socketIO(server);
 app.use(express.static(publicPath));
 
 server.listen(port, () => {
-    console.log('listening on http://localhost:' + port);
+    console.info('listening on http://localhost:' + port);
 });
 
 
@@ -24,7 +24,7 @@ server.listen(port, () => {
 let pandemic = new pan(io);
 
 io.on('connection', (socket) => {
-    console.log('A user just connected.');
+    console.info('A user just connected.');
     bindSocketEvents(socket);
     socket.emit("connected");
 });

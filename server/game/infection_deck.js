@@ -1,10 +1,12 @@
+const utils = require("./utils")
+
 class InfectionDeck {
     constructor(cities) {
 
         this.cities = cities;
 
         this.deck = Object.keys(this.cities);
-        shuffle(this.deck);
+        utils.shuffle(this.deck);
 
         this.discarded = [];
 
@@ -14,7 +16,7 @@ class InfectionDeck {
         this.deck_location = [0.597, 0.058];
         this.discard_location = [0.759, 0.058];
 
-        this._create_deck_image();
+        //this._create_deck_image();
         this.img_discard = null;
 
     }
@@ -42,7 +44,7 @@ class InfectionDeck {
                 this.discarded.push(city_name);
             }
         }
-        this._discard_city_card(city);
+        //this._discard_city_card(city);
     }
 
     _discard_city_card(city) {

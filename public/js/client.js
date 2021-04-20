@@ -21,6 +21,7 @@ jQuery(function ($) {
 
             // Game
             IO.socket.on('startGame', Client.startGame)
+            IO.socket.on("createImage", Client.createImage);
         },
 
         onConnected: function () {
@@ -72,8 +73,8 @@ jQuery(function ($) {
 
         updateRoles: function (data) {
             if (Client.data.current_page != "role_choice") {
-                console.log("Client asked to update roles but not on correct page")
-                console.log(Client.data)
+                console.error("Client asked to update roles but not on correct page")
+                console.error(Client.data)
                 return;
             }
 
@@ -135,9 +136,20 @@ jQuery(function ($) {
         },
 
         startGame: function(data){
-            console.log("starting game")
             Client.$gameArea.html(Client.$gameBoardTemplate);
             Client.data.current_page = "game_board";
+            Client.$boardCanvas = document.getElementById("boardCanvas");
+            Client.$ctx = Client.$boardCanvas.getContext("2d");
+        },
+
+        createImage: function(data){
+            createImage(
+                data.image_file,
+                Client.$ctx, 
+                data.x, data.y,
+                data.dx, data.dy,
+                Client.$boardCanvas
+            );
         }
     }
 

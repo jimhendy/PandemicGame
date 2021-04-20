@@ -1,3 +1,5 @@
+const utils = require("./utils")
+
 class Disease {
     constructor(colour, x_loc){
         this.colour = colour.toLowerCase();
@@ -8,11 +10,11 @@ class Disease {
         this.y_loc_cured_frac = 0.85;
         this.dx_frac = 0.025;
         this.dy_frac = 0.04;
-        this.vial_file = "images/vials/Vial " + this.colour.toTitleCase() + ".png"
+        this.vial_file = "images/vials/Vial " + utils.toTitleCase(this.colour) + ".png"
         this.vial_file_eradicated = this.vial_file.replace(".png", " Eracdiacted.png")
         this.total_cubes = 24;
         this.cubes_on_board = 0;
-        this.img = createImage(this.vial_file, ctx, this.x_loc_frac, this.y_loc_frac, this.dx_frac, this.dy_frac)
+        //this.img = createImage(this.vial_file, ctx, this.x_loc_frac, this.y_loc_frac, this.dx_frac, this.dy_frac)
     }
 
     cure(){

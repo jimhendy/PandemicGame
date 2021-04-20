@@ -1,10 +1,11 @@
 const utils = require("./game/utils")
+const Game = require('./game/game')
 
 class Pandemic {
     constructor(io) {
         this.io = io;
         this.gameId = Math.floor(Math.random() * 99999999);
-        console.log("Game ID: " + this.gameId);
+        console.info("Game ID: " + this.gameId);
         this.all_roles = [
             "Contingency Planner",
             "Dispatcher",
@@ -15,11 +16,12 @@ class Pandemic {
             "Scientist"
         ]
         this.users = {}; // socketId to client data
+        this.game = null;
     }
 
     add_user(data, socket) {
         this.users[data.socketId] = data;
-        console.log('Player "' + data.username + '" joining game');
+        console.info('Player "' + data.username + '" joining game');
         socket.emit("userJoinRoom", this._role_choice_data());
     }
 
@@ -34,7 +36,7 @@ class Pandemic {
     }
 
     remove_user(socket_id) {
-        console.log('User has disconnected.');
+        console.info('User has disconnected.');
         if (socket_id in this.users) {
             delete this.users[socket_id];
             // TODO emit user lost?
@@ -52,8 +54,20 @@ class Pandemic {
             if (!value.ready_to_play)
                 return
         }
-        console.log("starting game")
+        this.start_game();
+    }
+
+    start_game(){
+        this.game = new Game(this.io, this.gameId);
+        for (const [key, value] of Object.entries(this.users)) {
+            this.game.add_player(value);
+        }
         this.io.in(this.gameId).emit('startGame', this._role_choice_data());
+        this.initial_game_setup();
+    }
+
+    initial_game_setup(){
+        this.game.add_research_station("Atlanta")
     }
 }
 
