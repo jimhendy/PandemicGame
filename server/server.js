@@ -37,13 +37,14 @@ function bindSocketEvents(socket){
     socket.on('disconnect', function(){pandemic.remove_user(socket.id);});
     socket.on('playerJoinAttempt', playerJoinAttempt);
     socket.on('roleChosen', assignPlayerRole);
+    socket.on("waiting_for_other_roles", playerWaiting);
 }
 
 // Events
 function playerJoinAttempt(data) {
     var calling_socket = this;
 
-    if (data.passcode == pandemic.gameId) {
+    if (true || data.passcode == pandemic.gameId) {
         calling_socket.join(pandemic.gameId);
         pandemic.add_user(data, calling_socket);
         //io.sockets.in(data.passcode).emit('playerJoinedRoom', data);
@@ -60,4 +61,8 @@ function playerJoinAttempt(data) {
 
 function assignPlayerRole(data){
     pandemic.assign_role(data);
+}
+
+function playerWaiting(){
+    pandemic.player_waiting(this.id);
 }

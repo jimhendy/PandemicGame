@@ -1,35 +1,4 @@
-function array_from_objects_list(objects_list, attribute) {
-    var results = [];
-    for (var i = 0; i < objects_list.length; i++) {
-        results.push(objects_list[i][attribute])
-    }
-    return results;
-}
-
-function objects_attribute_contains_value(objects_list, attribute, value) {
-    for (var i = 0; i < objects_list.length; i++) {
-        if (objects_list[i][attribute] == value)
-            return true;
-    }
-    return false;
-}
-
-function dict_from_objects(objects_list, key, value) {
-    var results = {};
-    for (var i = 0; i < objects_list.length; i++) {
-        results[objects_list[i][key]] = objects_list[i][value];
-    }
-    return results;
-}
-
-function key_from_value(dict, desired_value) {
-    for (const [key, value] of Object.entries(dict)) {
-        if (value == desired_value)
-            return key;
-    }
-    return null;
-}
-
+const utils = require("./utils")
 
 class Pandemic {
     constructor(io) {
@@ -45,12 +14,7 @@ class Pandemic {
             "Researcher",
             "Scientist"
         ]
-        this.users = {
-            10: {
-                "username": "Tom",
-                "role": "Medic"
-            }
-        }; // socketId to client data
+        this.users = {}; // socketId to client data
     }
 
     add_user(data, socket) {
@@ -61,7 +25,7 @@ class Pandemic {
 
     _role_choice_data() {
         return {
-            assigned_roles: dict_from_objects(
+            assigned_roles: utils.dict_from_objects(
                 Object.values(this.users),
                 "username", "role"
             ),
@@ -80,6 +44,16 @@ class Pandemic {
     assign_role(data) {
         this.users[data.socketId].role = data.role;
         this.io.in(this.gameId).emit('reloadRolesSelection', this._role_choice_data());
+    }
+
+    player_waiting(socket_id){
+        this.users[socket_id].ready_to_play = true;
+        for (const [key, value] of Object.entries(this.users)) {
+            if (!value.ready_to_play)
+                return
+        }
+        console.log("starting game")
+        this.io.in(this.gameId).emit('startGame', this._role_choice_data());
     }
 }
 

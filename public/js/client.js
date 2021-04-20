@@ -13,10 +13,14 @@ jQuery(function ($) {
             IO.socket.on("connected", IO.onConnected);
             IO.socket.on("error", IO.error);
 
+            // Game setup
             IO.socket.on("clearUserScreen", Client.clearUserScreen);
             IO.socket.on("reloadLandingScreen", Client.showLandingScreen);
             IO.socket.on("userJoinRoom", Client.showRoleChoiceScreen);
             IO.socket.on("reloadRolesSelection", Client.updateRoles);
+
+            // Game
+            IO.socket.on('startGame', Client.startGame)
         },
 
         onConnected: function () {
@@ -51,6 +55,8 @@ jQuery(function ($) {
             Client.$gameArea = $('#gameArea');
             Client.$landingScreen = $('#landing-screen-template').html();
             Client.$roleChoiceScreen = $('#role-choice-screen-template').html();
+            Client.$waitingForRolesTemplate = $('#waiting-for-role-choices-template').html();
+            Client.$gameBoardTemplate = $('#game-board-template').html()
         },
 
         showLandingScreen: function () {
@@ -99,6 +105,13 @@ jQuery(function ($) {
         bindEvents: function () {
             Client.$doc.on("submit", "#player_details_form", Client.playerJoinForm);
             Client.$doc.on("click", ".role-card", Client.roleCardSelected);
+            Client.$doc.on("click", "#player-ready-button", Client.waitForOtherRoles)
+        },
+
+        waitForOtherRoles: function(){
+            Client.$gameArea.html(Client.$waitingForRolesTemplate);
+            Client.data.current_page = "waiting_for_roles";
+            IO.socket.emit("waiting_for_other_roles");
         },
 
         playerJoinForm: function (event) {
@@ -113,11 +126,18 @@ jQuery(function ($) {
                 return;
             var role = event.target.getAttribute("data-role");
             Client.data.role = role;
-            IO.socket.emit("roleChosen", Client.data)
+            IO.socket.emit("roleChosen", Client.data);
+            $('#player-ready-button').attr("disabled", false);
         },
 
         clearUserScreen: function (event) {
             Client.$gameArea.html("");
+        },
+
+        startGame: function(data){
+            console.log("starting game")
+            Client.$gameArea.html(Client.$gameBoardTemplate);
+            Client.data.current_page = "game_board";
         }
     }
 

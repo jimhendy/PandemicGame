@@ -42,11 +42,102 @@
 
 <script id="role-choice-screen-template" type="text/template">
     <!-- User now logged in, choose a character role -->
-
-
 <div style="text-align:center; padding-top: 32px; margin:0px; width:100%; height:calc(100% - 32px)">
     <h3>Please choose a role</h3>
-    <div id="role-choice-cards-div"></div>
+    <div id="role-choice-cards-div" style="margin-bottom: 5%"></div>
+    <button id="player-ready-button" disabled=true>Start Game</button>
+</div>
+</script>
+
+
+<script id="waiting-for-role-choices-template" type="text/template">
+    <!-- Spinner to wait on other player's role choice-->
+<div style="text-align:center; padding-top: 32px; margin:0px; width:100%; height:calc(100% - 32px)">
+    <div class="loader" style="margin-left: auto; margin-right: auto; margin-bottom: 5%"></div>
+    <div>Waiting for other players...</div>
+</div>
+</script>
+
+
+<script id="game-board-template" type="text/template">
+    <!-- Game Board -->
+<div style="margin:0px; width:100%; height:100%; display:flex;">
+    <div id="board_div" style="display:inline-block; width: 80%; height: 100%; position:relative;">
+        <img src="images/game/Board_1.jpg"
+            style="width:100%; height:100%; position:absolute; z-index:-1; top:0; left:0; opacity:0.8;">
+        <canvas id="boardCanvas" width=2056 height=2056
+            style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+        <canvas id="cubeCanvas" width=2056 height=2056
+            style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+    </div>
+    <div id="status_div" style="display: inline-block; width:20%; height:100%;">
+        <button id="outbreak_button" type="button">Outbreak!</button>
+        <button id="epidemic_button" type="button">Epidemic!</button>
+        <button id="cure_button" type="button">Cure!</button>
+        <button id="eradicate_button" type="button">Eradicate!</button>
+    </div>
+</div>
+<!--
+<script src="js/helpers.js"></script>
+<script src="js/images.js"></script>
+
+<script src="js/city.js"></script>
+<script src="js/disease.js"></script>
+<script src="js/player_deck.js"></script>
+<script src="js/infection_deck.js"></script>
+<script src="js/markers.js"></script>
+
+<script src="js/game.js"></script>
+
+<script>
+
+    var canvas = document.getElementById("boardCanvas");
+    var ctx = canvas.getContext("2d");
+
+    var cube_canvas = document.getElementById("cubeCanvas");
+    var cube_ctx = cube_canvas.getContext("2d");
+
+    var blink_canvas_i = 0;
+    var blink_canvas_interval_id = setInterval(blink_canvas, 50);
+    function blink_canvas() {
+        var i_mod = blink_canvas_i % 131;
+        if (i_mod > 100)
+            cube_canvas.style.opacity = Math.abs(i_mod - 115) / 15;
+        blink_canvas_i++;
+    }
+
+    $(document).ready(function () {
+        /*
+        document.onmousemove = function(e){
+            var x = e.pageX;
+            var y = e.pageY;
+            e.target.title = "X is "+x+" and Y is "+y;
+        };
+        */
+        var game = new PandemicGame(1);
+
+        $("#outbreak_button").click(function () {
+            game.cities["London"].remove_cube("black");
+        })
+
+        $("#epidemic_button").click(function () {
+            game.cities["London"].add_cube(game.cities, "black");
+        });
+
+        $("#cure_button").click(function () {
+            game.infection_deck.draw();
+        });
+
+        $("#eradicate_button").click(function () {
+            for (var i = 0; i < 3 * 48; i++) {
+                game.infection_deck.draw();
+            }
+        });
+
+    });
+
+</script>
+-->
 </script>
 
 
