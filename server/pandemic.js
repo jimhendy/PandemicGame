@@ -63,12 +63,9 @@ class Pandemic {
             this.game.add_player(value);
         }
         this.io.in(this.gameId).emit('startGame', this._role_choice_data());
-        this.initial_game_setup();
+        this.game.initial_game_setup();
     }
-
-    initial_game_setup(){
-        this.game.add_research_station("Atlanta")
-    }
+    
 }
 
 module.exports = Pandemic

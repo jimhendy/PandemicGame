@@ -138,17 +138,39 @@ jQuery(function ($) {
         startGame: function(data){
             Client.$gameArea.html(Client.$gameBoardTemplate);
             Client.data.current_page = "game_board";
+            
             Client.$boardCanvas = document.getElementById("boardCanvas");
             Client.$ctx = Client.$boardCanvas.getContext("2d");
+
+            Client.$blinkCanvas = document.getElementById("cubeCanvas");
+            Client.$ctxBlink = Client.$blinkCanvas.getContext("2d");
+            
+            var blink_canvas_i = 0;
+            var blink_canvas_interval_id = setInterval(blink_canvas, 50);
+            function blink_canvas() {
+                var i_mod = blink_canvas_i % 131;
+                if (i_mod > 100)
+                    Client.$blinkCanvas.style.opacity = Math.abs(i_mod - 115) / 15;
+                blink_canvas_i++;
+            }
+            
         },
 
         createImage: function(data){
+            var ctx = Client.$ctx;
+            var canvas = Client.$boardCanvas
+            
+            if (data.blinkCanvas){
+                var ctx = Client.$ctxBlink;
+                var canvas = Client.$blinkCanvas
+            }
+            
             createImage(
                 data.image_file,
-                Client.$ctx, 
+                ctx, 
                 data.x, data.y,
                 data.dx, data.dy,
-                Client.$boardCanvas
+                canvas
             );
         }
     }

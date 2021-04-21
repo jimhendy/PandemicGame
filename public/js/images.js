@@ -6,8 +6,6 @@ function createImage(image_file, context, x_frac, y_frac, dx_frac, dy_frac, canv
     img.width = dx_frac * canvas.width;
     img.height = dy_frac * canvas.height;
 
-    console.log(canvas)
-
     img.onload = function () {
         context.drawImage(img, img.canvas_x, img.canvas_y, img.width, img.height);
     }
