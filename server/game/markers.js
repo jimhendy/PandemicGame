@@ -1,34 +1,46 @@
 const images = require('./images')
 
 class Markers {
-    constructor() {
+    constructor(io, game_id) {
+
+        this.io = io;
+        this.game_id = game_id;
+
         this.outbreak_locations = this.create_outbreak_marker_locations();
         this.infection_rate_locations = this.create_infection_rate_locations();
 
-        //this.outbreak_marker = this.create_outbreak_marker();
-        //this.infection_rate_marker = this.create_infection_rate_marker();
+        this.create_outbreak_marker();
+        this.create_infection_rate_marker();
     };
 
     create_outbreak_marker() {
-        return images.createImage(
-            "images/Marker Outbreak.png",
-            ctx,
-            this.outbreak_locations[0][0],
-            this.outbreak_locations[0][1],
-            0.032,
-            0.042
+        this.io.in(this.game_id).emit(
+            "createImage",
+            {
+                img_type: "marker",
+                img_name: "outbreak_marker",
+                image_file: "images/game/Marker Outbreak.png",
+                x: this.outbreak_locations[0][0],
+                y: this.outbreak_locations[0][1],
+                dx: 0.032,
+                dy: 0.042    
+            }
         )
     };
 
     create_infection_rate_marker() {
-        return images.createImage(
-            "images/Marker Infection Rate.png",
-            ctx,
-            this.infection_rate_locations[6][0],
-            this.infection_rate_locations[6][1],
-            0.032,
-            0.042
-        )
+        this.io.in(this.game_id).emit(
+            "createImage",
+            {
+                img_type: "marker",
+                img_name: "infection_rate_marker",
+                image_file: "images/game/Marker Infection Rate.png",
+                x: this.infection_rate_locations[0][0],
+                y: this.infection_rate_locations[0][1],
+                dx: 0.032,
+                dy: 0.042    
+            }
+        );
     };
 
     create_outbreak_marker_locations() {

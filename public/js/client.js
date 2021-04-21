@@ -22,6 +22,9 @@ jQuery(function ($) {
             // Game
             IO.socket.on('startGame', Client.startGame)
             IO.socket.on("createImage", Client.createImage);
+            IO.socket.on("moveImage", Client.moveImage);
+            IO.socket.on("alterImage", Client.alterImage);
+            IO.socket.on("removeImage", Client.removeImage);
 
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
         },
@@ -44,6 +47,7 @@ jQuery(function ($) {
             username: null,
             current_page: null
         },
+        images: {},
 
         init: function () {
             Client.cacheElements();
@@ -141,45 +145,83 @@ jQuery(function ($) {
             Client.$gameArea.html(Client.$gameBoardTemplate);
             Client.data.current_page = "game_board";
             
-            Client.$boardCanvas = document.getElementById("boardCanvas");
-            Client.$ctx = Client.$boardCanvas.getContext("2d");
+            Client.$canvasBoard = document.getElementById("boardCanvas");
+            Client.$ctx = Client.$canvasBoard.getContext("2d");
 
-            Client.$blinkCanvas = document.getElementById("cubeCanvas");
-            Client.$ctxBlink = Client.$blinkCanvas.getContext("2d");
+            Client.$canvasBlink = document.getElementById("cubeCanvas");
+            Client.$ctxBlink = Client.$canvasBlink.getContext("2d");
             
+            Client.$canvasCard = document.getElementById("cardCanvas");
+            Client.$ctxCard = Client.$canvasCard.getContext("2d");
+
             var blink_canvas_i = 0;
-            var blink_canvas_interval_id = setInterval(blink_canvas, 50);
+            setInterval(blink_canvas, 50);
             function blink_canvas() {
                 var i_mod = blink_canvas_i % 131;
                 if (i_mod > 100)
-                    Client.$blinkCanvas.style.opacity = Math.abs(i_mod - 115) / 15;
+                    Client.$canvasBlink.style.opacity = Math.abs(i_mod - 115) / 15;
                 blink_canvas_i++;
             }
-            
 
             Client.$infectionCounterLog = $("#infection_counter");
+            Client.$gameLog = $("#game_log");
         },
 
         createImage: function(data){
-            var ctx = Client.$ctx;
-            var canvas = Client.$boardCanvas
-            
+            Client._addCtxAndCanvas(data);
+            Client.images[data.img_name] = {
+                data: data,
+                img: createImage(
+                    data.image_file,
+                    data.ctx, 
+                    data.x, data.y,
+                    data.dx, data.dy,
+                    data.canvas
+                )
+            };
+        },
+
+        _addCtxAndCanvas: function(data){
             if (data.blinkCanvas){
-                var ctx = Client.$ctxBlink;
-                var canvas = Client.$blinkCanvas
+                data.ctx = Client.$ctxBlink;
+                data.canvas = Client.$canvasBlink;
+            } else if (data.cardCanvas){
+                data.ctx = Client.$ctxCard;
+                data.canvas = Client.$canvasCard;
+            } else {
+                data.ctx = Client.$ctx;
+                data.canvas = Client.$canvasBoard;
             }
-            
-            createImage(
-                data.image_file,
-                ctx, 
-                data.x, data.y,
-                data.dx, data.dy,
-                canvas
-            );
         },
 
         updateInfectionCounter: function(text){
-            Client.$infectionCounterLog.html(text)
+            Client.$infectionCounterLog.html(text);
+        },
+
+        moveImage: function(data){
+            move(
+                Client.images[data.img_name],
+                data.dest_x,
+                data.dest_y,
+                data.dt,
+                Client.images
+            )  
+        },
+
+        alterImage: function(data){
+            alter_image(
+                Client.images[data.img_name],
+                data.new_img_file
+            )  
+        },
+
+        removeImage: function(img_name){
+            var img = Client.images[img_name];
+            clearImage(
+                img.img,
+                img.data.canvas
+            )
+            delete Client[img_name];
         }
     }
 

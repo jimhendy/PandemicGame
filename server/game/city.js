@@ -13,17 +13,6 @@ class City {
             "blue": 0,
             "black": 0
         };
-        /*
-        this.img_reseach_station = null;
-        this.img_players = [];
-        this.img_cubes = {
-            "yellow": [],
-            "red": [],
-            "blue": [],
-            "black": []
-        };
-        */
-
         this.cubs_y_offsets = {
             "yellow": -0.01,
             "red": 0,
@@ -73,6 +62,8 @@ class City {
         this.io.in(this.gameId).emit(
             "createImage",
             {
+                img_type: "cube",
+                img_name: "cube_" + this.name + "_" + colour + "_" + cube_number,
                 image_file: "images/game/cubes/cube_" + colour + ".png",
                 x: x, y: y, dx: 0.01, dy: 0.01,
                 blinkCanvas: true
@@ -92,9 +83,13 @@ class City {
     }
 
     remove_cube(colour) {
+        var img_name = "cube_" + this.name + "_" + colour + "_" + this.disease_cubes[colour];
         this.disease_cubes[colour]--;
-        var img = this.img_cubes[colour].pop();
-        clearImage(img, cube_ctx);
+        this.io.in(this.gameId).emit(
+            "removeImage", img_name
+        )
+        //var img = this.img_cubes[colour].pop();
+        //clearImage(img, cube_ctx);
     }
 
 

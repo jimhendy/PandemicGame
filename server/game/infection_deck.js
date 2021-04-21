@@ -1,7 +1,10 @@
 const utils = require("./utils")
 
 class InfectionDeck {
-    constructor(cities) {
+    constructor(io, game_id, cities) {
+
+        this.io = io;
+        this.game_id = game_id;
 
         this.cities = cities;
 
@@ -16,18 +19,32 @@ class InfectionDeck {
         this.deck_location = [0.597, 0.058];
         this.discard_location = [0.759, 0.058];
 
-        //this._create_deck_image();
-        this.img_discard = null;
+        this._create_deck_image();
 
     }
 
     _create_deck_image() {
+        this.io.in(this.game_id).emit(
+            "createImage",
+            {
+                img_type: "card",
+                img_name: "infection_deck",
+                image_file: "images/game/infection_deck/Back Infection.gif",
+                x: this.deck_location[0], 
+                y: this.deck_location[1],
+                dx: this.card_width_frac, 
+                dy: this.card_height_frac,
+                cardCanvas: true
+            }
+        )
+        /*
         this.img_deck = createImage(
             "images/infection_deck/Back Infection.gif",
             ctx,
             this.deck_location[0], this.deck_location[1],
             this.card_width_frac, this.card_height_frac
         );
+        */
     }
 
     initial_deal() {
@@ -44,16 +61,31 @@ class InfectionDeck {
                 this.discarded.push(city_name);
             }
         }
-        //this._discard_city_card(city);
+        this._discard_city_card(city);
     }
 
     _discard_city_card(city) {
+        this.io.in(this.game_id).emit(
+            "createImage",
+            {
+                img_type: "card",
+                img_name: "infection_discard_" + city,
+                image_file: "images/game/infection_deck/Infection " + utils.toTitleCase(city.native_disease_colour) + " " + utils.toTitleCase(city.name) + ".jpg",
+                x: this.discard_location[0], 
+                y: this.discard_location[1],
+                dx: this.card_width_frac, 
+                dy: this.card_height_frac,
+                cardCanvas: true
+            }
+        )
+        /*
         this.img_discard = createImage(
             "images/infection_deck/Infection " + city.native_disease_colour.toTitleCase() + " " + city.name.toTitleCase() + ".jpg",
             ctx,
             this.discard_location[0], this.discard_location[1],
             this.card_width_frac, this.card_height_frac
         );
+        */
     }
 
     draw() {
@@ -70,7 +102,10 @@ class InfectionDeck {
         this.discarded.push(city_name);
 
         if (!this.deck.length) {
-            clearImage(this.img_deck, ctx)
+            this.io.in(this.game_id).emit(
+                "removeImage", "infection_deck"
+            )
+            //clearImage(this.img_deck, ctx)
         }
     }
 
