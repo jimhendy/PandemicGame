@@ -19,7 +19,7 @@ class PandemicGame {
     }
 
     add_player(data){
-        var p = new Player(data.username, data.role, data.socketId);
+        var p = new Player(data.username, data.role, data.socketId, this.players.length);
         this.players.push(p);
     }
 
@@ -37,6 +37,33 @@ class PandemicGame {
         for (var p of this.players){
             this.place_pawn(p, "Atlanta");
         }
+
+        this.update_infection_count();
+    }
+
+    update_infection_count(){
+        var infection_count = [];
+        for (const [city_name, city] of Object.entries(this.cities)){
+            for (const [colour, num_colour] of Object.entries(city.disease_cubes)){
+                if (num_colour){
+                    infection_count.push({
+                        city: city_name,
+                        colour: colour,
+                        num: num_colour
+                    })
+                }
+            }
+        }
+        infection_count.sort((a,b) => (a.num > b.num) ? -1: ((b.num > a.num) ? 1 : 0));
+        var text = ""
+        for (const ic of infection_count){
+            text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; color:' 
+            text += ic.colour + ';">' + ic.city
+            text += '<span style="float:right;">' + ic.num + '</span></p>'
+        }
+        this.io.in(this.game_id).emit(
+            "updateInfectionCounter", text
+        )
     }
 
     add_research_station(city_name){

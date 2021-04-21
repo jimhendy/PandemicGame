@@ -1,7 +1,7 @@
 
 class Player{
 
-    constructor(player_name, role_name, socket_id){
+    constructor(player_name, role_name, socket_id, player_num){
 
         this.player_name = player_name;
         this.role_name = role_name;
@@ -10,15 +10,11 @@ class Player{
         this.city = "Atlanta";
         this.player_cards = [];
 
-        this.player_num = Player.counter;
+        this.player_num = player_num;
 
         this.img = null;
     }
 
-    static get counter(){
-        Player._counter = (Player._counter || 0) + 1;
-        return Player._counter;
-    }
 }
 
 

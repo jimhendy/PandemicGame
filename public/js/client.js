@@ -22,6 +22,8 @@ jQuery(function ($) {
             // Game
             IO.socket.on('startGame', Client.startGame)
             IO.socket.on("createImage", Client.createImage);
+
+            IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
         },
 
         onConnected: function () {
@@ -154,6 +156,8 @@ jQuery(function ($) {
                 blink_canvas_i++;
             }
             
+
+            Client.$infectionCounterLog = $("#infection_counter");
         },
 
         createImage: function(data){
@@ -172,6 +176,10 @@ jQuery(function ($) {
                 data.dx, data.dy,
                 canvas
             );
+        },
+
+        updateInfectionCounter: function(text){
+            Client.$infectionCounterLog.html(text)
         }
     }
 
