@@ -36,6 +36,10 @@ function bindSocketEvents(socket){
     socket.on('playerJoinAttempt', playerJoinAttempt);
     socket.on('roleChosen', assignPlayerRole);
     socket.on("waiting_for_other_roles", playerWaiting);
+    socket.on("enquireAvailableActions", assess_player_options);
+    socket.on("playerCardsReceived", clientNotesPlayerCardsReceived)
+
+    socket.on("player_drive_ferry", (data)=>pandemic.player_drive_ferry(data));
 }
 
 // Events
@@ -63,4 +67,12 @@ function assignPlayerRole(data){
 
 function playerWaiting(){
     pandemic.player_waiting(this.id);
+}
+
+function assess_player_options(data){
+    pandemic.assess_player_options(data);
+}
+
+function clientNotesPlayerCardsReceived(){
+    pandemic.clientNotesPlayerCardsReceived();
 }

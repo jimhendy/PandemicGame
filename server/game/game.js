@@ -17,6 +17,8 @@ class PandemicGame {
 
         this.epidemics = 0;
         this.outbreaks = 0;
+
+        this.round = 0;
     }
 
     add_player(data) {
@@ -41,6 +43,14 @@ class PandemicGame {
         }
 
         this.update_infection_count();
+    }
+
+    new_player_turn(){
+        this.current_player = this.players[ this.round % this.players.length ];
+        this.io.in(this.game_id).emit(
+            "newPlayersTurn", this.current_player.player_name
+        )
+        this.player_used_actions = 0;
     }
 
     update_infection_count() {
@@ -95,6 +105,19 @@ class PandemicGame {
                 y: city.location[1] - 0.01 + (0.01 * player.player_num),
                 dx: 0.015,
                 dy: 0.02
+            }
+        )
+    }
+
+    move_pawn(player, city_name) {
+        var city = this.cities[city_name];
+        this.io.in(this.game_id).emit(
+            "moveImage",
+            {
+                img_name: "pawn_" + player.role_name,
+                dest_x: city.location[0] + 0.02,
+                dest_y: city.location[1] - 0.01 + (0.01 * player.player_num),
+                dt: 1
             }
         )
     }

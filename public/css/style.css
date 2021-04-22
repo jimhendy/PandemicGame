@@ -81,8 +81,6 @@
 
   .player-hand-card:hover {
       z-index: 9999 !important;
-      border-style: solid;
-      border-width: 2px;
   }
 
   /* game buttons to control user actions */
@@ -96,5 +94,5 @@
     margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 3px;
-    font-size: 14px;
+    font-size: 17px;
 }

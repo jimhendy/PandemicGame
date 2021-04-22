@@ -31,6 +31,9 @@ jQuery(function ($) {
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
             IO.socket.on("newPlayerCards", Client.receivePlayerCards);
+            IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
+
+            IO.socket.on("enableActions", Client.enableActions);
         },
 
         onConnected: function () {
@@ -53,6 +56,7 @@ jQuery(function ($) {
             player_cards: []
         },
         images: {},
+        button_names: ["drive_ferry", "direct_flight", "charter_flight", "shuttle_flight", "builld_research_station", "treat_disease", "cure", "share_knowledge", "special", "pass"],
 
         init: function () {
             Client.cacheElements();
@@ -118,6 +122,8 @@ jQuery(function ($) {
             Client.$doc.on("submit", "#player_details_form", Client.playerJoinForm);
             Client.$doc.on("click", ".role-card", Client.roleCardSelected);
             Client.$doc.on("click", "#player-ready-button", Client.waitForOtherRoles)
+
+            Client.$doc.on("click", "#button_drive_ferry", Client.drive_ferry);
         },
 
         waitForOtherRoles: function () {
@@ -163,6 +169,7 @@ jQuery(function ($) {
             Client.$ctxAnimation = Client.$canvasAnimation.getContext("2d");
 
             Client.$playerHandStore = document.getElementById('player_card_store');
+            Client.$currentPlayerDiv = document.getElementById('current_player');
 
             var blink_canvas_i = 0;
             setInterval(blink_canvas, 50);
@@ -175,6 +182,13 @@ jQuery(function ($) {
 
             Client.$infectionCounterLog = $("#infection_counter");
             Client.$gameLog = document.getElementById("game_log");
+            Client.$playerSelectionArea = document.getElementById("player_selection_area");
+            Client.$playerActionsArea = document.getElementById("player_actions");
+
+            Client.$buttons = {};
+            for (const b of Client.button_names){
+                Client.$buttons[b] = document.getElementById('button_' + b);
+            }
         },
 
         createImage: function (data) {
@@ -241,6 +255,7 @@ jQuery(function ($) {
                 await Client.receivePlayerCard(c);
             }
             Client.$ctxAnimation.clearRect(0, 0, Client.$canvasAnimation.width, Client.$canvasAnimation.height);
+            IO.socket.emit("playerCardsReceived");
         },
 
         receivePlayerCard: function (card_data) {
@@ -256,7 +271,7 @@ jQuery(function ($) {
                 dest_y: 0.2,
                 dest_dx: 0.3,
                 dest_dy: 0.6,
-                dt: 1.5,
+                dt: 0.5,
                 animationCanvas: true
             }
             return new Promise((resolve, reject) => {
@@ -310,6 +325,71 @@ jQuery(function ($) {
                 Client.removeImage(data.img_name)
             }
             Client.createImage(data);
+        },
+
+        newPlayerTurn: function(player_name){
+            Client.$currentPlayerDiv.textContent = player_name
+            if (player_name != Client.data.username)
+                return;
+            IO.socket.emit("enquireAvailableActions", Client.data);
+        },
+
+        enableActions: function(data){
+            Client.adjacent_cities = data.adjacent_cities;
+            for (const [btn, enable] of Object.entries(data.actions)){
+                Client.$buttons[btn].disabled = !enable;
+            }
+        },
+
+        drive_ferry: function(){
+            var form = document.createElement("form");
+
+            for (const c of Client.adjacent_cities){
+                var input = document.createElement("input");
+                input.setAttribute("type", "radio");
+                input.setAttribute("value", c);
+                input.setAttribute("name", "choice");
+                var label = document.createElement("label");
+                label.setAttribute("for", c);
+                label.textContent = c;
+                var br = document.createElement("br");
+                form.appendChild(input);
+                form.appendChild(label);
+                form.appendChild(br);
+            }
+            var cancel_btn = document.createElement("button");
+            cancel_btn.innerHTML = "Cancel";
+            var ok_btn = document.createElement("button");
+            ok_btn.innerHTML = "Go";
+            
+            cancel_btn.onclick = function(event){
+                event.preventDefault();
+                Client.$playerSelectionArea.innerHTML = "";
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+            }
+
+            ok_btn.onclick = function(event){
+                event.preventDefault();
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+                var destination = document.querySelector('input[name="choice"]:checked').value;
+                IO.socket.emit(
+                    "player_drive_ferry", 
+                    {
+                        destination: destination,
+                        data: Client.data
+                    }
+                )
+                Client.$playerSelectionArea.innerHTML = "";
+            }
+
+            form.appendChild(cancel_btn);
+            form.appendChild(ok_btn);
+
+            Client.$playerSelectionArea.appendChild(form);
+            Client.$playerSelectionArea.style.display = "flex";
+            Client.$playerActionsArea.style.display = "none";
         }
     }
 

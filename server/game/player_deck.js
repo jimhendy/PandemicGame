@@ -47,7 +47,7 @@ class PlayerDeck {
                 this.io.in(this.game_id).emit(
                     "logMessage",
                     {
-                        message: p.player_name + ' received player card "' + card.city.name + '"',
+                        message: "🃟 " + p.player_name + ' received player card "' + card.city.name + '"',
                         style: {
                             color: card.city.native_disease_colour
                         }

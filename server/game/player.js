@@ -11,8 +11,6 @@ class Player{
         this.player_cards = [];
 
         this.player_num = player_num;
-
-        this.img = null;
     }
 
 }

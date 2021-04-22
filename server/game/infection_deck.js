@@ -45,8 +45,17 @@ class InfectionDeck {
         for (var cubes = 3; cubes >= 1; cubes--) {
             for (var c = 0; c < 3; c++) {
                 city_name = this.deck.pop();
-                console.log("Adding " + cubes + " cubes to " + city_name);
                 city = this.cities[city_name];
+                this.io.in(this.game_id).emit(
+                    "logMessage",
+                    {
+                        message: "🕱 " + city_name + " was infected with " + cubes + " cubes",
+                        style: {
+                            color: city.native_disease_colour,
+                            "font-weight": "bold"
+                        }
+                    }
+                )
                 for (var n = 0; n < cubes; n++) {
                     city.add_cube();
                 }

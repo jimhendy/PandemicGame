@@ -66,7 +66,7 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
     if (destination_dy)
         var final_dy = destination_dy * canvas.height;
     else
-        var final_dy = current_height;
+        var final_dy = current_dy;
 
     var dx = (final_x - current_x) / n_steps;
     var dy = (final_y - current_y) / n_steps;
