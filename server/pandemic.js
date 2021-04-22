@@ -100,7 +100,7 @@ class Pandemic {
         this.io.in(this.gameId).emit(
             "logMessage",
             {
-                message: data.username + " is off to " + data.destination
+                message: data.data.username + " is off to " + data.destination
             }
         )
         this.game.player_used_actions++;
@@ -108,6 +108,7 @@ class Pandemic {
         player.city = data.destination;
         this.game.move_pawn(player, data.destination)
         if (this.game.player_used_actions >= player.actions_per_turn){
+            this.game.round++;
             this.game.new_player_turn();
         } else {
             this.assess_player_options(data.data);

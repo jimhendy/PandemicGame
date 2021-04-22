@@ -34,6 +34,7 @@ jQuery(function ($) {
             IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
 
             IO.socket.on("enableActions", Client.enableActions);
+            IO.socket.on("disableActions", Client.disableActions);
         },
 
         onConnected: function () {
@@ -56,7 +57,7 @@ jQuery(function ($) {
             player_cards: []
         },
         images: {},
-        button_names: ["drive_ferry", "direct_flight", "charter_flight", "shuttle_flight", "builld_research_station", "treat_disease", "cure", "share_knowledge", "special", "pass"],
+        button_names: ["drive_ferry", "direct_flight", "charter_flight", "shuttle_flight", "build_research_station", "treat_disease", "cure", "share_knowledge", "special_action", "pass"],
 
         init: function () {
             Client.cacheElements();
@@ -390,6 +391,12 @@ jQuery(function ($) {
             Client.$playerSelectionArea.appendChild(form);
             Client.$playerSelectionArea.style.display = "flex";
             Client.$playerActionsArea.style.display = "none";
+        },
+
+        disableActions: function(){
+            for (const btn of Client.button_names){
+                Client.$buttons[btn].disabled = true;
+            }
         }
     }
 
