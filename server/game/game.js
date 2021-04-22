@@ -32,6 +32,7 @@ class PandemicGame {
         this.player_deck = new PlayerDeck(this.io, this.game_id, this.cities)
 
         this.infection_deck.initial_deal();
+        this.player_deck.initial_deal(this.players, this.n_initial_player_cards());
 
         this.add_research_station("Atlanta")
 
@@ -96,6 +97,16 @@ class PandemicGame {
                 dy: 0.02
             }
         )
+    }
+
+    n_initial_player_cards(){
+        var n_players = this.players.length;
+        if (n_players <= 2)
+            return 4;
+        else if (n_players == 3)
+            return 3;
+        else
+            return 2;
     }
 
 

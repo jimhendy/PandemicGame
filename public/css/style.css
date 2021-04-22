@@ -70,3 +70,31 @@
     background-color: #bfbfbd;
     line-height: normal;
   }
+
+
+  /* player cards in hand */
+  .player-hand-card {
+      width: 60%;
+      height: 50%;
+      position: absolute;
+  }
+
+  .player-hand-card:hover {
+      z-index: 9999 !important;
+      border-style: solid;
+      border-width: 2px;
+  }
+
+  /* game buttons to control user actions */
+
+.game-button {
+    disabled: true;
+}
+
+/* log messages */
+.log-message{
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 3px;
+    font-size: 14px;
+}

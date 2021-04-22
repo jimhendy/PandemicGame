@@ -30,27 +30,19 @@ class InfectionDeck {
                 img_type: "card",
                 img_name: "infection_deck",
                 image_file: "images/game/infection_deck/Back Infection.gif",
-                x: this.deck_location[0], 
+                x: this.deck_location[0],
                 y: this.deck_location[1],
-                dx: this.card_width_frac, 
+                dx: this.card_width_frac,
                 dy: this.card_height_frac,
                 cardCanvas: true
             }
         )
-        /*
-        this.img_deck = createImage(
-            "images/infection_deck/Back Infection.gif",
-            ctx,
-            this.deck_location[0], this.deck_location[1],
-            this.card_width_frac, this.card_height_frac
-        );
-        */
     }
 
     initial_deal() {
         var city_name;
         var city;
-        for (var cubes = 1; cubes <= 3; cubes++) {
+        for (var cubes = 3; cubes >= 1; cubes--) {
             for (var c = 0; c < 3; c++) {
                 city_name = this.deck.pop();
                 console.log("Adding " + cubes + " cubes to " + city_name);
@@ -66,26 +58,18 @@ class InfectionDeck {
 
     _discard_city_card(city) {
         this.io.in(this.game_id).emit(
-            "createImage",
+            "discardInfectionCard",
             {
                 img_type: "card",
-                img_name: "infection_discard_" + city,
+                img_name: "infection_discard",
                 image_file: "images/game/infection_deck/Infection " + utils.toTitleCase(city.native_disease_colour) + " " + utils.toTitleCase(city.name) + ".jpg",
-                x: this.discard_location[0], 
+                x: this.discard_location[0],
                 y: this.discard_location[1],
-                dx: this.card_width_frac, 
+                dx: this.card_width_frac,
                 dy: this.card_height_frac,
                 cardCanvas: true
             }
         )
-        /*
-        this.img_discard = createImage(
-            "images/infection_deck/Infection " + city.native_disease_colour.toTitleCase() + " " + city.name.toTitleCase() + ".jpg",
-            ctx,
-            this.discard_location[0], this.discard_location[1],
-            this.card_width_frac, this.card_height_frac
-        );
-        */
     }
 
     draw() {
