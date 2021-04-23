@@ -29,10 +29,10 @@ function clearImage(image) {
 };
 
 function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 25) {
-
-    object = image.img;
-    context = image.data.ctx;
-    canvas = image.data.canvas;
+    
+    var img_object = image.img;
+    var context = image.data.ctx;
+    var canvas = image.data.canvas;
 
     var images_to_redraw = [];
     for (const [oi_name, oi] of Object.entries(other_images)){
@@ -41,10 +41,10 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
         }
     }
 
-    var current_x = object.canvas_x;
-    var current_y = object.canvas_y;
-    var current_dx = object.width;
-    var current_dy = object.height;
+    var current_x = img_object.canvas_x;
+    var current_y = img_object.canvas_y;
+    var current_dx = img_object.width;
+    var current_dy = img_object.height;
 
     var n_steps = duration * 1000 / updateInterval;
 
@@ -80,6 +80,7 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
 
     return new Promise(
         resolve => {
+
             var id = setInterval(frame, updateInterval);
             var i = 0;
 
@@ -88,12 +89,13 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
             var width = current_dx;
             var height = current_dy;
 
+    
             function frame() {
                 if (i == n_steps) {
-                    object.canvas_x = final_x;
-                    object.canvas_y = final_y;
-                    object.width = final_dx;
-                    object.height = final_dy;
+                    img_object.canvas_x = final_x;
+                    img_object.canvas_y = final_y;
+                    img_object.width = final_dx;
+                    img_object.height = final_dy;
                     clearInterval(id);
                     resolve();
                 } else {
@@ -106,7 +108,7 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
                     width += ddx;
                     height += ddy;
                     context.drawImage(
-                        object, x, y, width, height
+                        img_object, x, y, width, height
                     );
                 };
                 for (const oi of images_to_redraw){

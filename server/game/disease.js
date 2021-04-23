@@ -54,7 +54,7 @@ class Disease {
             "alterImage",
             {
                 img_name: this.img_name,
-                new_img_file: this.vial_file_eradicated
+                new_image_file: this.vial_file_eradicated
             }
         )
         //alter_image(this.img, ctx, this.vial_file_eradicated)

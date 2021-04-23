@@ -35,6 +35,9 @@ jQuery(function ($) {
 
             IO.socket.on("enableActions", Client.enableActions);
             IO.socket.on("disableActions", Client.disableActions);
+
+            IO.socket.on("changeLocation", Client.changeLocation);
+            IO.socket.on("updatePlayerTurns", Client.updatePlayerTurns);
         },
 
         onConnected: function () {
@@ -54,7 +57,8 @@ jQuery(function ($) {
             passcode: null,
             username: null,
             current_page: null,
-            player_cards: []
+            player_cards: {},
+            loaction: "Atlanta"
         },
         images: {},
         button_names: ["drive_ferry", "direct_flight", "charter_flight", "shuttle_flight", "build_research_station", "treat_disease", "cure", "share_knowledge", "special_action", "pass"],
@@ -125,6 +129,8 @@ jQuery(function ($) {
             Client.$doc.on("click", "#player-ready-button", Client.waitForOtherRoles)
 
             Client.$doc.on("click", "#button_drive_ferry", Client.drive_ferry);
+            Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
+            Client.$doc.on("click", "#button_treat_disease", Client.treat_disease);
         },
 
         waitForOtherRoles: function () {
@@ -185,15 +191,18 @@ jQuery(function ($) {
             Client.$gameLog = document.getElementById("game_log");
             Client.$playerSelectionArea = document.getElementById("player_selection_area");
             Client.$playerActionsArea = document.getElementById("player_actions");
+            Client.$playerLocation = document.getElementById("player_location")
 
             Client.$buttons = {};
-            for (const b of Client.button_names){
+            for (const b of Client.button_names) {
                 Client.$buttons[b] = document.getElementById('button_' + b);
             }
         },
 
         createImage: function (data) {
             Client._addCtxAndCanvas(data);
+            if (Object.keys(Client.images).includes(data.img_name))
+                console.log("Image name already exists: " + data.img_name)
             Client.images[data.img_name] = {
                 data: data,
                 img: createImage(
@@ -241,7 +250,7 @@ jQuery(function ($) {
         alterImage: function (data) {
             alter_image(
                 Client.images[data.img_name],
-                data.new_img_file
+                data.new_image_file
             )
         },
 
@@ -255,7 +264,7 @@ jQuery(function ($) {
             for (let c of cards) {
                 await Client.receivePlayerCard(c);
             }
-            Client.$ctxAnimation.clearRect(0, 0, Client.$canvasAnimation.width, Client.$canvasAnimation.height);
+            //Client.$ctxAnimation.clearRect(0, 0, Client.$canvasAnimation.width, Client.$canvasAnimation.height);
             IO.socket.emit("playerCardsReceived");
         },
 
@@ -263,7 +272,7 @@ jQuery(function ($) {
             var data = {
                 img_type: "flying_card",
                 img_name: "flying_card_" + card_data.img_name,
-                image_file: card_data.img_file,
+                image_file: card_data.image_file,
                 x: card_data.x,
                 y: card_data.y,
                 dx: card_data.dx,
@@ -295,26 +304,37 @@ jQuery(function ($) {
 
         addPlayerCardToHand: function (data) {
 
-            var y_offset = 10 * Client.data.player_cards.length;
-            var x_offset = 5 * (Client.data.player_cards.length + 1);
-            Client.data.player_cards.push(data.city_name);
+            var n_previous = Object.keys(Client.data.player_cards).length;
+            var y_offset = 10 * n_previous
+            var x_offset = 5 * (n_previous + 1);
+            Client.data.player_cards[data.city_name] = data;
 
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
-            new_img.setAttribute("src", data.img_file);
-            new_img.setAttribute("z-order", Client.data.player_cards.length);
+            new_img.setAttribute("src", data.image_file);
+            new_img.setAttribute("z-order", n_previous);
+            new_img.setAttribute("data-cardname", data.city_name);
             new_img.style.top = y_offset + "%";
             new_img.style.left = x_offset + "%";
 
             Client.$playerHandStore.appendChild(new_img);
         },
 
-        logMessage: function(data){
+        refreshPlayerHand: function (card_name) {
+            Client.$playerHandStore.innerHTML = "";
+            var hand = { ...Client.data.player_cards };
+            Client.data.player_cards = {};
+            for (const c of Object.values(hand)) {
+                Client.addPlayerCardToHand(c);
+            }
+        },
+
+        logMessage: function (data) {
             var new_message = document.createElement("p");
             new_message.setAttribute("class", "log-message");
             new_message.textContent = data.message;
-            if (Object.keys(data).includes("style")){
-                for (const [key, value] of Object.entries(data.style)){
+            if (Object.keys(data).includes("style")) {
+                for (const [key, value] of Object.entries(data.style)) {
                     new_message.style[key] = value;
                 }
             }
@@ -328,24 +348,24 @@ jQuery(function ($) {
             Client.createImage(data);
         },
 
-        newPlayerTurn: function(player_name){
+        newPlayerTurn: function (player_name) {
             Client.$currentPlayerDiv.textContent = player_name
             if (player_name != Client.data.username)
                 return;
             IO.socket.emit("enquireAvailableActions", Client.data);
         },
 
-        enableActions: function(data){
+        enableActions: function (data) {
             Client.adjacent_cities = data.adjacent_cities;
-            for (const [btn, enable] of Object.entries(data.actions)){
-                Client.$buttons[btn].disabled = !enable;
+            for (const btn of Client.button_names){
+                Client.$buttons[btn].disabled = !(data.actions.includes(btn))
             }
         },
 
-        drive_ferry: function(){
+        drive_ferry: function () {
             var form = document.createElement("form");
 
-            for (const c of Client.adjacent_cities){
+            for (const c of Client.adjacent_cities) {
                 var input = document.createElement("input");
                 input.setAttribute("type", "radio");
                 input.setAttribute("value", c);
@@ -362,25 +382,21 @@ jQuery(function ($) {
             cancel_btn.innerHTML = "Cancel";
             var ok_btn = document.createElement("button");
             ok_btn.innerHTML = "Go";
-            
-            cancel_btn.onclick = function(event){
+
+            cancel_btn.onclick = function (event) {
                 event.preventDefault();
                 Client.$playerSelectionArea.innerHTML = "";
                 Client.$playerSelectionArea.style.display = "none";
                 Client.$playerActionsArea.style.display = "flex";
             }
 
-            ok_btn.onclick = function(event){
+            ok_btn.onclick = function (event) {
                 event.preventDefault();
                 Client.$playerSelectionArea.style.display = "none";
                 Client.$playerActionsArea.style.display = "flex";
                 var destination = document.querySelector('input[name="choice"]:checked').value;
-                IO.socket.emit(
-                    "player_drive_ferry", 
-                    {
-                        destination: destination,
-                        data: Client.data
-                    }
+                IO.socket.emit("player_drive_ferry",
+                    { destination: destination, data: Client.data }
                 )
                 Client.$playerSelectionArea.innerHTML = "";
             }
@@ -393,10 +409,78 @@ jQuery(function ($) {
             Client.$playerActionsArea.style.display = "none";
         },
 
-        disableActions: function(){
-            for (const btn of Client.button_names){
+        direct_flight: function () {
+            var form = document.createElement("form");
+
+            for (const c of Object.keys(Client.data.player_cards)) {
+                var input = document.createElement("input");
+                input.setAttribute("type", "radio");
+                input.setAttribute("value", c);
+                input.setAttribute("name", "choice");
+                var label = document.createElement("label");
+                label.setAttribute("for", c);
+                label.textContent = c;
+                var br = document.createElement("br");
+                form.appendChild(input);
+                form.appendChild(label);
+                form.appendChild(br);
+            }
+            var cancel_btn = document.createElement("button");
+            cancel_btn.innerHTML = "Cancel";
+            var ok_btn = document.createElement("button");
+            ok_btn.innerHTML = "Go";
+
+            cancel_btn.onclick = function (event) {
+                event.preventDefault();
+                Client.$playerSelectionArea.innerHTML = "";
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+            }
+
+            ok_btn.onclick = function (event) {
+                event.preventDefault();
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+                var destination = document.querySelector('input[name="choice"]:checked').value;
+                Client.remove_player_card(destination);
+                IO.socket.emit("player_direct_flight",
+                    { destination: destination, data: Client.data }
+                )
+                Client.$playerSelectionArea.innerHTML = "";
+            }
+
+            form.appendChild(cancel_btn);
+            form.appendChild(ok_btn);
+
+            Client.$playerSelectionArea.appendChild(form);
+            Client.$playerSelectionArea.style.display = "flex";
+            Client.$playerActionsArea.style.display = "none";
+        },
+
+        treat_disease: function(){
+            IO.socket.emit(
+                "treatDisease", Client.data
+            )
+        },
+
+        remove_player_card: function (destination) {
+            delete Client.data.player_cards[destination];
+            Client.refreshPlayerHand();
+        },
+
+        disableActions: function () {
+            for (const btn of Client.button_names) {
                 Client.$buttons[btn].disabled = true;
             }
+        },
+
+        changeLocation: function(city_name){
+            Client.data.location = city_name;
+            Client.$playerLocation.textContent = city_name;
+        },
+
+        updatePlayerTurns: function(data){
+            Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
         }
     }
 

@@ -79,40 +79,73 @@ class Pandemic {
     }
 
     assess_player_options(data) {
-
         var player = this.game.current_player;
-        var actions = { "drive_ferry": true, "pass": true }
-        if (data.player_cards.length) {
-            actions["direct_flight"] = true;
+        var actions = ["drive_ferry", "pass"]
+        if (Object.keys(data.player_cards).length) {
+            actions.push("direct_flight");
         }
-        if (data.player_cards.includes(player.city)) {
-            actions["charter_flight"] = true;
+        if (Object.keys(data.player_cards).includes(player.city)) {
+            actions.push("charter_flight");
         }
+        if (this.game.cities[player.city].total_cubes > 0) {
+            actions.push("treat_disease");
+        }
+
         this.io.to(player.socket_id).emit(
             "enableActions",
             {
                 actions: actions,
                 adjacent_cities: this.game.cities[player.city].adjacent_cities
             })
+        this.io.in(this.gameId).emit(
+            "updatePlayerTurns", { player: player.player_name, used_actions: this.game.player_used_actions, total_actions: player.actions_per_turn }
+        )
     }
 
     player_drive_ferry(data) {
-        this.io.in(this.gameId).emit(
-            "logMessage",
-            {
-                message: data.data.username + " is off to " + data.destination
-            }
+        this.io.in(this.gameId).emit("logMessage",
+            { message: data.data.username + " drives/ferries to " + data.destination }
         )
+        this.game.current_player.city = data.destination;
+        this.game.move_pawn(this.game.current_player, data.destination)
+        this._check_end_of_user_turn(data);
+    }
+
+    player_direct_flight(data) {
+        this.io.in(this.gameId).emit("logMessage",
+            { message: data.data.username + " takes direct flight to " + data.destination }
+        )
+        this.game.current_player.city = data.destination;
+        this.game.move_pawn(this.game.current_player, data.destination)
+        this.game.discard_player_card(data, data.destination)
+        this._check_end_of_user_turn(data);
+    }
+
+    _check_end_of_user_turn(data) {
         this.game.player_used_actions++;
         var player = this.game.current_player;
-        player.city = data.destination;
-        this.game.move_pawn(player, data.destination)
-        if (this.game.player_used_actions >= player.actions_per_turn){
+        if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
             this.game.new_player_turn();
         } else {
             this.assess_player_options(data.data);
         }
+    }
+
+    discard_player_card(destination) {
+        this.game.player_deck.discard(destination);
+    }
+
+    treatDisease(data) {
+        var player = this.game.current_player;
+        var location = player.city;
+        this.io.in(this.gameId).emit("logMessage",
+            { message: player.player_name + " treats disease in " + location }
+        )
+        var city = this.game.cities[location];
+        city.remove_cube(city.native_disease_colour);
+        this._check_end_of_user_turn({data: data});
+        this.game.update_infection_count();
     }
 
 }

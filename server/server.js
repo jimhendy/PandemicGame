@@ -40,6 +40,9 @@ function bindSocketEvents(socket){
     socket.on("playerCardsReceived", clientNotesPlayerCardsReceived)
 
     socket.on("player_drive_ferry", (data)=>pandemic.player_drive_ferry(data));
+    socket.on("player_direct_flight", (data)=>pandemic.player_direct_flight(data));
+
+    socket.on("treatDisease", (data)=>pandemic.treatDisease(data));
 }
 
 // Events

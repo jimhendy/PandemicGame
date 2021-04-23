@@ -13,6 +13,7 @@ class PlayerDeck {
         this.card_height_frac = 0.205;
 
         this.discard_pile = [];
+        this.cards_in_player_hands = {};
         this.deck = [];
         for (const [city_name, city] of Object.entries(this.cities)) {
             this.deck.push(
@@ -43,6 +44,7 @@ class PlayerDeck {
             var player_cards = [];
             for (var i = 0; i < n_initial_cards; i++) {
                 var card = this.deck.pop();
+                this.cards_in_player_hands[card.city.name] = card;
                 player_cards.push(this.emit_data(card));
                 this.io.in(this.game_id).emit(
                     "logMessage",
@@ -72,12 +74,35 @@ class PlayerDeck {
             is_event: false,
             city_name: card.city.name || null,
             img_name: card.img_name,
-            img_file: card.img_file,
+            image_file: card.image_file,
             x: this.deck_location[0],
             y: this.deck_location[1],
             dx: this.card_width_frac,
             dy: this.card_height_frac,
         }
+    };
+
+    discard(destination){
+        var card = this.cards_in_player_hands[destination];
+        delete this.cards_in_player_hands[destination];
+        this.discard_pile.push(card);
+
+        var data = this.emit_data(card);
+
+        data.img_name = "player_card_discard"
+        data.x = 1
+        data.y = 0.5
+        data.dest_x = this.discard_location[0];
+        data.dest_y = this.discard_location[1];
+        data.cardCanvas = true;
+        data.dt = 1;
+        
+        this.io.in(this.game_id).emit(
+            "createImage", data
+        )
+        this.io.in(this.game_id).emit(
+            "moveImage", data
+        )
     }
 }
 
@@ -87,10 +112,10 @@ class PlayerCard {
         this.epidemic = epidemic;
         if (epidemic) {
             this.img_name = "player_card_epidemic_" + epidemic_num
-            this.img_file = "images/game/player_cards/Epidemic.jpg"
+            this.image_file = "images/game/player_cards/Epidemic.jpg"
         } else {
-            this.img_name = "player_card_" + this.city.city_name
-            this.img_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.name) + ".jpg"
+            this.img_name = "player_card_" + this.city.name
+            this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.name) + ".jpg"
         }
     }
 
@@ -101,7 +126,7 @@ class PlayerCard {
             is_event: false,
             city_name: this.city.name || null,
             img_name: this.img_name,
-            img_file: this.img_file,
+            image_file: this.image_file,
             x: this.deck_location[0],
             y: this.deck_location[1],
             dx: this.card_width_frac,

@@ -123,6 +123,11 @@ class PandemicGame {
                 dt: 1
             }
         )
+        this.io.to(player.socket_id).emit("changeLocation", city_name);
+    }
+
+    discard_player_card(data, card_name) {
+        this.player_deck.discard(data.destination);
     }
 
     n_initial_player_cards(){

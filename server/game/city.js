@@ -7,6 +7,7 @@ class City {
         this.native_disease_colour = native_disease_colour;
         this.location = location;
         this.adjacent_cities = adjacent_cities;
+        this.total_cubes = 0;
         this.disease_cubes = {
             "yellow": 0,
             "red": 0,
@@ -30,10 +31,11 @@ class City {
             return 0;
 
         var n_outbreaks = 0;
-        colour = colour || this.native_disease_colour;
+        var colour = colour || this.native_disease_colour;
         var currrent_cubes = this.disease_cubes[colour];
         if (currrent_cubes < 3) {
             this.disease_cubes[colour]++;
+            this.total_cubes++;
             this.add_cube_image(this.disease_cubes[colour], colour)
         }
         else {
@@ -42,7 +44,7 @@ class City {
                 ignore_cities.push(this.name)
             }
             else {
-                ignore_cities = [this.name]
+                var ignore_cities = [this.name]
             }
             n_outbreaks++;
             var adj_city_name;
@@ -58,7 +60,6 @@ class City {
     add_cube_image(cube_number, colour) {
         var x = this.location[0] + this.cube_x_offset * cube_number - 0.005;
         var y = this.location[1] + this.cubs_y_offsets[colour];
-        console.log("Drawing cube in " + this.name)
         this.io.in(this.gameId).emit(
             "createImage",
             {
@@ -85,6 +86,7 @@ class City {
     remove_cube(colour) {
         var img_name = "cube_" + this.name + "_" + colour + "_" + this.disease_cubes[colour];
         this.disease_cubes[colour]--;
+        this.total_cubes--;
         this.io.in(this.gameId).emit(
             "removeImage", img_name
         )
