@@ -67,6 +67,27 @@ class PlayerDeck {
         // TODO: Add special event cards
     };
 
+    draw2Cards(player){
+        var player_cards = [];
+        for (var i = 0; i < 2; i++) {
+            var card = this.deck.pop();
+            this.cards_in_player_hands[card.city.name] = card;
+            player_cards.push(this.emit_data(card));
+            this.io.in(this.game_id).emit(
+                "logMessage",
+                {
+                    message: "🃟 " + player.player_name + ' received player card "' + card.city.name + '"',
+                    style: {
+                        color: card.city.native_disease_colour
+                    }
+                }
+            )
+        }
+        this.io.to(player.socket_id).emit(
+            "newPlayerCards", player_cards
+        )
+    }
+
     emit_data(card) {
         return {
             is_epidemic: card.epidemic,

@@ -126,10 +126,15 @@ class Pandemic {
         var player = this.game.current_player;
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
+            // TODO need to wait for this to complete before evaluating new actions
+            this.game.player_deck.draw2Cards(player);
+            // Check if player hand > 7 cards
+            // TODO infect cities
             this.game.new_player_turn();
         } else {
             this.assess_player_options(data.data);
         }
+        // TODO Test for game won/lost
     }
 
     discard_player_card(destination) {
@@ -146,6 +151,15 @@ class Pandemic {
         city.remove_cube(city.native_disease_colour);
         this._check_end_of_user_turn({data: data});
         this.game.update_infection_count();
+    }
+
+    pass(data){
+        var player = this.game.current_player;
+        this.io.in(this.gameId).emit("logMessage",
+            { message: player.player_name + " is too scared to do anything and passes"}
+        )
+        this.game.player_used_actions = player.actions_per_turn + 1;
+        this._check_end_of_user_turn({data: data});
     }
 
 }

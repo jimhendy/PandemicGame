@@ -131,6 +131,7 @@ jQuery(function ($) {
             Client.$doc.on("click", "#button_drive_ferry", Client.drive_ferry);
             Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
             Client.$doc.on("click", "#button_treat_disease", Client.treat_disease);
+            Client.$doc.on("click", "#button_pass", Client.pass);
         },
 
         waitForOtherRoles: function () {
@@ -481,6 +482,12 @@ jQuery(function ($) {
 
         updatePlayerTurns: function(data){
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
+        },
+
+        pass: function(){
+            IO.socket.emit(
+                "pass", Client.data
+            )
         }
     }
 

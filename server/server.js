@@ -43,6 +43,7 @@ function bindSocketEvents(socket){
     socket.on("player_direct_flight", (data)=>pandemic.player_direct_flight(data));
 
     socket.on("treatDisease", (data)=>pandemic.treatDisease(data));
+    socket.on("pass", (data)=>pandemic.pass(data));
 }
 
 // Events
