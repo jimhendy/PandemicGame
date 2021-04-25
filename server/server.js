@@ -44,6 +44,8 @@ function bindSocketEvents(socket){
 
     socket.on("treatDisease", ()=>pandemic.treatDisease());
     socket.on("pass", ()=>pandemic.pass());
+
+    socket.on("submitReducePlayerHand", (cards)=>{pandemic.reducePlayerCardHand(cards);})
 }
 
 // Events

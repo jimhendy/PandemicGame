@@ -87,7 +87,10 @@ class PlayerDeck {
     };
 
     discard(destination) {
+        // Update animation code to accept an array here to allow scheduling of client side discard
         var card = this.cards_in_player_hands[destination];
+        console.log(card);
+        console.log(this.cards_in_player_hands)
         delete this.cards_in_player_hands[destination];
         this.discard_pile.push(card);
 
@@ -123,7 +126,6 @@ class PlayerCard {
             this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.name) + ".jpg"
             this.card_name = this.city.name;
         }
-        console.log(this.card_name)
     }
 
     emit_data() {

@@ -33,6 +33,7 @@ jQuery(function ($) {
             IO.socket.on("newPlayerCards", Client.receivePlayerCards);
             IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
             IO.socket.on("discardPlayerCard", Client.remove_player_card);
+            IO.socket.on("reducePlayerHand", Client.reducePlayerHand);
 
             IO.socket.on("enableActions", Client.enableActions);
             IO.socket.on("disableActions", Client.disableActions);
@@ -481,6 +482,83 @@ jQuery(function ($) {
 
         pass: function () {
             IO.socket.emit("pass")
+        },
+
+        reducePlayerHand: function (data) {
+            var current_hand_size = data.current_cards.length;
+            var n_discard = current_hand_size - data.max_cards
+
+            var form = document.createElement("form");
+            var heading = document.createElement("h3");
+            heading.textContent = "Select " + n_discard + " cards to discard"
+            form.appendChild(heading)
+
+            for (const c of data.current_cards) {
+                var input = document.createElement("input");
+                input.setAttribute("type", "checkbox");
+                input.setAttribute("value", c);
+                input.setAttribute("name", "choice");
+                input.setAttribute("id", "form_input_" + c)
+                input.className = "input_cards";
+                var label = document.createElement("label");
+                label.setAttribute("for", "form_input_" + c);
+                label.textContent = c;
+                var br = document.createElement("br");
+                form.appendChild(input);
+                form.appendChild(label);
+                form.appendChild(br);
+            }
+            var ok_btn = document.createElement("button");
+            ok_btn.innerHTML = "OK";
+
+            ok_btn.onclick = function (event) {
+                event.preventDefault();
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+                var cards = [];
+                var inputs = document.getElementsByClassName("input_cards");
+                for (const i of inputs){
+                    if (i.checked){
+                        cards.push(i.value)
+                    }
+                }
+                console.log(cards);
+                IO.socket.emit("submitReducePlayerHand", cards)
+                Client.$playerSelectionArea.innerHTML = "";
+            }
+            form.appendChild(ok_btn);
+
+            Client.$playerSelectionArea.appendChild(form);
+            Client.$playerSelectionArea.style.display = "flex";
+            Client.$playerActionsArea.style.display = "none";
+
+            var inputs = document.getElementsByClassName("input_cards");
+            for (var i = 0; i < inputs.length; i++) {
+                inputs[i].onclick = checkFunc;
+            }
+            function checkFunc() {
+                var count = 0;
+                for (var i = 0; i < inputs.length; i++) {
+                    if (inputs[i].checked === true) {
+                        count++;
+                    }
+                }
+                if (count >= n_discard) {
+                    for (i = 0; i < inputs.length; i++) {
+                        if (inputs[i].checked === false) {
+                            inputs[i].disabled = true;
+                        }
+                    }
+                } else {
+                    for (i = 0; i < inputs.length; i++) {
+                        if (inputs[i].checked === false) {
+                            inputs[i].disabled = false;
+                        }
+                    }
+                }
+
+            }
+
         }
     }
 

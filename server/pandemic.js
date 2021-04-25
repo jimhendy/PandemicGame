@@ -125,23 +125,41 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
-    async _check_end_of_user_turn() {
+    _check_end_of_user_turn() {
         this.game.player_used_actions++;
         var player = this.game.current_player;
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
-            // TODO need to wait for this to complete before evaluating new actions
             this.game.player_deck.drawPlayerCards(2, player);
-            // Need to wait for player to recive cards ??
-            // Otherwise keep track of player cards on the server instead - feels better
-            
-            // Check if player hand > 7 cards
-            // TODO infect cities
-            this.game.new_player_turn();
+            if ( player.player_cards.length > player.max_hand_cards){
+                this.io.to(player.socket_id).emit(
+                    "reducePlayerHand", 
+                    {
+                        max_cards: player.max_hand_cards,
+                        current_cards: utils.array_from_objects_list(player.player_cards, "card_name")
+                    }
+                );
+            } else {
+                this.infect_cities();
+                this.game.new_player_turn();
+            }
         } else {
             this.assess_player_options();
         }
         // TODO Test for game won/lost
+    }
+
+    infect_cities(){
+        console.log("infect")
+    }
+
+    reducePlayerCardHand(cards){
+        for(const c of cards){
+            this.game.current_player.discard_card(c);
+            this.game.player_deck.discard(c)
+        };
+        this.infect_cities();
+        this.game.new_player_turn();
     }
 
     discard_player_card(destination) {
