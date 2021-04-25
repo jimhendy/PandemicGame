@@ -8,6 +8,7 @@ class City {
         this.location = location;
         this.adjacent_cities = adjacent_cities;
         this.total_cubes = 0;
+        this.has_research_station = false;
         this.disease_cubes = {
             "yellow": 0,
             "red": 0,
@@ -104,6 +105,10 @@ class City {
                 console.error(this.name + " has " + adj_city_name + " as adj but not vice versa")
             }
         }
+    }
+
+    add_research_station(){
+        this.has_research_station = true;
     }
 }
 

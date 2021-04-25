@@ -269,7 +269,6 @@ jQuery(function ($) {
             for (let c of cards) {
                 await Client.receivePlayerCard(c);
             }
-            //Client.$ctxAnimation.clearRect(0, 0, Client.$canvasAnimation.width, Client.$canvasAnimation.height);
             IO.socket.emit("playerCardsReceived");
         },
 

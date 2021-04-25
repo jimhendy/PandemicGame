@@ -84,11 +84,15 @@ class Pandemic {
         if (player.player_cards.length > 0) {
             actions.push("direct_flight");
         }
-        if (utils.objects_attribute_contains_value(player.player_cards, "city_name", player.city_name)){
+        var has_current_city_card = utils.objects_attribute_contains_value(player.player_cards, "city_name", player.city_name);
+        if (has_current_city_card) {
             actions.push("charter_flight");
         }
         if (this.game.cities[player.city_name].total_cubes > 0) {
             actions.push("treat_disease");
+        }
+        if (has_current_city_card && this.game.n_research_stations < this.game.max_n_research_stations) {
+            actions.push("build_research_station");
         }
 
         this.io.to(player.socket_id).emit(
@@ -116,12 +120,12 @@ class Pandemic {
         this.io.in(this.game_id).emit("logMessage",
             { message: player.player_name + " takes direct flight to " + destination_city_name }
         )
-        
+
         player.discard_card(destination_city_name);
         this.game.player_deck.discard([destination_city_name]);
 
         player.move_pawn(this.game.cities[destination_city_name]);
-        
+
         this._check_end_of_user_turn();
     }
 
@@ -131,9 +135,9 @@ class Pandemic {
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
             this.game.player_deck.drawPlayerCards(2, player);
-            if ( player.player_cards.length > player.max_hand_cards){
+            if (player.player_cards.length > player.max_hand_cards) {
                 this.io.to(player.socket_id).emit(
-                    "reducePlayerHand", 
+                    "reducePlayerHand",
                     {
                         max_cards: player.max_hand_cards,
                         current_cards: utils.array_from_objects_list(player.player_cards, "card_name")
@@ -149,12 +153,12 @@ class Pandemic {
         // TODO Test for game won/lost
     }
 
-    infect_cities(){
+    infect_cities() {
         this.game.infect_cities();
     }
 
-    reducePlayerCardHand(cards){
-        for(const c of cards){
+    reducePlayerCardHand(cards) {
+        for (const c of cards) {
             this.game.current_player.discard_card(c);
         }
         this.game.player_deck.discard(cards);
@@ -174,10 +178,10 @@ class Pandemic {
         this.game.update_infection_count();
     }
 
-    pass(){
+    pass() {
         var player = this.game.current_player;
         this.io.in(this.game_id).emit("logMessage",
-            { message: player.player_name + " is too scared to do anything and passes"}
+            { message: player.player_name + " is too scared to do anything and passes" }
         )
         this.game.player_used_actions = player.actions_per_turn + 1;
         this._check_end_of_user_turn();

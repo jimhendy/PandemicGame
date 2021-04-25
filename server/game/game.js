@@ -18,6 +18,9 @@ class PandemicGame {
         this.outbreaks = 0;
 
         this.round = 0;
+        this.n_research_stations = 0;
+        this.max_n_research_stations = 6;
+        this.research_station_cities = [];
 
         this.current_player = null;
     }
@@ -83,6 +86,9 @@ class PandemicGame {
     }
 
     add_research_station(city_name) {
+        this.n_research_stations++;
+        this.cities[city_name].add_research_station();
+        this.research_station_cities.push(city_name);
         this.io.in(this.game_id).emit(
             "createImage",
             {
@@ -107,7 +113,7 @@ class PandemicGame {
             return 2;
     }
 
-    infect_cities(){
+    infect_cities() {
         this.infection_deck.draw(this.markers.infection_rate());
         this.update_infection_count();
     }
