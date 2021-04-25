@@ -5,6 +5,7 @@ class PlayerDeck {
         this.io = io;
         this.game_id = game_id;
         this.cities = cities;
+        this.n_epidemics = n_epidemics;
 
         this.deck_location = [0.599, 0.73];
         this.discard_location = [0.732, 0.73];
@@ -41,35 +42,18 @@ class PlayerDeck {
     initial_deal(players, n_initial_cards) {
 
         for (const p of players) {
-            var player_cards = [];
-            for (var i = 0; i < n_initial_cards; i++) {
-                var card = this.deck.pop();
-                this.cards_in_player_hands[card.city.name] = card;
-                player_cards.push(this.emit_data(card));
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: "🃟 " + p.player_name + ' received player card "' + card.city.name + '"',
-                        style: {
-                            color: card.city.native_disease_colour
-                        }
-                    }
-                )
-            }
-            this.io.to(p.socket_id).emit(
-                "newPlayerCards", player_cards
-            )
+            this.drawPlayerCards(n_initial_cards, p);
         }
 
-        for (var i = 0; i < this.n_epidemics; i++)
-            this.deck.push(new PlayerCard(null, true, i))
+        //for (var i = 0; i < this.n_epidemics; i++)
+        //    this.deck.push(new PlayerCard(null, true, i))
         // TODO: Add epidemics equally throughout 1/n_epidemic of deck
         // TODO: Add special event cards
     };
 
-    draw2Cards(player){
+    drawPlayerCards(n_cards, player) {
         var player_cards = [];
-        for (var i = 0; i < 2; i++) {
+        for (var i = 0; i < n_cards; i++) {
             var card = this.deck.pop();
             this.cards_in_player_hands[card.city.name] = card;
             player_cards.push(this.emit_data(card));
@@ -83,9 +67,7 @@ class PlayerDeck {
                 }
             )
         }
-        this.io.to(player.socket_id).emit(
-            "newPlayerCards", player_cards
-        )
+        player.add_player_cards(player_cards);
     }
 
     emit_data(card) {
@@ -94,6 +76,7 @@ class PlayerDeck {
             is_city: card.city != null,
             is_event: false,
             city_name: card.city.name || null,
+            card_name: card.card_name,
             img_name: card.img_name,
             image_file: card.image_file,
             x: this.deck_location[0],
@@ -103,7 +86,7 @@ class PlayerDeck {
         }
     };
 
-    discard(destination){
+    discard(destination) {
         var card = this.cards_in_player_hands[destination];
         delete this.cards_in_player_hands[destination];
         this.discard_pile.push(card);
@@ -117,7 +100,7 @@ class PlayerDeck {
         data.dest_y = this.discard_location[1];
         data.cardCanvas = true;
         data.dt = 1;
-        
+
         this.io.in(this.game_id).emit(
             "createImage", data
         )
@@ -134,10 +117,13 @@ class PlayerCard {
         if (epidemic) {
             this.img_name = "player_card_epidemic_" + epidemic_num
             this.image_file = "images/game/player_cards/Epidemic.jpg"
+            this.card_name = "epidemic";
         } else {
             this.img_name = "player_card_" + this.city.name
             this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.name) + ".jpg"
+            this.card_name = this.city.name;
         }
+        console.log(this.card_name)
     }
 
     emit_data() {

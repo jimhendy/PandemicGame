@@ -4,7 +4,6 @@ const Cities = require("./city")
 const InfectionDeck = require("./infection_deck")
 const Player = require("./player")
 const PlayerDeck = require("./player_deck")
-const city = require("./city")
 
 class PandemicGame {
 
@@ -19,10 +18,12 @@ class PandemicGame {
         this.outbreaks = 0;
 
         this.round = 0;
+
+        this.current_player = null;
     }
 
     add_player(data) {
-        var p = new Player(data.username, data.role, data.socketId, this.players.length);
+        var p = new Player(this.io, this.game_id, data.player_name, data.role, data.socket_id, this.players.length);
         this.players.push(p);
     }
 
@@ -39,17 +40,17 @@ class PandemicGame {
         this.add_research_station("Atlanta")
 
         for (var p of this.players) {
-            this.place_pawn(p, "Atlanta");
+            p.place_pawn(this.cities["Atlanta"]);
         }
 
         this.update_infection_count();
     }
 
-    new_player_turn(){
-        if (this.current_player){
+    new_player_turn() {
+        if (this.current_player) {
             this.io.to(this.current_player.socket_id).emit("disableActions");
         }
-        this.current_player = this.players[ this.round % this.players.length ];
+        this.current_player = this.players[this.round % this.players.length];
         this.io.in(this.game_id).emit(
             "newPlayersTurn", this.current_player.player_name
         )
@@ -62,7 +63,7 @@ class PandemicGame {
             for (const [colour, num_colour] of Object.entries(city.disease_cubes)) {
                 if (num_colour) {
                     infection_count.push({
-                        city: city_name,
+                        city_name: city_name,
                         colour: colour,
                         num: num_colour
                     })
@@ -73,7 +74,7 @@ class PandemicGame {
         var text = ""
         for (const ic of infection_count) {
             text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; color:'
-            text += ic.colour + ';">' + ic.city
+            text += ic.colour + ';">' + ic.city_name
             text += '<span style="float:right;">' + ic.num + '</span></p>'
         }
         this.io.in(this.game_id).emit(
@@ -96,41 +97,7 @@ class PandemicGame {
         )
     }
 
-    place_pawn(player, city_name) {
-        var city = this.cities[city_name];
-        this.io.in(this.game_id).emit(
-            "createImage",
-            {
-                img_type: "pawn",
-                img_name: "pawn_" + player.role_name,
-                image_file: "images/game/roles/Pawn " + player.role_name + ".png",
-                x: city.location[0] + 0.02,
-                y: city.location[1] - 0.01 + (0.01 * player.player_num),
-                dx: 0.015,
-                dy: 0.02
-            }
-        )
-    }
-
-    move_pawn(player, city_name) {
-        var city = this.cities[city_name];
-        this.io.in(this.game_id).emit(
-            "moveImage",
-            {
-                img_name: "pawn_" + player.role_name,
-                dest_x: city.location[0] + 0.02,
-                dest_y: city.location[1] - 0.01 + (0.01 * player.player_num),
-                dt: 1
-            }
-        )
-        this.io.to(player.socket_id).emit("changeLocation", city_name);
-    }
-
-    discard_player_card(data, card_name) {
-        this.player_deck.discard(data.destination);
-    }
-
-    n_initial_player_cards(){
+    n_initial_player_cards() {
         var n_players = this.players.length;
         if (n_players <= 2)
             return 4;

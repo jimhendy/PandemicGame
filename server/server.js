@@ -34,27 +34,25 @@ io.on('connection', (socket) => {
 function bindSocketEvents(socket){
     socket.on('disconnect', function(){pandemic.remove_user(socket.id);});
     socket.on('playerJoinAttempt', playerJoinAttempt);
-    socket.on('roleChosen', assignPlayerRole);
-    socket.on("waiting_for_other_roles", playerWaiting);
-    socket.on("enquireAvailableActions", assess_player_options);
-    socket.on("playerCardsReceived", clientNotesPlayerCardsReceived)
+    socket.on('roleChosen', (data)=>{pandemic.assign_role(data)});
+    socket.on("waiting_for_other_roles", ()=>{pandemic.player_waiting(socket.id);});
+    socket.on("enquireAvailableActions", (data)=>{pandemic.assess_player_options(data);});
+    socket.on("playerCardsReceived", (data)=>{pandemic.clientNotesPlayerCardsReceived(data);})
 
-    socket.on("player_drive_ferry", (data)=>pandemic.player_drive_ferry(data));
-    socket.on("player_direct_flight", (data)=>pandemic.player_direct_flight(data));
+    socket.on("player_drive_ferry", (destination)=>pandemic.player_drive_ferry(destination));
+    socket.on("player_direct_flight", (destination)=>pandemic.player_direct_flight(destination));
 
-    socket.on("treatDisease", (data)=>pandemic.treatDisease(data));
-    socket.on("pass", (data)=>pandemic.pass(data));
+    socket.on("treatDisease", ()=>pandemic.treatDisease());
+    socket.on("pass", ()=>pandemic.pass());
 }
 
 // Events
 function playerJoinAttempt(data) {
     var calling_socket = this;
 
-    if (true || data.passcode == pandemic.gameId) {
-        calling_socket.join(pandemic.gameId);
+    if (true || data.passcode == pandemic.game_id) {
+        calling_socket.join(pandemic.game_id);
         pandemic.add_user(data, calling_socket);
-        //io.sockets.in(data.passcode).emit('playerJoinedRoom', data);
-        //calling_socket.emit("userJoinRoom");
     } else {  
         this.emit("clearUserScreen");
         setTimeout(() => { 
@@ -63,20 +61,4 @@ function playerJoinAttempt(data) {
         }, 2000);
         
     }
-}
-
-function assignPlayerRole(data){
-    pandemic.assign_role(data);
-}
-
-function playerWaiting(){
-    pandemic.player_waiting(this.id);
-}
-
-function assess_player_options(data){
-    pandemic.assess_player_options(data);
-}
-
-function clientNotesPlayerCardsReceived(){
-    pandemic.clientNotesPlayerCardsReceived();
 }

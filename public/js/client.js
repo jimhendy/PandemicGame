@@ -32,6 +32,7 @@ jQuery(function ($) {
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
             IO.socket.on("newPlayerCards", Client.receivePlayerCards);
             IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
+            IO.socket.on("discardPlayerCard", Client.remove_player_card);
 
             IO.socket.on("enableActions", Client.enableActions);
             IO.socket.on("disableActions", Client.disableActions);
@@ -41,7 +42,7 @@ jQuery(function ($) {
         },
 
         onConnected: function () {
-            Client.data.socketId = IO.socket.id;
+            Client.data.socket_id = IO.socket.id;
         },
 
         error: function (data) {
@@ -52,10 +53,10 @@ jQuery(function ($) {
 
     var Client = {
         data: {
-            socketId: null,
+            socket_id: null,
             role: null,
             passcode: null,
-            username: null,
+            player_name: null,
             current_page: null,
             player_cards: {},
             loaction: "Atlanta"
@@ -115,7 +116,7 @@ jQuery(function ($) {
                 roles_list += '<img class="' + card_class + '" '
                 roles_list += 'data-role="' + role + '" '
                 roles_list += 'src="/images/game/roles/Role - ' + role + '.jpg">'
-                roles_list += '<div class="centered role-username">'
+                roles_list += '<div class="centered role-player_name">'
                 roles_list += role_name + '</div>'
                 roles_list += '</div>'
             }
@@ -143,7 +144,7 @@ jQuery(function ($) {
         playerJoinForm: function (event) {
             event.preventDefault();
             Client.data['passcode'] = $('#passcode_input').val();
-            Client.data['username'] = $('#playername_input').val();
+            Client.data['player_name'] = $('#playername_input').val();
             IO.socket.emit("playerJoinAttempt", Client.data);
         },
 
@@ -351,14 +352,14 @@ jQuery(function ($) {
 
         newPlayerTurn: function (player_name) {
             Client.$currentPlayerDiv.textContent = player_name
-            if (player_name != Client.data.username)
+            if (player_name != Client.data.player_name)
                 return;
             IO.socket.emit("enquireAvailableActions", Client.data);
         },
 
         enableActions: function (data) {
             Client.adjacent_cities = data.adjacent_cities;
-            for (const btn of Client.button_names){
+            for (const btn of Client.button_names) {
                 Client.$buttons[btn].disabled = !(data.actions.includes(btn))
             }
         },
@@ -396,9 +397,7 @@ jQuery(function ($) {
                 Client.$playerSelectionArea.style.display = "none";
                 Client.$playerActionsArea.style.display = "flex";
                 var destination = document.querySelector('input[name="choice"]:checked').value;
-                IO.socket.emit("player_drive_ferry",
-                    { destination: destination, data: Client.data }
-                )
+                IO.socket.emit("player_drive_ferry", destination)
                 Client.$playerSelectionArea.innerHTML = "";
             }
 
@@ -443,10 +442,8 @@ jQuery(function ($) {
                 Client.$playerSelectionArea.style.display = "none";
                 Client.$playerActionsArea.style.display = "flex";
                 var destination = document.querySelector('input[name="choice"]:checked').value;
-                Client.remove_player_card(destination);
-                IO.socket.emit("player_direct_flight",
-                    { destination: destination, data: Client.data }
-                )
+                //Client.remove_player_card(destination);
+                IO.socket.emit("player_direct_flight", destination)
                 Client.$playerSelectionArea.innerHTML = "";
             }
 
@@ -458,10 +455,8 @@ jQuery(function ($) {
             Client.$playerActionsArea.style.display = "none";
         },
 
-        treat_disease: function(){
-            IO.socket.emit(
-                "treatDisease", Client.data
-            )
+        treat_disease: function () {
+            IO.socket.emit("treatDisease")
         },
 
         remove_player_card: function (destination) {
@@ -475,19 +470,17 @@ jQuery(function ($) {
             }
         },
 
-        changeLocation: function(city_name){
+        changeLocation: function (city_name) {
             Client.data.location = city_name;
             Client.$playerLocation.textContent = city_name;
         },
 
-        updatePlayerTurns: function(data){
+        updatePlayerTurns: function (data) {
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
         },
 
-        pass: function(){
-            IO.socket.emit(
-                "pass", Client.data
-            )
+        pass: function () {
+            IO.socket.emit("pass")
         }
     }
 

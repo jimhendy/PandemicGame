@@ -4,8 +4,8 @@ const Game = require('./game/game')
 class Pandemic {
     constructor(io) {
         this.io = io;
-        this.gameId = Math.floor(Math.random() * 99999999);
-        console.info("Game ID: " + this.gameId);
+        this.game_id = Math.floor(Math.random() * 99999999);
+        console.info("Game ID: " + this.game_id);
         this.all_roles = [
             "Contingency Planner",
             "Dispatcher",
@@ -15,15 +15,15 @@ class Pandemic {
             "Researcher",
             "Scientist"
         ]
-        this.users = {}; // socketId to client data
+        this.users = {}; // socket_id to client data
         this.game = null;
         this.initial_deal_complete = false;
         this.initial_clients_deals = 0;
     }
 
     add_user(data, socket) {
-        this.users[data.socketId] = data;
-        console.info('Player "' + data.username + '" joining game');
+        this.users[data.socket_id] = data;
+        console.info('Player "' + data.player_name + '" joining game');
         socket.emit("userJoinRoom", this._role_choice_data());
     }
 
@@ -31,7 +31,7 @@ class Pandemic {
         return {
             assigned_roles: utils.dict_from_objects(
                 Object.values(this.users),
-                "username", "role"
+                "player_name", "role"
             ),
             all_roles: this.all_roles
         }
@@ -46,8 +46,8 @@ class Pandemic {
     }
 
     assign_role(data) {
-        this.users[data.socketId].role = data.role;
-        this.io.in(this.gameId).emit('reloadRolesSelection', this._role_choice_data());
+        this.users[data.socket_id].role = data.role;
+        this.io.in(this.game_id).emit('reloadRolesSelection', this._role_choice_data());
     }
 
     player_waiting(socket_id) {
@@ -60,11 +60,11 @@ class Pandemic {
     }
 
     start_game() {
-        this.game = new Game(this.io, this.gameId);
+        this.game = new Game(this.io, this.game_id);
         for (const [key, value] of Object.entries(this.users)) {
             this.game.add_player(value);
         }
-        this.io.in(this.gameId).emit('startGame', this._role_choice_data());
+        this.io.in(this.game_id).emit('startGame', this._role_choice_data());
         this.game.initial_game_setup();
     }
 
@@ -78,16 +78,16 @@ class Pandemic {
         this.game.new_player_turn();
     }
 
-    assess_player_options(data) {
+    assess_player_options() {
         var player = this.game.current_player;
         var actions = ["drive_ferry", "pass"]
-        if (Object.keys(data.player_cards).length) {
+        if (player.player_cards.length > 0) {
             actions.push("direct_flight");
         }
-        if (Object.keys(data.player_cards).includes(player.city)) {
+        if (utils.objects_attribute_contains_value(player.player_cards, "city_name", player.city_name)){
             actions.push("charter_flight");
         }
-        if (this.game.cities[player.city].total_cubes > 0) {
+        if (this.game.cities[player.city_name].total_cubes > 0) {
             actions.push("treat_disease");
         }
 
@@ -95,44 +95,51 @@ class Pandemic {
             "enableActions",
             {
                 actions: actions,
-                adjacent_cities: this.game.cities[player.city].adjacent_cities
+                adjacent_cities: this.game.cities[player.city_name].adjacent_cities
             })
-        this.io.in(this.gameId).emit(
+        this.io.in(this.game_id).emit(
             "updatePlayerTurns", { player: player.player_name, used_actions: this.game.player_used_actions, total_actions: player.actions_per_turn }
         )
     }
 
-    player_drive_ferry(data) {
-        this.io.in(this.gameId).emit("logMessage",
-            { message: data.data.username + " drives/ferries to " + data.destination }
+    player_drive_ferry(destination_city_name) {
+        var player = this.game.current_player;
+        this.io.in(this.game_id).emit("logMessage",
+            { message: player.player_name + " drives/ferries to " + destination_city_name }
         )
-        this.game.current_player.city = data.destination;
-        this.game.move_pawn(this.game.current_player, data.destination)
-        this._check_end_of_user_turn(data);
+        player.move_pawn(this.game.cities[destination_city_name]);
+        this._check_end_of_user_turn();
     }
 
-    player_direct_flight(data) {
-        this.io.in(this.gameId).emit("logMessage",
-            { message: data.data.username + " takes direct flight to " + data.destination }
+    player_direct_flight(destination_city_name) {
+        var player = this.game.current_player;
+        this.io.in(this.game_id).emit("logMessage",
+            { message: player.player_name + " takes direct flight to " + destination_city_name }
         )
-        this.game.current_player.city = data.destination;
-        this.game.move_pawn(this.game.current_player, data.destination)
-        this.game.discard_player_card(data, data.destination)
-        this._check_end_of_user_turn(data);
+        
+        player.discard_card(destination_city_name);
+        this.game.player_deck.discard(destination_city_name)
+
+        player.move_pawn(this.game.cities[destination_city_name]);
+        
+        this._check_end_of_user_turn();
     }
 
-    _check_end_of_user_turn(data) {
+    async _check_end_of_user_turn() {
         this.game.player_used_actions++;
         var player = this.game.current_player;
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
             // TODO need to wait for this to complete before evaluating new actions
-            this.game.player_deck.draw2Cards(player);
+            this.game.player_deck.drawPlayerCards(2, player);
+            // Need to wait for player to recive cards ??
+            // Otherwise keep track of player cards on the server instead - feels better
+            
             // Check if player hand > 7 cards
             // TODO infect cities
             this.game.new_player_turn();
         } else {
-            this.assess_player_options(data.data);
+            this.assess_player_options();
         }
         // TODO Test for game won/lost
     }
@@ -141,25 +148,25 @@ class Pandemic {
         this.game.player_deck.discard(destination);
     }
 
-    treatDisease(data) {
+    treatDisease() {
         var player = this.game.current_player;
-        var location = player.city;
-        this.io.in(this.gameId).emit("logMessage",
-            { message: player.player_name + " treats disease in " + location }
+        var city_name = player.city_name;
+        this.io.in(this.game_id).emit("logMessage",
+            { message: player.player_name + " treats disease in " + city_name }
         )
-        var city = this.game.cities[location];
+        var city = this.game.cities[city_name];
         city.remove_cube(city.native_disease_colour);
-        this._check_end_of_user_turn({data: data});
+        this._check_end_of_user_turn();
         this.game.update_infection_count();
     }
 
-    pass(data){
+    pass(){
         var player = this.game.current_player;
-        this.io.in(this.gameId).emit("logMessage",
+        this.io.in(this.game_id).emit("logMessage",
             { message: player.player_name + " is too scared to do anything and passes"}
         )
         this.game.player_used_actions = player.actions_per_turn + 1;
-        this._check_end_of_user_turn({data: data});
+        this._check_end_of_user_turn();
     }
 
 }
