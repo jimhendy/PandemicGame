@@ -4,6 +4,7 @@ const Cities = require("./city")
 const InfectionDeck = require("./infection_deck")
 const Player = require("./player")
 const PlayerDeck = require("./player_deck")
+const city = require("./city")
 
 class PandemicGame {
 
@@ -87,7 +88,8 @@ class PandemicGame {
 
     add_research_station(city_name) {
         this.n_research_stations++;
-        this.cities[city_name].add_research_station();
+        var city = this.cities[city_name];
+        city.add_research_station();
         this.research_station_cities.push(city_name);
         this.io.in(this.game_id).emit(
             "createImage",
@@ -99,6 +101,15 @@ class PandemicGame {
                 y: this.cities[city_name].location[1],
                 dx: 0.02,
                 dy: 0.02
+            }
+        )
+        this.io.in(this.game_id).emit(
+            "logMessage", 
+            {
+                message: "Research Station built in " + city_name,
+                style: {
+                    color: city.native_disease_colour
+                }
             }
         )
     }

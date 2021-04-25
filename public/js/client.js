@@ -134,7 +134,9 @@ jQuery(function ($) {
 
             Client.$doc.on("click", "#button_drive_ferry", Client.drive_ferry);
             Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
+            Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
             Client.$doc.on("click", "#button_treat_disease", Client.treat_disease);
+            Client.$doc.on("click", "#button_build_research_station", Client.build_research_station);
             Client.$doc.on("click", "#button_pass", Client.pass);
         },
 
@@ -375,6 +377,7 @@ jQuery(function ($) {
 
         enableActions: function (data) {
             Client.adjacent_cities = data.adjacent_cities;
+            Client.research_station_cities = data.research_station_cities;
             for (const btn of Client.button_names) {
                 Client.$buttons[btn].disabled = !(data.actions.includes(btn))
             }
@@ -487,7 +490,7 @@ jQuery(function ($) {
         },
 
         changeLocation: function (city_name) {
-            Client.data.location = city_name;
+            Client.data.city_name = city_name;
             Client.$playerLocation.textContent = city_name;
         },
 
@@ -505,7 +508,7 @@ jQuery(function ($) {
 
             var form = document.createElement("form");
             var heading = document.createElement("h3");
-            heading.textContent = "Select " + n_discard + " cards to discard"
+            heading.textContent = "Select " + n_discard + " card(s) to discard"
             form.appendChild(heading)
 
             for (const c of data.current_cards) {
@@ -537,7 +540,6 @@ jQuery(function ($) {
                         cards.push(i.value)
                     }
                 }
-                console.log(cards);
                 IO.socket.emit("submitReducePlayerHand", cards)
                 Client.$playerSelectionArea.innerHTML = "";
             }
@@ -595,6 +597,57 @@ jQuery(function ($) {
                 Client.createImage(card_data);
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
+        },
+
+        build_research_station: function(){
+            IO.socket.emit("build_research_station")
+        },
+
+        shuttle_flight: function(data){
+            var form = document.createElement("form");
+
+            for (const c of Client.research_station_cities) {
+                if (c == Client.data.city_name)
+                    continue;
+                var input = document.createElement("input");
+                input.setAttribute("type", "radio");
+                input.setAttribute("value", c);
+                input.setAttribute("name", "choice");
+                var label = document.createElement("label");
+                label.setAttribute("for", c);
+                label.textContent = c;
+                var br = document.createElement("br");
+                form.appendChild(input);
+                form.appendChild(label);
+                form.appendChild(br);
+            }
+            var cancel_btn = document.createElement("button");
+            cancel_btn.innerHTML = "Cancel";
+            var ok_btn = document.createElement("button");
+            ok_btn.innerHTML = "Go";
+
+            cancel_btn.onclick = function (event) {
+                event.preventDefault();
+                Client.$playerSelectionArea.innerHTML = "";
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+            }
+
+            ok_btn.onclick = function (event) {
+                event.preventDefault();
+                Client.$playerSelectionArea.style.display = "none";
+                Client.$playerActionsArea.style.display = "flex";
+                var destination = document.querySelector('input[name="choice"]:checked').value;
+                IO.socket.emit("player_shuttle_flight", destination)
+                Client.$playerSelectionArea.innerHTML = "";
+            }
+
+            form.appendChild(cancel_btn);
+            form.appendChild(ok_btn);
+
+            Client.$playerSelectionArea.appendChild(form);
+            Client.$playerSelectionArea.style.display = "flex";
+            Client.$playerActionsArea.style.display = "none";
         }
 
 

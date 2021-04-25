@@ -80,7 +80,11 @@ class Pandemic {
 
     assess_player_options() {
         var player = this.game.current_player;
+        var city_name = player.city_name;
+        var city = this.game.cities[city_name];
+
         var actions = ["drive_ferry", "pass"]
+        
         if (player.player_cards.length > 0) {
             actions.push("direct_flight");
         }
@@ -88,21 +92,35 @@ class Pandemic {
         if (has_current_city_card) {
             actions.push("charter_flight");
         }
-        if (this.game.cities[player.city_name].total_cubes > 0) {
+        if (city.total_cubes > 0) {
             actions.push("treat_disease");
         }
-        if (has_current_city_card && this.game.n_research_stations < this.game.max_n_research_stations) {
+        if (
+            has_current_city_card 
+            && 
+            this.game.n_research_stations < this.game.max_n_research_stations
+            &&
+            !this.game.research_station_cities.includes(city_name)
+        ) {
             actions.push("build_research_station");
         }
+        if (city.has_research_station && this.game.n_research_stations > 1)
+            actions.push("shuttle_flight")
 
         this.io.to(player.socket_id).emit(
             "enableActions",
             {
                 actions: actions,
-                adjacent_cities: this.game.cities[player.city_name].adjacent_cities
+                adjacent_cities: this.game.cities[player.city_name].adjacent_cities,
+                research_station_cities: this.game.research_station_cities
             })
         this.io.in(this.game_id).emit(
-            "updatePlayerTurns", { player: player.player_name, used_actions: this.game.player_used_actions, total_actions: player.actions_per_turn }
+            "updatePlayerTurns", 
+            { 
+                player: player.player_name, 
+                used_actions: this.game.player_used_actions, 
+                total_actions: player.actions_per_turn 
+            }
         )
     }
 
@@ -126,6 +144,16 @@ class Pandemic {
 
         player.move_pawn(this.game.cities[destination_city_name]);
 
+        this._check_end_of_user_turn();
+    }
+
+    player_shuttle_flight(destination_city_name) {
+        var player = this.game.current_player;
+        this.io.in(this.game_id).emit("logMessage",
+            { message: player.player_name + " takes shuttle flight to " + destination_city_name }
+        )
+
+        player.move_pawn(this.game.cities[destination_city_name]);
         this._check_end_of_user_turn();
     }
 
@@ -166,7 +194,7 @@ class Pandemic {
         this.game.new_player_turn();
     }
 
-    treatDisease() {
+    player_treatDisease() {
         var player = this.game.current_player;
         var city_name = player.city_name;
         this.io.in(this.game_id).emit("logMessage",
@@ -178,12 +206,22 @@ class Pandemic {
         this.game.update_infection_count();
     }
 
-    pass() {
+    player_pass() {
         var player = this.game.current_player;
         this.io.in(this.game_id).emit("logMessage",
             { message: player.player_name + " is too scared to do anything and passes" }
         )
         this.game.player_used_actions = player.actions_per_turn + 1;
+        this._check_end_of_user_turn();
+    }
+
+    player_build_research_station(){
+        var player = this.game.current_player;
+        var city_name = player.city_name;
+        this.game.add_research_station(city_name);
+        player.discard_card(city_name);
+        this.game.player_deck.discard([city_name]);
+
         this._check_end_of_user_turn();
     }
 

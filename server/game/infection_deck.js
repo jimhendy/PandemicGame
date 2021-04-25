@@ -52,7 +52,7 @@ class InfectionDeck {
                 this.io.in(this.game_id).emit(
                     "logMessage",
                     {
-                        message: "🕱 " + city_name + " was infected with " + cubes + " cubes",
+                        message: "🕱 " + city_name + " was infected with " + cubes + " cube(s)",
                         style: {
                             color: city.native_disease_colour,
                             "font-weight": "bold"
