@@ -9,9 +9,20 @@ class Markers {
         this.outbreak_locations = this.create_outbreak_marker_locations();
         this.infection_rate_locations = this.create_infection_rate_locations();
 
+        this.infection_rate_loc = 0;
+
         this.create_outbreak_marker();
         this.create_infection_rate_marker();
     };
+
+    infection_rate(){
+        if (this.infection_rate_loc < 3)
+            return 2;
+        else if (this.infection_rate_loc < 5)
+            return 3;
+        else
+            return 4
+    }
 
     create_outbreak_marker() {
         this.io.in(this.game_id).emit(

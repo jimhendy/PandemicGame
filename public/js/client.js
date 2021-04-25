@@ -30,6 +30,7 @@ jQuery(function ($) {
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
+            IO.socket.on("drawInfectionCards", Client.drawInfectionCards);
             IO.socket.on("newPlayerCards", Client.receivePlayerCards);
             IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
             IO.socket.on("discardPlayerCardFromHand", Client.remove_player_card_from_hand);
@@ -306,17 +307,17 @@ jQuery(function ($) {
             });
         },
 
-        discardPlayerCards: async function(cards){
+        discardPlayerCards: async function (cards) {
             for (let c of cards) {
                 await Client.discardPlayerCard(c);
             }
             IO.socket.emit("playerCardDiscarded");
         },
 
-        discardPlayerCard: function(card_data){
-            return new Promise((resolve, reject)=>{
+        discardPlayerCard: function (card_data) {
+            return new Promise((resolve, reject) => {
                 Client.createImage(card_data);
-                Client.moveImage(card_data).then(()=>{resolve();});
+                Client.moveImage(card_data).then(() => { resolve(); });
             })
         },
 
@@ -356,7 +357,7 @@ jQuery(function ($) {
                     new_message.style[key] = value;
                 }
             }
-            Client.$gameLog.prepend(new_message);//, Client.$gameLog.firstChild);
+            Client.$gameLog.prepend(new_message);
         },
 
         discardInfectionCard: function (data) {
@@ -532,8 +533,8 @@ jQuery(function ($) {
                 Client.$playerActionsArea.style.display = "flex";
                 var cards = [];
                 var inputs = document.getElementsByClassName("input_cards");
-                for (const i of inputs){
-                    if (i.checked){
+                for (const i of inputs) {
+                    if (i.checked) {
                         cards.push(i.value)
                     }
                 }
@@ -543,9 +544,11 @@ jQuery(function ($) {
             }
             form.appendChild(ok_btn);
 
+            
             Client.$playerSelectionArea.appendChild(form);
             Client.$playerSelectionArea.style.display = "flex";
             Client.$playerActionsArea.style.display = "none";
+            Client.$playerSelectionArea.scrollTop = 0;
 
             var inputs = document.getElementsByClassName("input_cards");
             for (var i = 0; i < inputs.length; i++) {
@@ -574,7 +577,28 @@ jQuery(function ($) {
 
             }
 
+        },
+
+        drawInfectionCards: async function (data) {
+            for (var i = 0; i < data.cards.length; i++) {
+                if (i - 1 == data.empty_deck_deal) {
+                    Client.createImage(data.infection_deck_image_data)
+                }
+                await Client.drawSingleInfectionCard(data.cards[i])
+                if (i == data.empty_deck_deal) {
+                    Client.removeImage("infection_deck")
+                }
+            }
+        },
+
+        drawSingleInfectionCard(card_data) {
+            return new Promise((resolve, reject) => {
+                Client.createImage(card_data);
+                Client.moveImage(card_data).then(() => { resolve(); });
+            })
         }
+
+
     }
 
     IO.init();

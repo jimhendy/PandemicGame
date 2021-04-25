@@ -107,6 +107,11 @@ class PandemicGame {
             return 2;
     }
 
+    infect_cities(){
+        this.infection_deck.draw(this.markers.infection_rate());
+        this.update_infection_count();
+    }
+
 
 }
 

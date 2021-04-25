@@ -112,9 +112,11 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
                     );
                 };
                 for (const oi of images_to_redraw){
-                    context.drawImage(
-                        oi.img, oi.img.canvas_x, oi.img.canvas_y, oi.img.width, oi.img.height
-                    );
+                    if (oi.img.canvas_x <= 1.1*(x+width) && (oi.img.canvas_x+oi.img.width) >= 0.9*x &&
+                        oi.img.canvas_y <= 1.1*(y+height) && (oi.img.canvas_y+oi.img.height) >= 0.9*y ) 
+                        context.drawImage(
+                            oi.img, oi.img.canvas_x, oi.img.canvas_y, oi.img.width, oi.img.height
+                        );
                 };
             }
         } // end of resolve

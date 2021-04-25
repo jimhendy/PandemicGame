@@ -106,7 +106,6 @@ class PlayerDeck {
 
             player_cards.push(data);
         }
-        console.log(player_cards)
         this.io.in(this.game_id).emit(
             "discardPlayerCards", player_cards
         )

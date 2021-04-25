@@ -150,7 +150,7 @@ class Pandemic {
     }
 
     infect_cities(){
-        console.log("infect")
+        this.game.infect_cities();
     }
 
     reducePlayerCardHand(cards){
