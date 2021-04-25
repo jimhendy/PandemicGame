@@ -32,7 +32,7 @@ class Player{
         this.player_cards = this.player_cards.filter(
             function(c) { return c.card_name != card_name});
         this.io.to(this.socket_id).emit(
-            "discardPlayerCard", card_name
+            "discardPlayerCardFromHand", card_name
         );
     };
 

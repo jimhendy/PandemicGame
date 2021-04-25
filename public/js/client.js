@@ -32,7 +32,8 @@ jQuery(function ($) {
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
             IO.socket.on("newPlayerCards", Client.receivePlayerCards);
             IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
-            IO.socket.on("discardPlayerCard", Client.remove_player_card);
+            IO.socket.on("discardPlayerCardFromHand", Client.remove_player_card_from_hand);
+            IO.socket.on("discardPlayerCards", Client.discardPlayerCards);
             IO.socket.on("reducePlayerHand", Client.reducePlayerHand);
 
             IO.socket.on("enableActions", Client.enableActions);
@@ -305,6 +306,20 @@ jQuery(function ($) {
             });
         },
 
+        discardPlayerCards: async function(cards){
+            for (let c of cards) {
+                await Client.discardPlayerCard(c);
+            }
+            IO.socket.emit("playerCardDiscarded");
+        },
+
+        discardPlayerCard: function(card_data){
+            return new Promise((resolve, reject)=>{
+                Client.createImage(card_data);
+                Client.moveImage(card_data).then(()=>{resolve();});
+            })
+        },
+
         addPlayerCardToHand: function (data) {
 
             var n_previous = Object.keys(Client.data.player_cards).length;
@@ -460,7 +475,7 @@ jQuery(function ($) {
             IO.socket.emit("treatDisease")
         },
 
-        remove_player_card: function (destination) {
+        remove_player_card_from_hand: function (destination) {
             delete Client.data.player_cards[destination];
             Client.refreshPlayerHand();
         },

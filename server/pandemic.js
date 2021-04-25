@@ -118,7 +118,7 @@ class Pandemic {
         )
         
         player.discard_card(destination_city_name);
-        this.game.player_deck.discard(destination_city_name)
+        this.game.player_deck.discard([destination_city_name]);
 
         player.move_pawn(this.game.cities[destination_city_name]);
         
@@ -156,14 +156,10 @@ class Pandemic {
     reducePlayerCardHand(cards){
         for(const c of cards){
             this.game.current_player.discard_card(c);
-            this.game.player_deck.discard(c)
-        };
+        }
+        this.game.player_deck.discard(cards);
         this.infect_cities();
         this.game.new_player_turn();
-    }
-
-    discard_player_card(destination) {
-        this.game.player_deck.discard(destination);
     }
 
     treatDisease() {

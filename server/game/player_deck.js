@@ -86,29 +86,29 @@ class PlayerDeck {
         }
     };
 
-    discard(destination) {
-        // Update animation code to accept an array here to allow scheduling of client side discard
-        var card = this.cards_in_player_hands[destination];
-        console.log(card);
-        console.log(this.cards_in_player_hands)
-        delete this.cards_in_player_hands[destination];
-        this.discard_pile.push(card);
+    discard(destinations) {
+        // destinations is an array of the card city_names (/event card names)
+        var player_cards = [];
+        for (const d of destinations){
+            var card = this.cards_in_player_hands[d];
+            delete this.cards_in_player_hands[d];
+            this.discard_pile.push(card);
 
-        var data = this.emit_data(card);
+            var data = this.emit_data(card);
 
-        data.img_name = "player_card_discard"
-        data.x = 1
-        data.y = 0.5
-        data.dest_x = this.discard_location[0];
-        data.dest_y = this.discard_location[1];
-        data.cardCanvas = true;
-        data.dt = 1;
+            data.img_name = "player_card_discard"
+            data.x = 1
+            data.y = 0.5
+            data.dest_x = this.discard_location[0];
+            data.dest_y = this.discard_location[1];
+            data.cardCanvas = true;
+            data.dt = 1;
 
+            player_cards.push(data);
+        }
+        console.log(player_cards)
         this.io.in(this.game_id).emit(
-            "createImage", data
-        )
-        this.io.in(this.game_id).emit(
-            "moveImage", data
+            "discardPlayerCards", player_cards
         )
     }
 }
