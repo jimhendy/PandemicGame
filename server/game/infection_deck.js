@@ -1,12 +1,13 @@
 const utils = require("./utils")
 
 class InfectionDeck {
-    constructor(io, game_id, cities) {
+    constructor(io, game_id, cities, diseases) {
 
         this.io = io;
         this.game_id = game_id;
 
         this.cities = cities;
+        this.diseases = diseases;
 
         this.deck = Object.keys(this.cities);
         utils.shuffle(this.deck);
@@ -29,7 +30,7 @@ class InfectionDeck {
         )
     }
 
-    _infection_deck_image_data(){
+    _infection_deck_image_data() {
         return {
             img_type: "card",
             img_name: "infection_deck",
@@ -61,6 +62,7 @@ class InfectionDeck {
                 )
                 for (var n = 0; n < cubes; n++) {
                     city.add_cube();
+                    this.diseases[city.native_disease_colour].add_cube()
                 }
                 this.discarded.push(city_name);
             }
@@ -77,7 +79,7 @@ class InfectionDeck {
         )
     }
 
-    _discard_card_data(city){
+    _discard_card_data(city) {
         return {
             img_type: "card",
             img_name: "infection_discard",
@@ -100,7 +102,7 @@ class InfectionDeck {
             cards: [],
             infection_deck_image_data: this._infection_deck_image_data()
         }
-        for (var i=0; i<n_cards; i++){
+        for (var i = 0; i < n_cards; i++) {
             if (!this.deck.length) {
                 this.deck = this.discarded;
                 this.discarded = [];
@@ -109,8 +111,18 @@ class InfectionDeck {
             }
             var city_name = this.deck.pop();
             var city = this.cities[city_name];
+            if (this.diseases[city.native_disease_colour].eradictaed) {
+                this.io.in(this.game_id).emit(
+                    "logMessage",
+                    {
+                        message: city_name + " was NOT infected as disease is eradicated",
+                        style: { color: city.native_disease_colour }
+                    }
+                )
+                continue;
+            }
             this.io.in(this.game_id).emit(
-                "logMessage", 
+                "logMessage",
                 {
                     message: "🕱 " + city_name + " was infected",
                     style: {
@@ -119,7 +131,7 @@ class InfectionDeck {
                     }
                 }
             )
-            
+            this.diseases[city.native_disease_colour].add_cube();
             city.add_cube(this.cities);
             this.discarded.push(city_name);
 

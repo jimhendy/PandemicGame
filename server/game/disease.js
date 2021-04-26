@@ -14,7 +14,7 @@ class Disease {
         this.dx_frac = 0.025;
         this.dy_frac = 0.04;
         this.vial_file = "images/game/vials/Vial " + utils.toTitleCase(this.colour) + ".png"
-        this.vial_file_eradicated = this.vial_file.replace(".png", " Eracdiacted.png")
+        this.vial_file_eradicated = this.vial_file.replace(".png", " Eradicated.png")
         this.total_cubes = 24; // can lose the game if we run out
         this.cubes_on_board = 0;
         this.img_name = "vial_" + this.colour
@@ -31,6 +31,22 @@ class Disease {
                 dy: this.dy_frac
             }
         )
+    }
+
+    add_cube(){
+        this.cubes_on_board++;
+        if (this.cubes_on_board > this.total_cubes){
+            this.io.in(this.game_id).emit(
+                "gameLost",
+                {
+                    message: utils.toTitleCase(this.colour) + " diease attempted to add more cubes than are provided in the game. Game Lost"
+                }
+            )
+        }
+    }
+
+    remove_cube(){
+        this.cubes_on_board--;
     }
 
     cure(){

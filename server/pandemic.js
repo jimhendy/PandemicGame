@@ -211,10 +211,15 @@ class Pandemic {
     _check_end_of_user_turn() {
         this.game.player_used_actions++;
         var player = this.game.current_player;
+
+        this.check_disease_status();
+        //this.check_game_status();// TODO Test for game won/lost
+
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
             this.game.player_deck.drawPlayerCards(2, player);
             if (player.player_cards.length > player.max_hand_cards) {
+                // current player's turn over but needs to discard player cards
                 this.io.to(player.socket_id).emit(
                     "reducePlayerHand",
                     {
@@ -223,14 +228,27 @@ class Pandemic {
                     }
                 );
             } else {
+                // current player's turn over and no cards to discard so can go straight on to next player
                 this.infect_cities();
                 this.game.new_player_turn();
             }
         } else {
+            // current player has another action
             this.assess_player_options();
         }
-        // TODO Test for game won/lost
     }
+
+    check_disease_status(){
+        for (const d of Object.values(this.game.diseases)){
+            if (d.eradicated)
+                continue;
+            if (d.cured && d.cubes_on_board==0){
+                d.eradicate();
+            }
+        }
+        
+    }
+
 
     infect_cities() {
         this.game.infect_cities();
@@ -252,6 +270,7 @@ class Pandemic {
             { message: player.player_name + " treats disease in " + city_name }
         )
         var city = this.game.cities[city_name];
+        this.game.diseases[city.native_disease_colour].remove_cube();
         city.remove_cube(city.native_disease_colour);
         this._check_end_of_user_turn();
         this.game.update_infection_count();

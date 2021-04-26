@@ -42,6 +42,8 @@ jQuery(function ($) {
 
             IO.socket.on("changeLocation", Client.changeLocation);
             IO.socket.on("updatePlayerTurns", Client.updatePlayerTurns);
+
+            IO.socket.on("gameLost", Client.gameLost);
         },
 
         onConnected: function () {
@@ -82,6 +84,7 @@ jQuery(function ($) {
             Client.$roleChoiceScreen = $('#role-choice-screen-template').html();
             Client.$waitingForRolesTemplate = $('#waiting-for-role-choices-template').html();
             Client.$gameBoardTemplate = $('#game-board-template').html()
+            Client.$gameOverTemplate = $('#game-over-template').html()
         },
 
         showLandingScreen: function () {
@@ -635,6 +638,13 @@ jQuery(function ($) {
                     true
                 )
             }
+        },
+
+        gameLost: function(data){
+            Client.$gameArea.html(Client.$gameOverTemplate);
+            Client.data.current_page = "gameOver";
+
+            document.getElementById("game-over-div").textContent = data.message;
         }
 
 

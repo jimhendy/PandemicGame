@@ -72,17 +72,6 @@ class City {
                 blinkCanvas: true
             }
         )
-        /*
-        this.img_cubes[colour].push(
-            createImage(
-                "images/cubes/cube_" + colour + ".png",
-                cube_ctx,
-                x, y, 0.01, 0.01
-            )
-        )
-        */
-        //cube_ctx.fillStyle = "#FFFFFF";
-        //cube_ctx.fillRect(x * canvas.width, y * canvas.height, 0.01 * canvas.width, 0.01 * canvas.height);
     }
 
     remove_cube(colour) {
@@ -92,8 +81,6 @@ class City {
         this.io.in(this.game_id).emit(
             "removeImage", img_name
         )
-        //var img = this.img_cubes[colour].pop();
-        //clearImage(img, cube_ctx);
     }
 
 

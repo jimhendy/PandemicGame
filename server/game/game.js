@@ -35,7 +35,7 @@ class PandemicGame {
         this.markers = new Markers(this.io, this.game_id);
         this.diseases = Diseases.create_new_diseases(this.io, this.game_id);
         this.cities = Cities.create_cities(this.io, this.game_id);
-        this.infection_deck = new InfectionDeck(this.io, this.game_id, this.cities)
+        this.infection_deck = new InfectionDeck(this.io, this.game_id, this.cities, this.diseases)
         this.player_deck = new PlayerDeck(this.io, this.game_id, this.cities)
 
         this.colour_to_cities = {};
