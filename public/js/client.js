@@ -136,10 +136,10 @@ jQuery(function ($) {
             Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
             Client.$doc.on("click", "#button_charter_flight", Client.charter_flight);
             Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
-            Client.$doc.on("click", "#button_treat_disease", Client.treat_disease);
-            Client.$doc.on("click", "#button_build_research_station", Client.build_research_station);
+            Client.$doc.on("click", "#button_treat_disease", () => IO.socket.emit("treatDisease"));
+            Client.$doc.on("click", "#button_build_research_station", () => IO.socket.emit("build_research_station"));
             Client.$doc.on("click", "#button_cure", Client.cure);
-            Client.$doc.on("click", "#button_pass", Client.pass);
+            Client.$doc.on("click", "#button_pass", () => IO.socket.emit("pass"));
         },
 
         waitForOtherRoles: function () {
@@ -398,10 +398,6 @@ jQuery(function ($) {
             );
         },
 
-        treat_disease: function () {
-            IO.socket.emit("treatDisease")
-        },
-
         remove_player_card_from_hand: function (destination) {
             delete Client.data.player_cards[destination];
             Client.refreshPlayerHand();
@@ -420,10 +416,6 @@ jQuery(function ($) {
 
         updatePlayerTurns: function (data) {
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
-        },
-
-        pass: function () {
-            IO.socket.emit("pass")
         },
 
         reducePlayerHand: function (data) {
@@ -458,10 +450,6 @@ jQuery(function ($) {
                 Client.createImage(card_data);
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
-        },
-
-        build_research_station: function () {
-            IO.socket.emit("build_research_station")
         },
 
         shuttle_flight: function (data) {
@@ -500,10 +488,10 @@ jQuery(function ($) {
 
         _ask_question: function (
             options,
-            go_callback = null, 
-            n_choices = 1, 
-            colours = null, 
-            cancel_button = true, 
+            go_callback = null,
+            n_choices = 1,
+            colours = null,
+            cancel_button = true,
             title = null,
             checkboxes = false
         ) {
@@ -614,7 +602,7 @@ jQuery(function ($) {
         cure: function () {
             var possible_colours = Object.keys(Client.actions_data.curable_colours);
 
-            if (possible_colours.length == 1){
+            if (possible_colours.length == 1) {
                 Client._cure_single_disease(possible_colours[0])
             } else {
                 Client._ask_question(
@@ -630,16 +618,16 @@ jQuery(function ($) {
 
         },
 
-        _cure_single_disease: function(colour){
-            function reply_func(cards){IO.socket.emit("player_cure", cards); };            
+        _cure_single_disease: function (colour) {
+            function reply_func(cards) { IO.socket.emit("player_cure", cards); };
             var n_discard = Client.actions_data.n_cards_to_cure;
             var possible_cards = Client.actions_data.curable_colours[colour];
-            if (possible_cards.length == n_discard){
+            if (possible_cards.length == n_discard) {
                 reply_func(possible_cards)
             } else {
                 Client._ask_question(
                     possible_cards,
-                    (cards) =>{reply_func(cards)},
+                    (cards) => { reply_func(cards) },
                     Client.actions_data.n_cards_to_cure,
                     null,
                     true,
