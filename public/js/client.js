@@ -63,6 +63,8 @@ jQuery(function ($) {
             passcode: null,
             player_name: null,
             current_page: null,
+            city_cards: {},
+            event_cards: {},
             player_cards: {},
             loaction: "Atlanta"
         },
@@ -332,20 +334,27 @@ jQuery(function ($) {
             var n_previous = Object.keys(Client.data.player_cards).length;
             var y_offset = 10 * n_previous
             var x_offset = 5 * (n_previous + 1);
-            Client.data.player_cards[data.city_name] = data;
+
+            Client.data.player_cards[data.card_name] = data;
+            if (data.is_city)
+                Client.data.city_cards[data.card_name] = data;
+            else if (data.is_event)
+                Client.data.event_cards[data.card_name] = data;
+            else
+                IO.error({message: "Bad card found " + data})
 
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
             new_img.setAttribute("src", data.image_file);
             new_img.setAttribute("z-order", n_previous);
-            new_img.setAttribute("data-cardname", data.city_name);
+            new_img.setAttribute("data-cardname", data.card_name);
             new_img.style.top = y_offset + "%";
             new_img.style.left = x_offset + "%";
 
             Client.$playerHandStore.appendChild(new_img);
         },
 
-        refreshPlayerHand: function (card_name) {
+        refreshPlayerHand: function () {
             Client.$playerHandStore.innerHTML = "";
             var hand = { ...Client.data.player_cards };
             Client.data.player_cards = {};
@@ -396,13 +405,17 @@ jQuery(function ($) {
 
         direct_flight: function () {
             Client._ask_question(
-                Object.keys(Client.data.player_cards),
+                Object.keys(Client.data.city_cards),
                 (destination) => IO.socket.emit("player_direct_flight", destination)
             );
         },
 
-        remove_player_card_from_hand: function (destination) {
-            delete Client.data.player_cards[destination];
+        remove_player_card_from_hand: function (card_name) {
+            delete Client.data.player_cards[card_name];
+            if (Object.keys(Client.data.city_cards).includes(card_name))
+                delete Client.data.city_cards[card_name]
+            if (Object.keys(Client.data.event_cards).includes(card_name))
+                delete Client.data.event_cards[card_name]                
             Client.refreshPlayerHand();
         },
 
@@ -530,6 +543,11 @@ jQuery(function ($) {
                 form.appendChild(br);
             }
 
+            var button_div = document.createElement("div");
+            button_div.setAttribute("textAlign", "center");
+            button_div.style.marginTop = "5px"
+            form.appendChild(button_div)
+
             if (cancel_button) {
                 var cancel_btn = document.createElement("button");
                 cancel_btn.innerHTML = "Cancel";
@@ -539,7 +557,7 @@ jQuery(function ($) {
                     Client.$playerSelectionArea.style.display = "none";
                     Client.$playerActionsArea.style.display = "flex";
                 }
-                form.appendChild(cancel_btn);
+                button_div.appendChild(cancel_btn);
             }
 
             var ok_btn = document.createElement("button");
@@ -562,7 +580,7 @@ jQuery(function ($) {
                 if (go_callback)
                     go_callback(selection);
             }
-            form.appendChild(ok_btn);
+            button_div.appendChild(ok_btn);
 
             Client.$playerSelectionArea.appendChild(form);
             Client.$playerSelectionArea.style.display = "flex";

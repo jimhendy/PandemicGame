@@ -13,12 +13,19 @@ class PlayerDeck {
         this.card_width_frac = 0.103;
         this.card_height_frac = 0.205;
 
+        this.event_card_names = ["Airlift", "Forecast", "Government Grant", "One Quiet Night", "Resilient Population"];
+
         this.discard_pile = [];
         this.cards_in_player_hands = {};
         this.deck = [];
         for (const [city_name, city] of Object.entries(this.cities)) {
             this.deck.push(
                 new PlayerCard(city)
+            )
+        }
+        for (const ev of this.event_card_names){
+            this.deck.push(
+                new PlayerCard(null, false, null, ev)
             )
         }
         utils.shuffle(this.deck);
@@ -44,34 +51,66 @@ class PlayerDeck {
         for (const p of players) {
             this.drawPlayerCards(n_initial_cards, p);
         }
-
-        //for (var i = 0; i < this.n_epidemics; i++)
-        //    this.deck.push(new PlayerCard(null, true, i))
-        // TODO: Add epidemics equally throughout 1/n_epidemic of deck
+        this._add_epidemics();
         // TODO: Add special event cards
     };
+
+    _add_epidemics() {
+        var sub_decks = [];
+        for (var i = 0; i < this.n_epidemics; i++) {
+            var new_epidemic = new PlayerCard(null, true, i)
+            sub_decks.push([new_epidemic])
+        }
+        for (var i = 0; i < this.deck.length; i++) {
+            sub_decks[i % this.n_epidemics].push(this.deck[i]);
+        }
+        this.deck = [];
+        for (var i = 0; i < this.n_epidemics; i++) {
+            utils.shuffle(sub_decks[i]);
+            for (const c of sub_decks[i]) {
+                this.deck.push(c)
+            }
+        }
+    }
+
 
     drawPlayerCards(n_cards, player) {
         var player_cards = [];
         for (var i = 0; i < n_cards; i++) {
             var card = this.deck.pop();
-            this.cards_in_player_hands[card.city.name] = card;
-            player_cards.push(this.emit_data(card));
-            this.io.in(this.game_id).emit(
-                "logMessage",
-                {
-                    message: "🃟 " + player.player_name + ' received player card "' + card.city.name + '"',
-                    style: {
-                        color: card.city.native_disease_colour
+            if (false && !card.is_epidemic){
+                this.io.in(this.game_id).emit(
+                    "logMessage",
+                    {
+                        message: "An Epidemic card was drawn!",
+                        fontWeight: "bold"
                     }
-                }
-            )
+                )
+            } else {
+                this.cards_in_player_hands[card.card_name] = card;
+                player_cards.push(this.emit_data(card));
+                this.io.in(this.game_id).emit(
+                    "logMessage",
+                    {
+                        message: "🃟 " + player.player_name + ' received player card "' + card.card_name + '"',
+                        style: {
+                            color: card.is_city ? card.city.native_disease_colour : null
+                        }
+                    }
+                )
+            }
         }
         player.add_player_cards(player_cards);
     }
 
     emit_data(card) {
-        return {
+        var data = card.emit_data()
+        data.x =this.deck_location[0]
+        data.y = this.deck_location[1]
+        data.dx = this.card_width_frac
+        data.dy = this.card_height_frac
+        return data
+        /*{
             is_epidemic: card.epidemic,
             is_city: card.city != null,
             is_event: false,
@@ -83,13 +122,13 @@ class PlayerDeck {
             y: this.deck_location[1],
             dx: this.card_width_frac,
             dy: this.card_height_frac,
-        }
+        }*/
     };
 
     discard(destinations) {
         // destinations is an array of the card city_names (/event card names)
         var player_cards = [];
-        for (const d of destinations){
+        for (const d of destinations) {
             var card = this.cards_in_player_hands[d];
             delete this.cards_in_player_hands[d];
             this.discard_pile.push(card);
@@ -113,14 +152,22 @@ class PlayerDeck {
 }
 
 class PlayerCard {
-    constructor(city = null, epidemic = false, epidemic_num = null) {
+    constructor(city = null, epidemic = false, epidemic_num = null, event_name=null) {
         this.city = city;
-        this.epidemic = epidemic;
-        if (epidemic) {
+
+        this.is_city = city != null;
+        this.is_event = event_name != null ;
+        this.is_epidemic = epidemic;
+
+        if (this.is_epidemic) {
             this.img_name = "player_card_epidemic_" + epidemic_num
             this.image_file = "images/game/player_cards/Epidemic.jpg"
-            this.card_name = "epidemic";
-        } else {
+            this.card_name = "Epidemic";
+        } else if (this.is_event) {
+            this.card_name = event_name;
+            this.img_name = "player_card_event_" + this.card_name;
+            this.image_file = "images/game/player_cards/Special Event - " + this.card_name + ".jpg"
+        } else if (this.is_city) {
             this.img_name = "player_card_" + this.city.name
             this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.name) + ".jpg"
             this.card_name = this.city.name;
@@ -130,15 +177,16 @@ class PlayerCard {
     emit_data() {
         return {
             is_epidemic: this.epidemic,
-            is_city: this.city != null,
-            is_event: false,
-            city_name: this.city.name || null,
+            is_city: this.is_city,
+            is_event: this.is_event,
+
+            city_name: this.is_city ? this.city.name : null,
             img_name: this.img_name,
+            card_name: this.card_name,
+
             image_file: this.image_file,
-            x: this.deck_location[0],
-            y: this.deck_location[1],
-            dx: this.card_width_frac,
-            dy: this.card_height_frac,
+
+            
         }
     }
 }

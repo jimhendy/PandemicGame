@@ -139,6 +139,8 @@ class Pandemic {
         var player = this.game.current_player;
         var colour_to_cities = {};
         for (const c of player.player_cards){
+            if (!c.is_city)
+                continue;
             var city = this.game.cities[c.city_name]
             var col = city.native_disease_colour;
             if (Object.keys(colour_to_cities).includes(col)){
