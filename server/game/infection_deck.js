@@ -111,7 +111,7 @@ class InfectionDeck {
             }
             var city_name = this.deck.pop();
             var city = this.cities[city_name];
-            if (this.diseases[city.native_disease_colour].eradictaed) {
+            if (this.diseases[city.native_disease_colour].eradicated) {
                 this.io.in(this.game_id).emit(
                     "logMessage",
                     {
