@@ -15,7 +15,7 @@ class Disease {
         this.dy_frac = 0.04;
         this.vial_file = "images/game/vials/Vial " + utils.toTitleCase(this.colour) + ".png"
         this.vial_file_eradicated = this.vial_file.replace(".png", " Eracdiacted.png")
-        this.total_cubes = 24;
+        this.total_cubes = 24; // can lose the game if we run out
         this.cubes_on_board = 0;
         this.img_name = "vial_" + this.colour
 
@@ -34,8 +34,15 @@ class Disease {
     }
 
     cure(){
-        console.log("Curing " + this.colour + " disease!");
-        self.cured = true;
+        this.io.in(this.game_id).emit(
+            "logMessage",
+            {
+                message: "The " + this.colour + " disease is cured!",
+                fontWeight: "bold",
+                color: this.colour
+            }
+        )
+        this.cured = true;
         this.io.in(this.game_id).emit(
             "moveImage",
             {
@@ -44,11 +51,17 @@ class Disease {
                 dt: 1
             }
         )
-        //move(this.img, ctx, null, this.y_loc_cured_frac, 1);
     }
 
     eradicate(){
-        console.log("Eradicating " + this.colour + " disease!");
+        this.io.in(this.game_id).emit(
+            "logMessage",
+            {
+                message: "The " + this.colour + " disease is ERADICATED!",
+                fontWeight: "bold",
+                color: this.colour
+            }
+        )
         this.eradicated = true;
         this.io.in(this.game_id).emit(
             "alterImage",
@@ -57,7 +70,6 @@ class Disease {
                 new_image_file: this.vial_file_eradicated
             }
         )
-        //alter_image(this.img, ctx, this.vial_file_eradicated)
     }
 }
 

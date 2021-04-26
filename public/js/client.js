@@ -119,7 +119,7 @@ jQuery(function ($) {
                 roles_list += '<img class="' + card_class + '" '
                 roles_list += 'data-role="' + role + '" '
                 roles_list += 'src="/images/game/roles/Role - ' + role + '.jpg">'
-                roles_list += '<div class="centered role-player_name">'
+                roles_list += '<div class="centered role-player-name">'
                 roles_list += role_name + '</div>'
                 roles_list += '</div>'
             }
@@ -134,9 +134,11 @@ jQuery(function ($) {
 
             Client.$doc.on("click", "#button_drive_ferry", Client.drive_ferry);
             Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
+            Client.$doc.on("click", "#button_charter_flight", Client.charter_flight);
             Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
             Client.$doc.on("click", "#button_treat_disease", Client.treat_disease);
             Client.$doc.on("click", "#button_build_research_station", Client.build_research_station);
+            Client.$doc.on("click", "#button_cure", Client.cure);
             Client.$doc.on("click", "#button_pass", Client.pass);
         },
 
@@ -376,102 +378,24 @@ jQuery(function ($) {
         },
 
         enableActions: function (data) {
-            Client.adjacent_cities = data.adjacent_cities;
-            Client.research_station_cities = data.research_station_cities;
+            Client.actions_data = data;
             for (const btn of Client.button_names) {
                 Client.$buttons[btn].disabled = !(data.actions.includes(btn))
             }
         },
 
         drive_ferry: function () {
-            var form = document.createElement("form");
-
-            for (const c of Client.adjacent_cities) {
-                var input = document.createElement("input");
-                input.setAttribute("type", "radio");
-                input.setAttribute("value", c);
-                input.setAttribute("name", "choice");
-                var label = document.createElement("label");
-                label.setAttribute("for", c);
-                label.textContent = c;
-                var br = document.createElement("br");
-                form.appendChild(input);
-                form.appendChild(label);
-                form.appendChild(br);
-            }
-            var cancel_btn = document.createElement("button");
-            cancel_btn.innerHTML = "Cancel";
-            var ok_btn = document.createElement("button");
-            ok_btn.innerHTML = "Go";
-
-            cancel_btn.onclick = function (event) {
-                event.preventDefault();
-                Client.$playerSelectionArea.innerHTML = "";
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
-            }
-
-            ok_btn.onclick = function (event) {
-                event.preventDefault();
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
-                var destination = document.querySelector('input[name="choice"]:checked').value;
-                IO.socket.emit("player_drive_ferry", destination)
-                Client.$playerSelectionArea.innerHTML = "";
-            }
-
-            form.appendChild(cancel_btn);
-            form.appendChild(ok_btn);
-
-            Client.$playerSelectionArea.appendChild(form);
-            Client.$playerSelectionArea.style.display = "flex";
-            Client.$playerActionsArea.style.display = "none";
+            Client._ask_question(
+                Client.actions_data.adjacent_cities,
+                (destination) => IO.socket.emit("player_drive_ferry", destination)
+            );
         },
 
         direct_flight: function () {
-            var form = document.createElement("form");
-
-            for (const c of Object.keys(Client.data.player_cards)) {
-                var input = document.createElement("input");
-                input.setAttribute("type", "radio");
-                input.setAttribute("value", c);
-                input.setAttribute("name", "choice");
-                var label = document.createElement("label");
-                label.setAttribute("for", c);
-                label.textContent = c;
-                var br = document.createElement("br");
-                form.appendChild(input);
-                form.appendChild(label);
-                form.appendChild(br);
-            }
-            var cancel_btn = document.createElement("button");
-            cancel_btn.innerHTML = "Cancel";
-            var ok_btn = document.createElement("button");
-            ok_btn.innerHTML = "Go";
-
-            cancel_btn.onclick = function (event) {
-                event.preventDefault();
-                Client.$playerSelectionArea.innerHTML = "";
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
-            }
-
-            ok_btn.onclick = function (event) {
-                event.preventDefault();
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
-                var destination = document.querySelector('input[name="choice"]:checked').value;
-                //Client.remove_player_card(destination);
-                IO.socket.emit("player_direct_flight", destination)
-                Client.$playerSelectionArea.innerHTML = "";
-            }
-
-            form.appendChild(cancel_btn);
-            form.appendChild(ok_btn);
-
-            Client.$playerSelectionArea.appendChild(form);
-            Client.$playerSelectionArea.style.display = "flex";
-            Client.$playerActionsArea.style.display = "none";
+            Client._ask_question(
+                Object.keys(Client.data.player_cards),
+                (destination) => IO.socket.emit("player_direct_flight", destination)
+            );
         },
 
         treat_disease: function () {
@@ -505,79 +429,16 @@ jQuery(function ($) {
         reducePlayerHand: function (data) {
             var current_hand_size = data.current_cards.length;
             var n_discard = current_hand_size - data.max_cards
-
-            var form = document.createElement("form");
-            var heading = document.createElement("h3");
-            heading.textContent = "Select " + n_discard + " card(s) to discard"
-            form.appendChild(heading)
-
-            for (const c of data.current_cards) {
-                var input = document.createElement("input");
-                input.setAttribute("type", "checkbox");
-                input.setAttribute("value", c);
-                input.setAttribute("name", "choice");
-                input.setAttribute("id", "form_input_" + c)
-                input.className = "input_cards";
-                var label = document.createElement("label");
-                label.setAttribute("for", "form_input_" + c);
-                label.textContent = c;
-                var br = document.createElement("br");
-                form.appendChild(input);
-                form.appendChild(label);
-                form.appendChild(br);
-            }
-            var ok_btn = document.createElement("button");
-            ok_btn.innerHTML = "OK";
-
-            ok_btn.onclick = function (event) {
-                event.preventDefault();
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
-                var cards = [];
-                var inputs = document.getElementsByClassName("input_cards");
-                for (const i of inputs) {
-                    if (i.checked) {
-                        cards.push(i.value)
-                    }
-                }
-                IO.socket.emit("submitReducePlayerHand", cards)
-                Client.$playerSelectionArea.innerHTML = "";
-            }
-            form.appendChild(ok_btn);
-
-            
-            Client.$playerSelectionArea.appendChild(form);
-            Client.$playerSelectionArea.style.display = "flex";
-            Client.$playerActionsArea.style.display = "none";
-            Client.$playerSelectionArea.scrollTop = 0;
-
-            var inputs = document.getElementsByClassName("input_cards");
-            for (var i = 0; i < inputs.length; i++) {
-                inputs[i].onclick = checkFunc;
-            }
-            function checkFunc() {
-                var count = 0;
-                for (var i = 0; i < inputs.length; i++) {
-                    if (inputs[i].checked === true) {
-                        count++;
-                    }
-                }
-                if (count >= n_discard) {
-                    for (i = 0; i < inputs.length; i++) {
-                        if (inputs[i].checked === false) {
-                            inputs[i].disabled = true;
-                        }
-                    }
-                } else {
-                    for (i = 0; i < inputs.length; i++) {
-                        if (inputs[i].checked === false) {
-                            inputs[i].disabled = false;
-                        }
-                    }
-                }
-
-            }
-
+            var heading = "Select " + n_discard + (n_discard == 1 ? " card" : " cards") + " to discard"
+            Client._ask_question(
+                data.current_cards,
+                (cards) => { IO.socket.emit("submitReducePlayerHand", cards) },
+                n_discard,
+                null,
+                false,
+                heading,
+                true
+            )
         },
 
         drawInfectionCards: async function (data) {
@@ -599,55 +460,193 @@ jQuery(function ($) {
             })
         },
 
-        build_research_station: function(){
+        build_research_station: function () {
             IO.socket.emit("build_research_station")
         },
 
-        shuttle_flight: function(data){
-            var form = document.createElement("form");
+        shuttle_flight: function (data) {
+            var possible_destinations = Client.actions_data.research_station_cities.filter(
+                (d) => { return d != Client.data.city_name }
+            )
+            Client._ask_question(
+                possible_destinations,
+                (destination) => IO.socket.emit("player_shuttle_flight", destination)
+            );
+        },
 
-            for (const c of Client.research_station_cities) {
-                if (c == Client.data.city_name)
-                    continue;
+        charter_flight: function () {
+            var colours = [];
+            var possible_destinations = [];
+            for (const [colour, cities] of Object.entries(Client.actions_data.colour_to_cities)) {
+                for (const c of cities) {
+                    if (c == Client.data.city_name)
+                        continue;
+                    possible_destinations.push(c);
+                    colours.push(colour);
+                }
+            }
+            Client._ask_question(
+                possible_destinations,
+                (destination) => IO.socket.emit(
+                    "player_charter_flight",
+                    {
+                        destination_city_name: destination,
+                        origin_city_name: Client.data.city_name
+                    }),
+                1,
+                colours
+            );
+        },
+
+        _ask_question: function (
+            options,
+            go_callback = null, 
+            n_choices = 1, 
+            colours = null, 
+            cancel_button = true, 
+            title = null,
+            checkboxes = false
+        ) {
+
+            var form = document.createElement("form");
+            var input_type = checkboxes ? "checkbox" : "radio";
+
+            if (title) {
+                var heading = document.createElement("h3");
+                heading.textContent = title;
+                form.appendChild(heading)
+            }
+
+            for (var i = 0; i < options.length; i++) {
+                var o = options[i];
+                var colour = colours === null ? null : colours[i];
                 var input = document.createElement("input");
-                input.setAttribute("type", "radio");
-                input.setAttribute("value", c);
+                input.setAttribute("type", input_type);
+                input.setAttribute("value", o);
                 input.setAttribute("name", "choice");
+                input.className = "input_form_choice"
+                var id = "form_input_" + o;
+                input.setAttribute("id", id);
                 var label = document.createElement("label");
-                label.setAttribute("for", c);
-                label.textContent = c;
+                label.setAttribute("for", id);
+                label.style.color = colour;
+                if (colour && colour.toLowerCase() == "yellow")
+                    label.style.backgroundColor = "#bfbfbd"
+                label.textContent = o;
                 var br = document.createElement("br");
                 form.appendChild(input);
                 form.appendChild(label);
                 form.appendChild(br);
             }
-            var cancel_btn = document.createElement("button");
-            cancel_btn.innerHTML = "Cancel";
-            var ok_btn = document.createElement("button");
-            ok_btn.innerHTML = "Go";
 
-            cancel_btn.onclick = function (event) {
-                event.preventDefault();
-                Client.$playerSelectionArea.innerHTML = "";
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
+            if (cancel_button) {
+                var cancel_btn = document.createElement("button");
+                cancel_btn.innerHTML = "Cancel";
+                cancel_btn.onclick = function (event) {
+                    event.preventDefault();
+                    Client.$playerSelectionArea.innerHTML = "";
+                    Client.$playerSelectionArea.style.display = "none";
+                    Client.$playerActionsArea.style.display = "flex";
+                }
+                form.appendChild(cancel_btn);
             }
 
+            var ok_btn = document.createElement("button");
+            ok_btn.innerHTML = "Go";
             ok_btn.onclick = function (event) {
                 event.preventDefault();
                 Client.$playerSelectionArea.style.display = "none";
                 Client.$playerActionsArea.style.display = "flex";
-                var destination = document.querySelector('input[name="choice"]:checked').value;
-                IO.socket.emit("player_shuttle_flight", destination)
+                var selection = null;
+                if (checkboxes) {
+                    selection = [];
+                    var inputs = document.getElementsByClassName("input_form_choice");
+                    for (const i of inputs)
+                        if (i.checked)
+                            selection.push(i.value)
+                } else {
+                    selection = document.querySelector('input[name="choice"]:checked').value;
+                }
                 Client.$playerSelectionArea.innerHTML = "";
+                if (go_callback)
+                    go_callback(selection);
             }
-
-            form.appendChild(cancel_btn);
             form.appendChild(ok_btn);
 
             Client.$playerSelectionArea.appendChild(form);
             Client.$playerSelectionArea.style.display = "flex";
             Client.$playerActionsArea.style.display = "none";
+            Client.$playerSelectionArea.scrollTop = 0;
+
+            if (checkboxes) {
+                ok_btn.disabled = true;
+                var inputs = document.getElementsByClassName("input_form_choice");
+                for (var i = 0; i < inputs.length; i++) {
+                    inputs[i].onclick = checkFunc;
+                }
+                function checkFunc() {
+                    var count = 0;
+                    for (var i = 0; i < inputs.length; i++) {
+                        if (inputs[i].checked === true) {
+                            count++;
+                        }
+                    }
+                    if (count >= n_choices) {
+                        for (i = 0; i < inputs.length; i++) {
+                            if (inputs[i].checked === false) {
+                                inputs[i].disabled = true;
+                            }
+                        }
+                        ok_btn.disabled = false;
+                    } else {
+                        for (i = 0; i < inputs.length; i++) {
+                            if (inputs[i].checked === false) {
+                                inputs[i].disabled = false;
+                            }
+                        }
+                        ok_btn.disabled = true;
+                    }
+                }
+            }
+
+        },
+
+        cure: function () {
+            var possible_colours = Object.keys(Client.actions_data.curable_colours);
+
+            if (possible_colours.length == 1){
+                Client._cure_single_disease(possible_colours[0])
+            } else {
+                Client._ask_question(
+                    possible_colours,
+                    (colour) => Client._cure_single_disease(colour),
+                    1,
+                    null,
+                    true,
+                    "Choose which disease to cure",
+                    false
+                )
+            }
+
+        },
+
+        _cure_single_disease: function(colour){
+            function reply_func(cards){IO.socket.emit("player_cure", cards); };            
+            var n_discard = Client.actions_data.n_cards_to_cure;
+            var possible_cards = Client.actions_data.curable_colours[colour];
+            if (possible_cards.length == n_discard){
+                reply_func(possible_cards)
+            } else {
+                Client._ask_question(
+                    possible_cards,
+                    (cards) =>{reply_func(cards)},
+                    Client.actions_data.n_cards_to_cure,
+                    null,
+                    true,
+                    "Select the " + n_discard + " cards to cure",
+                    true
+                )
+            }
         }
 
 

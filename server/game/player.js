@@ -10,6 +10,7 @@ class Player{
         this.role_name = role_name;
         this.socket_id = socket_id;
         this.actions_per_turn = 4;
+        this.n_cards_to_cure = 5;
         this.max_hand_cards = 7;
         this.city_name = "Atlanta";
         this.player_cards = [];

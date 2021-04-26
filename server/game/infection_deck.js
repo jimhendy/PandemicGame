@@ -104,7 +104,7 @@ class InfectionDeck {
             if (!this.deck.length) {
                 this.deck = this.discarded;
                 this.discarded = [];
-                shuffle(this.deck);
+                utils.shuffle(this.deck);
                 client_infection_data.empty_deck_deal = i;
             }
             var city_name = this.deck.pop();

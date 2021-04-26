@@ -7,6 +7,7 @@ class City {
         this.native_disease_colour = native_disease_colour;
         this.location = location;
         this.adjacent_cities = adjacent_cities;
+        this.adjacent_cities.sort();
         this.total_cubes = 0;
         this.has_research_station = false;
         this.disease_cubes = {

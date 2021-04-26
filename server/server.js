@@ -32,22 +32,25 @@ io.on('connection', (socket) => {
 
 // Bind user events to game functions
 function bindSocketEvents(socket){
-    socket.on('disconnect', function(){pandemic.remove_user(socket.id);});
+    socket.on('disconnect', ()=>pandemic.remove_user(socket.id));
     socket.on('playerJoinAttempt', playerJoinAttempt);
-    socket.on('roleChosen', (data)=>{pandemic.assign_role(data)});
-    socket.on("waiting_for_other_roles", ()=>{pandemic.player_waiting(socket.id);});
-    socket.on("enquireAvailableActions", (data)=>{pandemic.assess_player_options(data);});
-    socket.on("playerCardsReceived", (data)=>{pandemic.clientNotesPlayerCardsReceived(data);})
+    socket.on('roleChosen', (data)=>pandemic.assign_role(data));
+    socket.on("waiting_for_other_roles", ()=>pandemic.player_waiting(socket.id));
+    socket.on("enquireAvailableActions", (data)=>pandemic.assess_player_options(data));
+    socket.on("playerCardsReceived", (data)=>pandemic.clientNotesPlayerCardsReceived(data))
 
     socket.on("player_drive_ferry", (destination)=>pandemic.player_drive_ferry(destination));
     socket.on("player_direct_flight", (destination)=>pandemic.player_direct_flight(destination));
     socket.on("player_shuttle_flight", (destination)=>pandemic.player_shuttle_flight(destination));
+    socket.on("player_charter_flight", (data)=>pandemic.player_charter_flight(data));
 
-    socket.on("build_research_station", ()=>{pandemic.player_build_research_station();})
+    socket.on("player_cure", (cards) => pandemic.player_cure(cards));
+
+    socket.on("build_research_station", ()=>pandemic.player_build_research_station())
     socket.on("treatDisease", ()=>pandemic.player_treatDisease());
     socket.on("pass", ()=>pandemic.player_pass());
 
-    socket.on("submitReducePlayerHand", (cards)=>{pandemic.reducePlayerCardHand(cards);})
+    socket.on("submitReducePlayerHand", (cards)=>pandemic.reducePlayerCardHand(cards))
 }
 
 // Events

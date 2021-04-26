@@ -38,6 +38,17 @@ class PandemicGame {
         this.infection_deck = new InfectionDeck(this.io, this.game_id, this.cities)
         this.player_deck = new PlayerDeck(this.io, this.game_id, this.cities)
 
+        this.colour_to_cities = {};
+        for (const c of Object.values(this.cities)){
+            if (Object.keys(this.colour_to_cities).includes(c.native_disease_colour)){
+                this.colour_to_cities[c.native_disease_colour].push(c.name)
+            } else {
+                this.colour_to_cities[c.native_disease_colour] = [c.name]
+            }
+        }
+        for (const k of Object.keys(this.colour_to_cities))
+            this.colour_to_cities[k].sort()
+
         this.infection_deck.initial_deal();
         this.player_deck.initial_deal(this.players, this.n_initial_player_cards());
 
@@ -91,6 +102,7 @@ class PandemicGame {
         var city = this.cities[city_name];
         city.add_research_station();
         this.research_station_cities.push(city_name);
+        this.research_station_cities.sort();
         this.io.in(this.game_id).emit(
             "createImage",
             {
