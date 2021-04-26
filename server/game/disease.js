@@ -37,7 +37,7 @@ class Disease {
         this.cubes_on_board++;
         if (this.cubes_on_board > this.total_cubes){
             this.io.in(this.game_id).emit(
-                "gameLost",
+                "gameOver",
                 {
                     message: utils.toTitleCase(this.colour) + " diease attempted to add more cubes than are provided in the game. Game Lost"
                 }

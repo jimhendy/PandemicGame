@@ -213,7 +213,7 @@ class Pandemic {
         var player = this.game.current_player;
 
         this.check_disease_status();
-        //this.check_game_status();// TODO Test for game won/lost
+        this.check_game_status();// TODO Test for game won/lost
 
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
@@ -246,7 +246,17 @@ class Pandemic {
                 d.eradicate();
             }
         }
-        
+    }
+
+    check_game_status(){
+        for (const d of Object.values(this.game.diseases)){
+            if (!d.cured)
+                return
+        }
+        this.io.in(this.game_id).emit(
+            "gameOver",
+            {message: "All disease have been cured, you win!"}
+        )
     }
 
 

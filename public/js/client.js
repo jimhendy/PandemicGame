@@ -43,7 +43,7 @@ jQuery(function ($) {
             IO.socket.on("changeLocation", Client.changeLocation);
             IO.socket.on("updatePlayerTurns", Client.updatePlayerTurns);
 
-            IO.socket.on("gameLost", Client.gameLost);
+            IO.socket.on("gameOver", Client.gameOver);
         },
 
         onConnected: function () {
@@ -213,8 +213,8 @@ jQuery(function ($) {
 
         createImage: function (data) {
             Client._addCtxAndCanvas(data);
-            if (Object.keys(Client.images).includes(data.img_name))
-                console.log("Image name already exists: " + data.img_name)
+            //if (Object.keys(Client.images).includes(data.img_name))
+            //    console.log("Image name already exists: " + data.img_name)
             Client.images[data.img_name] = {
                 data: data,
                 img: createImage(
@@ -640,10 +640,9 @@ jQuery(function ($) {
             }
         },
 
-        gameLost: function(data){
+        gameOver: function(data){
             Client.$gameArea.html(Client.$gameOverTemplate);
             Client.data.current_page = "gameOver";
-
             document.getElementById("game-over-div").textContent = data.message;
         }
 
