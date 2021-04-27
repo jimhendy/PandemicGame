@@ -28,6 +28,35 @@ function clearImage(image) {
     );
 };
 
+function clearAndRedrawCanvas(image, other_images){
+    $("body").toggleClass("refresh");
+    // Above seems to work for now...
+
+    /*
+    return new Promise(
+        resolve => {
+        var context = image.data.ctx;
+        var canvas = image.data.canvas;
+
+        var images_to_redraw = [];
+        for (const [oi_name, oi] of Object.entries(other_images)){
+            if ((oi.data.ctx === context)){
+                images_to_redraw.push(oi);
+            }
+        }
+
+        context.clearRect(
+            0, 0, canvas.width, canvas.height
+        );
+
+        for (const i of images_to_redraw){
+            createImage(i);
+        }
+        resolve();
+    })
+    */
+}
+
 function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 25) {
     
     var img_object = image.img;
@@ -97,6 +126,12 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
                     img_object.width = final_dx;
                     img_object.height = final_dy;
                     clearInterval(id);
+                    for (const oi of images_to_redraw){
+                        // Redraw everything on this canvas
+                        context.drawImage(
+                            oi.img, oi.img.canvas_x, oi.img.canvas_y, oi.img.width, oi.img.height
+                        );
+                    }
                     resolve();
                 } else {
                     i++;
@@ -112,6 +147,7 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
                     );
                 };
                 for (const oi of images_to_redraw){
+                    // Only redraw if overlap
                     if (oi.img.canvas_x <= 1.1*(x+width) && (oi.img.canvas_x+oi.img.width) >= 0.9*x &&
                         oi.img.canvas_y <= 1.1*(y+height) && (oi.img.canvas_y+oi.img.height) >= 0.9*y ) 
                         context.drawImage(

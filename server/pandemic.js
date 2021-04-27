@@ -119,11 +119,12 @@ class Pandemic {
             "enableActions",
             {
                 actions: actions,
-                adjacent_cities: this.game.cities[player.city_name].adjacent_cities,
+                adjacent_cities: city.adjacent_cities,
                 research_station_cities: this.game.research_station_cities,
                 colour_to_cities: this.game.colour_to_cities, // Does not change, should not be passed every time
                 curable_colours: colours_that_can_be_cured,
-                n_cards_to_cure: player.n_cards_to_cure
+                n_cards_to_cure: player.n_cards_to_cure,
+                current_city_cubes: city.disease_cubes
             })
         this.io.in(this.game_id).emit(
             "updatePlayerTurns",
@@ -221,8 +222,9 @@ class Pandemic {
             this.game.round++;
             var n_epidemics_drawn = this.game.player_deck.drawPlayerCards(2, player);
             if (n_epidemics_drawn) {
-                if (this.game.resolve_epidemics(n_epidemics_drawn))
+                if (this.game.resolve_epidemics(n_epidemics_drawn)){    
                     return;
+                }
                 this.check_disease_status();
                 this.check_game_status();
 
@@ -238,7 +240,8 @@ class Pandemic {
                 );
             } else {
                 // current player's turn over and no cards to discard so can go straight on to next player
-                this.infect_cities();
+                if(this.infect_cities()) // Will return true if game over
+                    return;
                 this.game.new_player_turn();
             }
         } else {
@@ -270,7 +273,7 @@ class Pandemic {
 
 
     infect_cities() {
-        this.game.infect_cities();
+        return this.game.infect_cities();
     }
 
     reducePlayerCardHand(cards) {
@@ -278,19 +281,23 @@ class Pandemic {
             this.game.current_player.discard_card(c);
         }
         this.game.player_deck.discard(cards);
-        this.infect_cities();
+        if(this.infect_cities())
+            return;
         this.game.new_player_turn();
     }
 
-    player_treatDisease() {
+    player_treatDisease(data) {
         var player = this.game.current_player;
         var city_name = player.city_name;
+        var colour = data.colour;
+
         this.io.in(this.game_id).emit("logMessage",
-            { message: player.player_name + " treats disease in " + city_name }
+            { message: player.player_name + " treats the " + colour + " disease in " + city_name }
         )
         var city = this.game.cities[city_name];
-        this.game.diseases[city.native_disease_colour].remove_cube();
-        city.remove_cube(city.native_disease_colour);
+        
+        this.game.diseases[colour].remove_cube();
+        city.remove_cube(colour);
         this._check_end_of_user_turn();
         this.game.update_infection_count();
     }

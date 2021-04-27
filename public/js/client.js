@@ -143,7 +143,7 @@ jQuery(function ($) {
             Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
             Client.$doc.on("click", "#button_charter_flight", Client.charter_flight);
             Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
-            Client.$doc.on("click", "#button_treat_disease", () => IO.socket.emit("treatDisease"));
+            Client.$doc.on("click", "#button_treat_disease", Client.treatDisease);
             Client.$doc.on("click", "#button_build_research_station", () => IO.socket.emit("build_research_station"));
             Client.$doc.on("click", "#button_cure", Client.cure);
             Client.$doc.on("click", "#button_pass", () => IO.socket.emit("pass"));
@@ -260,6 +260,8 @@ jQuery(function ($) {
                 data.dest_dy,
                 data.dt,
                 Client.images
+            ).then(
+                () => clearAndRedrawCanvas(Client.images[data.img_name], Client.images)
             )
         },
 
@@ -429,6 +431,30 @@ jQuery(function ($) {
             );
         },
 
+        treatDisease: function(data){
+            function reply_func(colour) { IO.socket.emit("treatDisease", {colour: colour}); };
+            var available_colours = [];
+            for (const [colour, num] of Object.entries(Client.actions_data.current_city_cubes)){
+                if (num > 0){
+                    available_colours.push(colour);
+                }
+            }
+            if (available_colours.length == 1){
+                reply_func(available_colours[0]);
+            } else {
+                Client._ask_question(
+                    available_colours,
+                    (colour) => reply_func(colour),
+                    1,
+                    null,
+                    true,
+                    "Treat which disease?",
+                    false
+                )
+            }
+            
+        },
+
         remove_player_card_from_hand: function (card_name) {
             delete Client.data.player_cards[card_name];
             if (Object.keys(Client.data.city_cards).includes(card_name))
@@ -439,7 +465,6 @@ jQuery(function ($) {
         },
 
         disableActions: function () {
-            console.log("client disable actions")
             for (const btn of Client.button_names) {
                 Client.$buttons[btn].disabled = true;
             }
@@ -542,6 +567,7 @@ jQuery(function ($) {
         ) {
 
             var form = document.createElement("form");
+            form.style.width = "100%"
             var input_type = checkboxes ? "checkbox" : "radio";
 
             if (title) {
@@ -573,8 +599,8 @@ jQuery(function ($) {
             }
 
             var button_div = document.createElement("div");
-            button_div.style.display = "block"
-            button_div.setAttribute("textAlign", "center");
+            button_div.style.display = "flex"
+            button_div.style.justifyContent = "center";
             button_div.style.marginTop = "5px"
             form.appendChild(button_div)
 
@@ -645,6 +671,15 @@ jQuery(function ($) {
                         }
                         ok_btn.disabled = true;
                     }
+                }
+            } else {
+                ok_btn.disabled = true;
+                var inputs = document.getElementsByClassName("input_form_choice");
+                for (var i = 0; i < inputs.length; i++) {
+                    inputs[i].onclick = checkFunc;
+                }
+                function checkFunc() {
+                    ok_btn.disabled = false;
                 }
             }
 

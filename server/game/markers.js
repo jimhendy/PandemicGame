@@ -110,7 +110,7 @@ class Markers {
         data.y = this.outbreak_locations[this.outbreak_loc][1]
         this.outbreak_loc += n_outbreaks;
         var too_many_outbreaks = false;
-        if (this.outbreak_loc >= this.outbreak_locations.length){
+        if (this.outbreak_loc >= (this.outbreak_locations.length - 1)){
             this.io.in(this.game_id).emit(
                 "gameOver", {message: "Too many outbreaks, you lose!"}
             )

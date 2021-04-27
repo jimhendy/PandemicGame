@@ -139,10 +139,13 @@ class PandemicGame {
     infect_cities() {
         var n_outbreaks = this.infection_deck.draw(this.markers.infection_rate());
         if (n_outbreaks){
-            if(this.markers.increase_outbreaks(n_outbreaks))
+            if(this.markers.increase_outbreaks(n_outbreaks)){
                 this.gameOver();
+                return true;
+            }
         }
         this.update_infection_count();
+        return false;
     }
 
     resolve_epidemics(n_epidemics){
@@ -151,7 +154,7 @@ class PandemicGame {
             this.markers.increase_infection_rate();
             var n_outbreaks = this.infection_deck.draw(1, true); // Infect stage
             if (n_outbreaks){
-                if(this.markers.increase_outbreaks(n_outbreaks)){
+                if (this.markers.increase_outbreaks(n_outbreaks)){
                     this.gameOver();
                     return true;
                 }
@@ -160,10 +163,10 @@ class PandemicGame {
             this.infection_deck.epidemic_intensify();
         }
         this.update_infection_count();
+        return false;
     }
 
     gameOver(){
-        console.log("disableing actions")
         this.io.in(this.game_id).emit("disableActions");
     }
 
