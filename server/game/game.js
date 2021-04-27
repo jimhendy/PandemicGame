@@ -137,8 +137,34 @@ class PandemicGame {
     }
 
     infect_cities() {
-        this.infection_deck.draw(this.markers.infection_rate());
+        var n_outbreaks = this.infection_deck.draw(this.markers.infection_rate());
+        if (n_outbreaks){
+            if(this.markers.increase_outbreaks(n_outbreaks))
+                this.gameOver();
+        }
         this.update_infection_count();
+    }
+
+    resolve_epidemics(n_epidemics){
+        for (var i=0; i<n_epidemics; i++){
+            this.epidemics++;
+            this.markers.increase_infection_rate();
+            var n_outbreaks = this.infection_deck.draw(1, true); // Infect stage
+            if (n_outbreaks){
+                if(this.markers.increase_outbreaks(n_outbreaks)){
+                    this.gameOver();
+                    return true;
+                }
+            }
+            // TODO Allow players chance to play event cards
+            this.infection_deck.epidemic_intensify();
+        }
+        this.update_infection_count();
+    }
+
+    gameOver(){
+        console.log("disableing actions")
+        this.io.in(this.game_id).emit("disableActions");
     }
 
 

@@ -95,7 +95,8 @@ class InfectionDeck {
         }
     }
 
-    draw(n_cards) {
+    draw(n_cards, epidemic_draw = false) {
+        var n_outbreaks = 0;
         var client_infection_data = {
             empty_deck_deal: null, // We do not find the end of the infection deck
             // Otherwise the deck will be empty on this deal (0 based) and refilled on +1
@@ -109,7 +110,10 @@ class InfectionDeck {
                 utils.shuffle(this.deck);
                 client_infection_data.empty_deck_deal = i;
             }
-            var city_name = this.deck.pop();
+            if (epidemic_draw)
+                var city_name = this.deck.shift(); // "pop" from the front
+            else
+                var city_name = this.deck.pop();
             var city = this.cities[city_name];
             if (this.diseases[city.native_disease_colour].eradicated) {
                 this.io.in(this.game_id).emit(
@@ -124,27 +128,39 @@ class InfectionDeck {
             this.io.in(this.game_id).emit(
                 "logMessage",
                 {
-                    message: "🕱 " + city_name + " was infected",
+                    message: "🕱 " + city_name + " was infected" + (epidemic_draw?" on the epidemic draw":""),
                     style: {
                         color: city.native_disease_colour,
 
                     }
                 }
             )
-            this.diseases[city.native_disease_colour].add_cube();
-            city.add_cube(this.cities);
+            var n_infections = epidemic_draw ? 3 : 1;
+            for (var j = 0; j < n_infections; j++) {
+                this.diseases[city.native_disease_colour].add_cube();
+                n_outbreaks += city.add_cube(this.cities);
+            }
             this.discarded.push(city_name);
 
             client_infection_data.cards.push(
                 this._discard_card_data(city)
             )
         }
+        var client_action = epidemic_draw ? "epidemicDraw" : "drawInfectionCards"
         this.io.in(this.game_id).emit(
-            "drawInfectionCards",
+            client_action,
             client_infection_data
         )
+        return n_outbreaks;
     }
 
+    epidemic_intensify() {
+        utils.shuffle(this.discarded);
+        var discard_size = this.discarded.length;
+        for (var i = 0; i < discard_size; i++) {
+            this.deck.push(this.discarded.pop())
+        }
+    }
 
 }
 

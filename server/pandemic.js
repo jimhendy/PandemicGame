@@ -84,7 +84,7 @@ class Pandemic {
         var city = this.game.cities[city_name];
 
         var actions = ["drive_ferry", "pass"]
-        
+
         if (player.player_cards.length > 0) {
             actions.push("direct_flight");
         }
@@ -96,8 +96,8 @@ class Pandemic {
             actions.push("treat_disease");
         }
         if (
-            has_current_city_card 
-            && 
+            has_current_city_card
+            &&
             this.game.n_research_stations < this.game.max_n_research_stations
             &&
             !this.game.research_station_cities.includes(city_name)
@@ -106,11 +106,11 @@ class Pandemic {
         }
         if (city.has_research_station && this.game.n_research_stations > 1)
             actions.push("shuttle_flight")
-        
+
         var colours_that_can_be_cured = null;
-        if (city.has_research_station){
+        if (city.has_research_station) {
             colours_that_can_be_cured = this._curable_colours();
-            if (Object.keys(colours_that_can_be_cured).length){
+            if (Object.keys(colours_that_can_be_cured).length) {
                 actions.push("cure");
             }
         }
@@ -126,24 +126,24 @@ class Pandemic {
                 n_cards_to_cure: player.n_cards_to_cure
             })
         this.io.in(this.game_id).emit(
-            "updatePlayerTurns", 
-            { 
-                player: player.player_name, 
-                used_actions: this.game.player_used_actions, 
-                total_actions: player.actions_per_turn 
+            "updatePlayerTurns",
+            {
+                player: player.player_name,
+                used_actions: this.game.player_used_actions,
+                total_actions: player.actions_per_turn
             }
         )
     }
 
-    _curable_colours(){
+    _curable_colours() {
         var player = this.game.current_player;
         var colour_to_cities = {};
-        for (const c of player.player_cards){
+        for (const c of player.player_cards) {
             if (!c.is_city)
                 continue;
             var city = this.game.cities[c.city_name]
             var col = city.native_disease_colour;
-            if (Object.keys(colour_to_cities).includes(col)){
+            if (Object.keys(colour_to_cities).includes(col)) {
                 colour_to_cities[col].push(c.city_name)
             } else {
                 colour_to_cities[col] = [c.city_name]
@@ -152,11 +152,11 @@ class Pandemic {
         for (const k of Object.keys(colour_to_cities))
             colour_to_cities[k].sort()
 
-        for (const [d_colour, disease] of Object.entries(this.game.diseases)){
+        for (const [d_colour, disease] of Object.entries(this.game.diseases)) {
             if (!Object.keys(colour_to_cities).includes(d_colour))
                 continue;
             if (disease.cured || colour_to_cities[d_colour].length < player.n_cards_to_cure)
-                delete colour_to_cities[d_colour]            
+                delete colour_to_cities[d_colour]
         }
 
         return colour_to_cities;
@@ -202,7 +202,7 @@ class Pandemic {
         this.io.in(this.game_id).emit("logMessage",
             { message: player.player_name + " takes charter flight to " + destination_city_name }
         )
-        
+
         player.discard_card(origin_city_name);
         this.game.player_deck.discard([origin_city_name]);
 
@@ -219,7 +219,14 @@ class Pandemic {
 
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
-            this.game.player_deck.drawPlayerCards(2, player);
+            var n_epidemics_drawn = this.game.player_deck.drawPlayerCards(2, player);
+            if (n_epidemics_drawn) {
+                if (this.game.resolve_epidemics(n_epidemics_drawn))
+                    return;
+                this.check_disease_status();
+                this.check_game_status();
+
+            }
             if (player.player_cards.length > player.max_hand_cards) {
                 // current player's turn over but needs to discard player cards
                 this.io.to(player.socket_id).emit(
@@ -240,25 +247,25 @@ class Pandemic {
         }
     }
 
-    check_disease_status(){
-        for (const d of Object.values(this.game.diseases)){
+    check_disease_status() {
+        for (const d of Object.values(this.game.diseases)) {
             if (d.eradicated)
                 continue;
-            if (d.cured && d.cubes_on_board==0){
+            if (d.cured && d.cubes_on_board == 0) {
                 d.eradicate();
             }
         }
     }
 
-    check_game_status(){
-        for (const d of Object.values(this.game.diseases)){
+    check_game_status() {
+        for (const d of Object.values(this.game.diseases)) {
             if (!d.cured)
                 return
         }
         this.io.in(this.game_id).emit(
-            "gameOver",
-            {message: "All disease have been cured, you win!"}
+            "gameOver", { message: "All diseases have been cured, you win!" }
         )
+        this.game.gameOver();
     }
 
 
@@ -297,7 +304,7 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
-    player_build_research_station(){
+    player_build_research_station() {
         var player = this.game.current_player;
         var city_name = player.city_name;
         this.game.add_research_station(city_name);
@@ -307,13 +314,13 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
-    player_cure(cards){
+    player_cure(cards) {
         var player = this.game.current_player;
         var colour = this.game.cities[cards[0]].native_disease_colour;
         var disease = this.game.diseases[colour];
         this.io.in(this.game_id).emit(
             "logMessage",
-            {message: player.player_name + " cured the " + colour + " disease"}
+            { message: player.player_name + " cured the " + colour + " disease" }
         )
         for (const c of cards)
             player.discard_card(c);

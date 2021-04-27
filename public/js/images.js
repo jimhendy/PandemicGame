@@ -74,7 +74,7 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
     var ddx = (final_dx - current_dx) / n_steps;
     var ddy = (final_dy - current_dy) / n_steps;
 
-    if (dx === 0 && dy === 0 && ddx === 0 && ddy === 0){
+    if (dx === 0 && dy === 0 && ddx === 0 && ddy === 0 && !duration){
         return Promise.resolve();
     }
 

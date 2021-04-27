@@ -42,6 +42,15 @@ class City {
         }
         else {
             // Outbreak
+            this.io.in(this.game_id).emit(
+                "logMessage",
+                {
+                    message: "Outbreak of " + colour + " disease from " + this.name,
+                    style: {
+                        color: colour
+                    }
+                }
+            )
             if (ignore_cities) {
                 ignore_cities.push(this.name)
             }

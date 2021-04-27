@@ -73,6 +73,11 @@
             style="width:100%; height:100%; position:absolute; top:0;"></canvas>
         <canvas id="animationCanvas" width=2056 height=2056
             style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+        <div id="blockingDiv" style="width:100%; height:100%; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;"></div>
+        <div id="gameOverDiv" style="text-align:center; width:100%; height: 100%; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
+            <h1 style="background-color: white;">Game Over</h1>
+            <div id="game-over-message" style="background-color: white;"></div>
+        </div>
     </div>
     <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100%;">
         <div id="player_area" style="width=100%; height:70%;">
@@ -121,15 +126,11 @@
     </div>
 </div>
 </script>
-
+<!--
 <script id="game-over-template" type="text/template">
-    <!-- Game either won or lost -->
-<div style="text-align:center; padding-top: 32px; margin:0px; width:100%; height:calc(100% - 32px)">
-    <h1>Game Over</h1>
-    <div id="game-over-div"></div>
-</div>
+    
 </script>
-
+-->
 
 <script src="js/utils.js"></script>
 <script src="js/images.js"></script>

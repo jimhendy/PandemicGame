@@ -37,6 +37,8 @@ jQuery(function ($) {
             IO.socket.on("discardPlayerCards", Client.discardPlayerCards);
             IO.socket.on("reducePlayerHand", Client.reducePlayerHand);
 
+            IO.socket.on("epidemicDraw", Client.epidemicDraw);
+
             IO.socket.on("enableActions", Client.enableActions);
             IO.socket.on("disableActions", Client.disableActions);
 
@@ -297,22 +299,39 @@ jQuery(function ($) {
                 dt: 0.5,
                 animationCanvas: true
             }
-            return new Promise((resolve, reject) => {
-                Client.createImage(data);
-                Client.moveImage(data).then(
-                    () => {
-                        data.dest_x = 1.2;
-                        data.dt = 0.5;
-                        Client.moveImage(data).then(
-                            () => {
-                                Client.removeImage(data.img_name);
-                                Client.addPlayerCardToHand(card_data);
-                                resolve();
-                            }
-                        );
-                    }
-                );
-            });
+            if (card_data.is_epidemic){
+                return new Promise((resolve)=>{
+                    Client.createImage(data);
+                    Client.moveImage(data).then(
+                        () => {
+                            data.dt = 1;
+                            Client.moveImage(data).then(
+                                () => {
+                                    Client.removeImage(data.img_name);
+                                    resolve();
+                                }
+                            )
+                        }
+                    )
+                })
+            } else {
+                return new Promise((resolve, reject) => {
+                    Client.createImage(data);
+                    Client.moveImage(data).then(
+                        () => {
+                            data.dest_x = 1.2;
+                            data.dt = 0.5;
+                            Client.moveImage(data).then(
+                                () => {
+                                    Client.removeImage(data.img_name);
+                                    Client.addPlayerCardToHand(card_data);
+                                    resolve();
+                                }
+                            );
+                        }
+                    );
+                });
+            }
         },
 
         discardPlayerCards: async function (cards) {
@@ -420,6 +439,7 @@ jQuery(function ($) {
         },
 
         disableActions: function () {
+            console.log("client disable actions")
             for (const btn of Client.button_names) {
                 Client.$buttons[btn].disabled = true;
             }
@@ -466,6 +486,15 @@ jQuery(function ($) {
                 Client.createImage(card_data);
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
+        },
+
+        epidemicDraw: async function(data){
+            for (var i = 0; i < data.cards.length; i++) {
+                Client.createImage(data.cards[i]);
+                await Client.moveImage(data.cards[i]).then(() => {
+                    Client.removeImage("infection_discard")
+                });
+            }
         },
 
         shuttle_flight: function (data) {
@@ -544,6 +573,7 @@ jQuery(function ($) {
             }
 
             var button_div = document.createElement("div");
+            button_div.style.display = "block"
             button_div.setAttribute("textAlign", "center");
             button_div.style.marginTop = "5px"
             form.appendChild(button_div)
@@ -659,9 +689,14 @@ jQuery(function ($) {
         },
 
         gameOver: function(data){
-            Client.$gameArea.html(Client.$gameOverTemplate);
-            Client.data.current_page = "gameOver";
-            document.getElementById("game-over-div").textContent = data.message;
+            var blockingDiv = document.getElementById("blockingDiv")
+            blockingDiv.style.opacity = 0.7;
+
+            var gameOverDiv = document.getElementById("gameOverDiv");
+            gameOverDiv.style.display ="block";
+
+            var gameOverMessage = document.getElementById("game-over-message");
+            gameOverMessage.textContent = data.message;
         }
 
 

@@ -21,7 +21,8 @@ class Player{
     add_player_cards(cards_data){
         // Expect an array of incoming cards to allow client side animation to order multiple deals
         for (var i =0; i<cards_data.length; i++){
-            this.player_cards.push(cards_data[i]);
+            if (!cards_data[i].is_epidemic)
+                this.player_cards.push(cards_data[i]);
         }
         this.io.to(this.socket_id).emit(
             "newPlayerCards", cards_data

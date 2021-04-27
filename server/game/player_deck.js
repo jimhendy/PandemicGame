@@ -47,12 +47,10 @@ class PlayerDeck {
     }
 
     initial_deal(players, n_initial_cards) {
-
         for (const p of players) {
             this.drawPlayerCards(n_initial_cards, p);
         }
         this._add_epidemics();
-        // TODO: Add special event cards
     };
 
     _add_epidemics() {
@@ -76,9 +74,14 @@ class PlayerDeck {
 
     drawPlayerCards(n_cards, player) {
         var player_cards = [];
+        var new_epidemics = 0;
         for (var i = 0; i < n_cards; i++) {
+            
             var card = this.deck.pop();
-            if (false && !card.is_epidemic){
+            this.cards_in_player_hands[card.card_name] = card;
+            player_cards.push(this.emit_data(card));
+
+            if (card.is_epidemic){
                 this.io.in(this.game_id).emit(
                     "logMessage",
                     {
@@ -86,9 +89,8 @@ class PlayerDeck {
                         fontWeight: "bold"
                     }
                 )
+                new_epidemics++;
             } else {
-                this.cards_in_player_hands[card.card_name] = card;
-                player_cards.push(this.emit_data(card));
                 this.io.in(this.game_id).emit(
                     "logMessage",
                     {
@@ -101,6 +103,7 @@ class PlayerDeck {
             }
         }
         player.add_player_cards(player_cards);
+        return new_epidemics;
     }
 
     emit_data(card) {
@@ -110,19 +113,6 @@ class PlayerDeck {
         data.dx = this.card_width_frac
         data.dy = this.card_height_frac
         return data
-        /*{
-            is_epidemic: card.epidemic,
-            is_city: card.city != null,
-            is_event: false,
-            city_name: card.city.name || null,
-            card_name: card.card_name,
-            img_name: card.img_name,
-            image_file: card.image_file,
-            x: this.deck_location[0],
-            y: this.deck_location[1],
-            dx: this.card_width_frac,
-            dy: this.card_height_frac,
-        }*/
     };
 
     discard(destinations) {
@@ -176,7 +166,7 @@ class PlayerCard {
 
     emit_data() {
         return {
-            is_epidemic: this.epidemic,
+            is_epidemic: this.is_epidemic,
             is_city: this.is_city,
             is_event: this.is_event,
 
