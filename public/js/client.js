@@ -28,6 +28,7 @@ jQuery(function ($) {
 
             IO.socket.on("logMessage", Client.logMessage);
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
+            IO.socket.on("colourToCitiesMap", (map) => {Client.colour_to_cities = map;})
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
             IO.socket.on("drawInfectionCards", Client.drawInfectionCards);
@@ -44,6 +45,9 @@ jQuery(function ($) {
 
             IO.socket.on("changeLocation", Client.changeLocation);
             IO.socket.on("updatePlayerTurns", Client.updatePlayerTurns);
+
+            IO.socket.on("incoming_shareKnowledgeProposal", Client.incoming_shareKnowledgeProposal);
+            IO.socket.on("addPlayerCardToHand", Client.addPlayerCardToHand)
 
             IO.socket.on("gameOver", Client.gameOver);
         },
@@ -145,6 +149,7 @@ jQuery(function ($) {
             Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
             Client.$doc.on("click", "#button_treat_disease", Client.treatDisease);
             Client.$doc.on("click", "#button_build_research_station", () => IO.socket.emit("build_research_station"));
+            Client.$doc.on("click", "#button_share_knowledge", Client.share_knowledge);
             Client.$doc.on("click", "#button_cure", Client.cure);
             Client.$doc.on("click", "#button_pass", () => IO.socket.emit("pass"));
         },
@@ -535,7 +540,7 @@ jQuery(function ($) {
         charter_flight: function () {
             var colours = [];
             var possible_destinations = [];
-            for (const [colour, cities] of Object.entries(Client.actions_data.colour_to_cities)) {
+            for (const [colour, cities] of Object.entries(Client.colour_to_cities)) {
                 for (const c of cities) {
                     if (c == Client.data.city_name)
                         continue;
@@ -721,6 +726,98 @@ jQuery(function ($) {
                     true
                 )
             }
+        },
+
+        share_knowledge: function(){
+            Client._shareKnowledgeOtherPlayerQuestion();
+        },
+
+        _shareKnowledgeOtherPlayerQuestion: function(){
+            var possible_players = array_from_objects_list(Client.actions_data.share_knowledge_data, "other_player");
+            possible_players = [...new Set(possible_players)]; // remove possible duplicates
+            function next_step(player){ Client._shareKnowledgeGiveOrTake(player); }
+            if (possible_players.length > 1){
+                Client._ask_question(
+                    possible_players,
+                    (player) => next_step(player),
+                    1,
+                    null,
+                    true,
+                    "Chose a player to trade with"
+                )
+            } else {
+                next_step(possible_players[0])
+            }
+        },
+
+        _shareKnowledgeGiveOrTake: function(player){
+            var possible_trades = Client.actions_data.share_knowledge_data.filter(
+                (t) => {return t.other_player == player;}
+            )
+            var possible_directions = array_from_objects_list(possible_trades, "direction");
+            possible_directions = [...new Set(possible_directions)];
+            function next_step(direction){ Client._shareKnowledgeCard(possible_trades, direction); }
+            if (possible_directions.length > 1){
+                Client._ask_question(
+                    possible_directions,
+                    (direction) => next_step(direction),
+                    1,
+                    null,
+                    true,
+                    "Which direction to trade?"
+                )
+            } else {
+                next_step(possible_directions[0]);
+            }
+        },
+
+        _shareKnowledgeCard: function(trades, direction){
+            var possible_trades = trades.filter(
+                (t) => {return t.direction == direction;}
+            )
+            var possible_cards = array_from_objects_list(possible_trades, "card");
+            function next_step(card){ Client._submitShareKnowledgeProposal(possible_trades, card); }
+            if (possible_cards.length > 1){
+                Client._ask_question(
+                    possible_cards,
+                    (card) => next_step(card),
+                    1,
+                    null,
+                    true,
+                    "Which card to " + direction.toLowerCase() + "?"
+                )
+            } else {
+                next_step(possible_cards[0]);
+            }
+        },
+
+        _submitShareKnowledgeProposal: function(trades, card){
+            for (const t of trades){
+                if (t.card == card){
+                    IO.socket.emit("shareKnowledgeProposal", t)
+                    break;
+                }
+            }
+        },
+
+        incoming_shareKnowledgeProposal(data){
+            console.log("incoming proposal")
+            function reply_func(answer){
+                IO.socket.emit("shareKnowledgeResponse", {answer: answer, trade_data: data.trade_data, current_player: data.trade_player})
+            }
+            var is_give = data.trade_data.direct_flight == "Take"; // direction reversed for this player
+            var heading = is_give ? "Give " : "Receive ";
+            heading += data.trade_data.card;
+            heading += is_give ? " to " : " from ";
+            heading += data.trade_player;
+            Client._ask_question(
+                ["Yes", "No"],
+                (answer) => reply_func(answer),
+                1,
+                null,
+                false,
+                heading
+            )
         },
 
         gameOver: function(data){

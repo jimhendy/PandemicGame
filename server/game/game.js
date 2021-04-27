@@ -48,6 +48,10 @@ class PandemicGame {
         }
         for (const k of Object.keys(this.colour_to_cities))
             this.colour_to_cities[k].sort()
+        this.io.in(this.game_id).emit(
+            "colourToCitiesMap",
+            this.colour_to_cities
+        )
 
         this.infection_deck.initial_deal();
         this.player_deck.initial_deal(this.players, this.n_initial_player_cards());

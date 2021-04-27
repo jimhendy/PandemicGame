@@ -107,6 +107,50 @@ class Pandemic {
         if (city.has_research_station && this.game.n_research_stations > 1)
             actions.push("shuttle_flight")
 
+        var players_in_same_city = [];
+        for (const p of this.game.players){
+            if (p === player) continue;
+            if (p.city_name == city_name){
+                players_in_same_city.push(p)
+            }
+        }
+        var share_knowledge_data = [];
+        if (players_in_same_city.length){
+            if (has_current_city_card){
+                // Can trade this with ANY other player in same city
+                actions.push("share_knowledge")
+                for (const p of players_in_same_city){
+                    share_knowledge_data.push({
+                        other_player: p.player_name,
+                        card: city_name,
+                        direction: "Give"
+                    })
+                }
+            } else {
+                // require other player to have this card
+                var players_with_current_city = [];
+                for (const p of players_in_same_city){
+                    if (p.player_cards.includes(city_name))
+                        players_with_current_city.push(p)
+                }
+                if (players_with_current_city.length > 1){
+                    console.error("Two players have the same card!")
+                    console.error(players_with_current_city)
+                    console.error(city_name)
+                }
+                if (players_with_current_city.length)
+                    actions.push("share_knowledge")
+                for (const p of players_with_current_city){
+                    share_knowledge_data.push({
+                        other_player: p.player_name,
+                        card: city_name,
+                        direction: "Take"
+                    })
+                }
+
+            }
+        }
+
         var colours_that_can_be_cured = null;
         if (city.has_research_station) {
             colours_that_can_be_cured = this._curable_colours();
@@ -121,10 +165,10 @@ class Pandemic {
                 actions: actions,
                 adjacent_cities: city.adjacent_cities,
                 research_station_cities: this.game.research_station_cities,
-                colour_to_cities: this.game.colour_to_cities, // Does not change, should not be passed every time
                 curable_colours: colours_that_can_be_cured,
                 n_cards_to_cure: player.n_cards_to_cure,
-                current_city_cubes: city.disease_cubes
+                current_city_cubes: city.disease_cubes,
+                share_knowledge_data: share_knowledge_data
             })
         this.io.in(this.game_id).emit(
             "updatePlayerTurns",
@@ -335,6 +379,48 @@ class Pandemic {
         disease.cure();
 
         this._check_end_of_user_turn();
+    }
+
+    player_shareKnowledgeProposal(data){
+        var player = this.game.current_player;
+        this.io.to(player.socket_id).emit("disableActions");
+        var other_player = this.game.players.filter(
+            (p) => {return p.player_name == data.other_player}
+        )[0]
+        this.io.in(this.game_id).emit(
+            "logMessage",
+            {
+                message: player.player_name + " wants to trade " + data.card + " with " + data.other_player
+            }
+        )
+        this.io.to(other_player.socket_id).emit(
+            "incoming_shareKnowledgeProposal", 
+            {
+                trade_data: data,
+                trade_player: player.player_name
+            }
+        )
+    }
+
+    player_shareKnowledgeResponse(data){
+        if (data.answer == "Yes"){
+            this.io.in(this.game_id).emit(
+                "logMessage",
+                {message: data.trade_data.other_player + " accepted the trade"}
+            )
+            var other_player = this.game.players.filter(
+                (p) => {return p.player_name == data.trade_data.other_player}
+            )[0]
+            var card_data = other_player.discard_card(data.trade_data.card);
+            this.game.current_player.receive_card_from_other_player(card_data);
+            this._check_end_of_user_turn();
+        } else {
+            this.io.in(this.game_id).emit(
+                "logMessage",
+                {message: data.trade_data.other_player + " refused the trade"}
+            )
+            this.assess_player_options();
+        }
     }
 
 }

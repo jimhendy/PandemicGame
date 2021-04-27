@@ -51,6 +51,9 @@ function bindSocketEvents(socket){
     socket.on("pass", ()=>pandemic.player_pass());
 
     socket.on("submitReducePlayerHand", (cards)=>pandemic.reducePlayerCardHand(cards))
+
+    socket.on("shareKnowledgeProposal", (data) => pandemic.player_shareKnowledgeProposal(data))
+    socket.on("shareKnowledgeResponse", (data) => pandemic.player_shareKnowledgeResponse(data));
 }
 
 // Events

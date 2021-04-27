@@ -29,13 +29,27 @@ class Player{
         );
     }
 
+    receive_card_from_other_player(card_data){
+        this.player_cards.push(card_data);
+        this.io.to(this.socket_id).emit(
+            "receiveCardsStraightToHand", card_data
+        );
+    }
+
     discard_card(card_name){
         // Expect just a single card here (can't think of situation to discard multiple cards)
+        var card_data = null;
+        for (const c of this.player_cards){
+            if (c.card_name == card_name){
+                card_data = c;
+            }
+        }
         this.player_cards = this.player_cards.filter(
             function(c) { return c.card_name != card_name});
         this.io.to(this.socket_id).emit(
             "discardPlayerCardFromHand", card_name
         );
+        return card_data;
     };
 
 
