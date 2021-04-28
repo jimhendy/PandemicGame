@@ -16,9 +16,9 @@
 
 <script id="landing-screen-template" type="text/template">
     <!-- LANDING SCREEN where user can enter details -->
-<div style="text-align:center; padding-top: 32px; width:calc(100% - 32px); height:calc(100% - 32px) margin: 0px">
+<div style="text-align:center; padding-top: 3%; width: 100%; height: 97%; margin: 0px">
     <img class="logo" alt="my_logo" src="http://localhost:3000/images/pandemic_landing_image.jpg"
-        style="width:80%; height:50%; margin-bottom: 32px;">
+        style="width:80%; height:50%; margin-bottom: 3%;">
     <form id="player_details_form">
         <input id="passcode_input" autocomplete="off" placeholder="Passcode" style="margin-bottom: 1%;">
         </br>
@@ -42,7 +42,7 @@
 
 <script id="role-choice-screen-template" type="text/template">
     <!-- User now logged in, choose a character role -->
-<div style="text-align:center; padding-top: 32px; margin:0px; width:100%; height:calc(100% - 32px)">
+<div style="text-align:center; padding-top: 3%; margin:0px; width:100%; height: 97%;">
     <h3>Please choose a role</h3>
     <div id="role-choice-cards-div" style="margin-bottom: 5%"></div>
     <button id="player-ready-button" disabled=true>Start Game</button>
@@ -52,7 +52,7 @@
 
 <script id="waiting-for-role-choices-template" type="text/template">
     <!-- Spinner to wait on other player's role choice-->
-<div style="text-align:center; padding-top: 32px; margin:0px; width:100%; height:calc(100% - 32px)">
+<div style="text-align:center; padding-top: 3%; margin:0px; width:100%; height: 97%;">
     <div class="loader" style="margin-left: auto; margin-right: auto; margin-bottom: 5%"></div>
     <div>Waiting for other players...</div>
 </div>
@@ -81,17 +81,17 @@
     </div>
     <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100%;">
         <div id="player_area" style="width=100%; height:70%;">
-            <div>
-                <p style="text-align: left; margin-top: 0px; margin-left: 2px; margin-bottom: 2px; height: 22px">
+            <div style="height: 6%;">
+                <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">
                     Your Location: <span id="player_location" style="font-weight: bold;">Atlanta</span></p>
-                <p style="text-align: left; margin-top: 0px; margin-left: 2px; margin-bottom: 2px; height: 22px">Current
+                <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">Current
                     Turn: <span id="current_player" style="font-weight: bold;"></span></p>
             </div>
             <div id="player_card_store"
-                style="overflow: hidden; position: relative; height: calc(100% - 210px - 46px);"></div>
-            <div id="player_selection_area" style="display: none; height: 210px; overflow-y: scroll;"></div>
+                style="overflow: hidden; position: relative; height: 64%;"></div>
+            <div id="player_selection_area" style="display: none; height: 30%; overflow-y: scroll;"></div>
             <div id="player_actions"
-                style="display: flex; flex-direction: column; margin-top: auto; margin-bottom: 0px; height: 210px; overflow-y: hidden">
+                style="display: flex; flex-direction: column; margin-top: 0px; margin-bottom: 0px; height: 30%; overflow-y: hidden">
                 <button disabled=true class="game-button" id="button_drive_ferry"
                     title="Move to a city connected by a white line.">Drive/Ferry</button>
                 <button disabled=true class="game-button" id="button_direct_flight"

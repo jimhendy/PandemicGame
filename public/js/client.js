@@ -611,7 +611,7 @@ jQuery(function ($) {
             var button_div = document.createElement("div");
             button_div.style.display = "flex"
             button_div.style.justifyContent = "center";
-            button_div.style.marginTop = "5px"
+            button_div.style.marginTop = "2%"
             form.appendChild(button_div)
 
             if (cancel_button) {
