@@ -5,7 +5,7 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* Special role actions (CP, D, OE & QS)
+* Special role actions (CP, D, OE)
 * Event cards
 * log file
 * show other players the deal animations from different perspective

@@ -1,13 +1,14 @@
 const utils = require("./utils")
 
 class InfectionDeck {
-    constructor(io, game_id, cities, diseases) {
+    constructor(io, game_id, cities, players, diseases) {
 
         this.io = io;
         this.game_id = game_id;
 
         this.cities = cities;
         this.diseases = diseases;
+        this.players = players;
 
         this.deck = Object.keys(this.cities);
         utils.shuffle(this.deck);
@@ -62,7 +63,6 @@ class InfectionDeck {
                 )
                 for (var n = 0; n < cubes; n++) {
                     city.add_cube();
-                    this.diseases[city.native_disease_colour].add_cube()
                 }
                 this.discarded.push(city_name);
             }
@@ -115,36 +115,46 @@ class InfectionDeck {
             else
                 var city_name = this.deck.pop();
             var city = this.cities[city_name];
+            var colour = city.native_disease_colour;
+
             if (this.diseases[city.native_disease_colour].eradicated) {
                 this.io.in(this.game_id).emit(
                     "logMessage",
                     {
                         message: city_name + " was NOT infected as disease is eradicated",
-                        style: { color: city.native_disease_colour }
+                        style: { color: colour }
                     }
                 )
                 continue;
-            }
-            this.io.in(this.game_id).emit(
-                "logMessage",
-                {
-                    message: "🕱 " + city_name + " was infected" + (epidemic_draw?" on the epidemic draw":""),
-                    style: {
-                        color: city.native_disease_colour,
+            } else {
+                var ignore_cities = this._get_protected_cities(colour);
+                if (ignore_cities.includes(city_name)) {
+                    this.io.in(this.game_id).emit(
+                        "logMessage",
+                        {
+                            message: city_name + " was NOT infected as it is protected",
+                            style: { color: colour }
+                        }
+                    )
+                    continue;
+                } else {
+                    this.io.in(this.game_id).emit(
+                        "logMessage",
+                        {
+                            message: "🕱 " + city_name + " was infected" + (epidemic_draw ? " on the epidemic draw" : ""),
+                            style: { color: colour }
+                        }
+                    )
+                    var n_infections = epidemic_draw ? 3 : 1;
+                    for (var j = 0; j < n_infections; j++)
+                        n_outbreaks += city.add_cube(this.cities, colour, ignore_cities);
+                    this.discarded.push(city_name);
 
-                    }
+                    client_infection_data.cards.push(
+                        this._discard_card_data(city)
+                    )
                 }
-            )
-            var n_infections = epidemic_draw ? 3 : 1;
-            for (var j = 0; j < n_infections; j++) {
-                this.diseases[city.native_disease_colour].add_cube();
-                n_outbreaks += city.add_cube(this.cities);
             }
-            this.discarded.push(city_name);
-
-            client_infection_data.cards.push(
-                this._discard_card_data(city)
-            )
         }
         var client_action = epidemic_draw ? "epidemicDraw" : "drawInfectionCards"
         this.io.in(this.game_id).emit(
@@ -152,6 +162,27 @@ class InfectionDeck {
             client_infection_data
         )
         return n_outbreaks;
+    }
+
+    _get_protected_cities(colour) {
+        var cities = [];
+        var qs = this.players.filter(
+            (p) => { return p.role_name == "Quarantine Specialist"; }
+        )
+        var medic = this.players.filter(
+            (p) => { return p.role_name == "Medic"; }
+        )
+        if (qs.length) {
+            qs = qs[0];
+            cities.push(qs.city_name);
+            for (const c of this.cities[qs.city_name].adjacent_cities)
+                cities.push(c)
+        } else if (medic.length) {
+            medic = medic[0];
+            if (this.diseases[colour].cured)
+                cities.push(medic.city_name)
+        }
+        return cities;
     }
 
     epidemic_intensify() {

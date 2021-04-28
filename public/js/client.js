@@ -443,20 +443,15 @@ jQuery(function ($) {
                     available_colours.push(colour);
                 }
             }
-            if (available_colours.length == 1){
-                reply_func(available_colours[0]);
-            } else {
-                Client._ask_question(
-                    available_colours,
-                    (colour) => reply_func(colour),
-                    1,
-                    null,
-                    true,
-                    "Treat which disease?",
-                    false
-                )
-            }
-            
+            Client._ask_question(
+                available_colours,
+                (colour) => reply_func(colour),
+                1,
+                null,
+                true,
+                "Treat which disease?",
+                false
+            )
         },
 
         remove_player_card_from_hand: function (card_name) {
@@ -569,6 +564,14 @@ jQuery(function ($) {
             title = null,
             checkboxes = false
         ) {
+
+            if (options.length == 1 && n_choices == 1){
+                go_callback(options[0])
+                return;
+            } else if (options.length == n_choices) {
+                go_callback(options)
+                return;
+            }
 
             var form = document.createElement("form");
             form.style.width = "100%"
@@ -691,40 +694,30 @@ jQuery(function ($) {
 
         cure: function () {
             var possible_colours = Object.keys(Client.actions_data.curable_colours);
-
-            if (possible_colours.length == 1) {
-                Client._cure_single_disease(possible_colours[0])
-            } else {
-                Client._ask_question(
-                    possible_colours,
-                    (colour) => Client._cure_single_disease(colour),
-                    1,
-                    null,
-                    true,
-                    "Choose which disease to cure",
-                    false
-                )
-            }
-
+            Client._ask_question(
+                possible_colours,
+                (colour) => Client._cure_single_disease(colour),
+                1,
+                null,
+                true,
+                "Choose which disease to cure",
+                false
+            )
         },
 
-        _cure_single_disease: function (colour) {
+        _cure_single_disease: function(colour) {
             function reply_func(cards) { IO.socket.emit("player_cure", cards); };
             var n_discard = Client.actions_data.n_cards_to_cure;
             var possible_cards = Client.actions_data.curable_colours[colour];
-            if (possible_cards.length == n_discard) {
-                reply_func(possible_cards)
-            } else {
-                Client._ask_question(
-                    possible_cards,
-                    (cards) => { reply_func(cards) },
-                    Client.actions_data.n_cards_to_cure,
-                    null,
-                    true,
-                    "Select the " + n_discard + " cards to cure",
-                    true
-                )
-            }
+            Client._ask_question(
+                possible_cards,
+                (cards) => { reply_func(cards) },
+                Client.actions_data.n_cards_to_cure,
+                null,
+                true,
+                "Select the " + n_discard + " cards to cure",
+                true
+            )
         },
 
         share_knowledge: function(){
@@ -735,18 +728,14 @@ jQuery(function ($) {
             var possible_players = array_from_objects_list(Client.actions_data.share_knowledge_data, "other_player");
             possible_players = [...new Set(possible_players)]; // remove possible duplicates
             function next_step(player){ Client._shareKnowledgeGiveOrTake(player); }
-            if (possible_players.length > 1){
-                Client._ask_question(
-                    possible_players,
-                    (player) => next_step(player),
-                    1,
-                    null,
-                    true,
-                    "Chose a player to trade with"
-                )
-            } else {
-                next_step(possible_players[0])
-            }
+            Client._ask_question(
+                possible_players,
+                (player) => next_step(player),
+                1,
+                null,
+                true,
+                "Chose a player to trade with"
+            )
         },
 
         _shareKnowledgeGiveOrTake: function(player){
@@ -756,18 +745,14 @@ jQuery(function ($) {
             var possible_directions = array_from_objects_list(possible_trades, "direction");
             possible_directions = [...new Set(possible_directions)];
             function next_step(direction){ Client._shareKnowledgeCard(possible_trades, direction); }
-            if (possible_directions.length > 1){
-                Client._ask_question(
-                    possible_directions,
-                    (direction) => next_step(direction),
-                    1,
-                    null,
-                    true,
-                    "Which direction to trade?"
-                )
-            } else {
-                next_step(possible_directions[0]);
-            }
+            Client._ask_question(
+                possible_directions,
+                (direction) => next_step(direction),
+                1,
+                null,
+                true,
+                "Which direction to trade?"
+            )
         },
 
         _shareKnowledgeCard: function(trades, direction){
@@ -776,18 +761,14 @@ jQuery(function ($) {
             )
             var possible_cards = array_from_objects_list(possible_trades, "card");
             function next_step(card){ Client._submitShareKnowledgeProposal(possible_trades, card); }
-            if (possible_cards.length > 1){
-                Client._ask_question(
-                    possible_cards,
-                    (card) => next_step(card),
-                    1,
-                    null,
-                    true,
-                    "Which card to " + direction.toLowerCase() + "?"
-                )
-            } else {
-                next_step(possible_cards[0]);
-            }
+            Client._ask_question(
+                possible_cards,
+                (card) => next_step(card),
+                1,
+                null,
+                true,
+                "Which card to " + direction.toLowerCase() + "?"
+            )
         },
 
         _submitShareKnowledgeProposal: function(trades, card){

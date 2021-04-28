@@ -34,13 +34,13 @@ class PandemicGame {
     initial_game_setup() {
         this.markers = new Markers(this.io, this.game_id);
         this.diseases = Diseases.create_new_diseases(this.io, this.game_id);
-        this.cities = Cities.create_cities(this.io, this.game_id);
-        this.infection_deck = new InfectionDeck(this.io, this.game_id, this.cities, this.diseases)
+        this.cities = Cities.create_cities(this.io, this.game_id, this.diseases);
+        this.infection_deck = new InfectionDeck(this.io, this.game_id, this.cities, this.players, this.diseases)
         this.player_deck = new PlayerDeck(this.io, this.game_id, this.cities)
 
         this.colour_to_cities = {};
-        for (const c of Object.values(this.cities)){
-            if (Object.keys(this.colour_to_cities).includes(c.native_disease_colour)){
+        for (const c of Object.values(this.cities)) {
+            if (Object.keys(this.colour_to_cities).includes(c.native_disease_colour)) {
                 this.colour_to_cities[c.native_disease_colour].push(c.name)
             } else {
                 this.colour_to_cities[c.native_disease_colour] = [c.name]
@@ -120,7 +120,7 @@ class PandemicGame {
             }
         )
         this.io.in(this.game_id).emit(
-            "logMessage", 
+            "logMessage",
             {
                 message: "Research Station built in " + city_name,
                 style: {
@@ -142,8 +142,8 @@ class PandemicGame {
 
     infect_cities() {
         var n_outbreaks = this.infection_deck.draw(this.markers.infection_rate());
-        if (n_outbreaks){
-            if(this.markers.increase_outbreaks(n_outbreaks)){
+        if (n_outbreaks) {
+            if (this.markers.increase_outbreaks(n_outbreaks)) {
                 this.gameOver();
                 return true;
             }
@@ -152,13 +152,13 @@ class PandemicGame {
         return false;
     }
 
-    resolve_epidemics(n_epidemics){
-        for (var i=0; i<n_epidemics; i++){
+    resolve_epidemics(n_epidemics) {
+        for (var i = 0; i < n_epidemics; i++) {
             this.epidemics++;
             this.markers.increase_infection_rate();
             var n_outbreaks = this.infection_deck.draw(1, true); // Infect stage
-            if (n_outbreaks){
-                if (this.markers.increase_outbreaks(n_outbreaks)){
+            if (n_outbreaks) {
+                if (this.markers.increase_outbreaks(n_outbreaks)) {
                     this.gameOver();
                     return true;
                 }
@@ -170,7 +170,7 @@ class PandemicGame {
         return false;
     }
 
-    gameOver(){
+    gameOver() {
         this.io.in(this.game_id).emit("disableActions");
     }
 

@@ -40,7 +40,7 @@ class Pandemic {
 
     remove_user(socket_id) {
         console.info('User has disconnected.');
-        if (socket_id in this.users) {
+        if (Object.keys(this.users).includes(socket_id)) {
             delete this.users[socket_id];
             // TODO emit user lost?
         }
@@ -395,7 +395,6 @@ class Pandemic {
         
         var n_removes = player.role_name == "Medic" ? city.disease_cubes[colour] : 1
         for (var i=0; i<n_removes; i++){
-            this.game.diseases[colour].remove_cube();
             city.remove_cube(colour);
         }
         this.game.update_infection_count();
