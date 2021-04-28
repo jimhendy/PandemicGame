@@ -83,7 +83,7 @@ class InfectionDeck {
         return {
             img_type: "card",
             img_name: "infection_discard",
-            image_file: "images/game/infection_deck/Infection " + utils.toTitleCase(city.native_disease_colour) + " " + utils.toTitleCase(city.name) + ".jpg",
+            image_file: "images/game/infection_deck/Infection " + utils.toTitleCase(city.native_disease_colour) + " " + utils.toTitleCase(city.city_name) + ".jpg",
             x: this.deck_location[0],
             y: this.deck_location[1],
             dx: this.card_width_frac,

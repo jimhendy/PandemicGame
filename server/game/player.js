@@ -16,6 +16,8 @@ class Player{
         this.player_cards = [];
 
         this.player_num = player_num;
+
+        this.used_special_action_this_turn = false;
     }
 
     add_player_cards(cards_data){
@@ -54,7 +56,7 @@ class Player{
 
 
     place_pawn(city) {
-        this.city_name = city.name;
+        this.city_name = city.city_name;
         this.io.in(this.game_id).emit(
             "createImage",
             {
@@ -70,7 +72,7 @@ class Player{
     }
 
     move_pawn(city) {
-        this.city_name = city.name;
+        this.city_name = city.city_name;
         this.io.in(this.game_id).emit(
             "moveImage",
             {

@@ -5,7 +5,7 @@ class City {
 
         this.diseases = diseases;
 
-        this.name = name;
+        this.city_name = name;
         this.native_disease_colour = native_disease_colour;
         this.location = location;
         this.adjacent_cities = adjacent_cities;
@@ -31,7 +31,7 @@ class City {
         // Return number of outbreaks occuring due to this new cube
 
         // Might be ignoring this city as it has already outbroken
-        if (ignore_cities && ignore_cities.includes(this.name))
+        if (ignore_cities && ignore_cities.includes(this.city_name))
             return 0;
 
         var n_outbreaks = 0;
@@ -48,17 +48,17 @@ class City {
             this.io.in(this.game_id).emit(
                 "logMessage",
                 {
-                    message: "Outbreak of " + colour + " disease from " + this.name,
+                    message: "Outbreak of " + colour + " disease from " + this.city_name,
                     style: {
                         color: colour
                     }
                 }
             )
             if (ignore_cities) {
-                ignore_cities.push(this.name)
+                ignore_cities.push(this.city_name)
             }
             else {
-                var ignore_cities = [this.name]
+                var ignore_cities = [this.city_name]
             }
             n_outbreaks++;
             var adj_city_name;
@@ -78,7 +78,7 @@ class City {
             "createImage",
             {
                 img_type: "cube",
-                img_name: "cube_" + this.name + "_" + colour + "_" + cube_number,
+                img_name: "cube_" + this.city_name + "_" + colour + "_" + cube_number,
                 image_file: "images/game/cubes/cube_" + colour + ".png",
                 x: x, y: y, dx: 0.01, dy: 0.01,
                 blinkCanvas: true
@@ -87,7 +87,7 @@ class City {
     }
 
     remove_cube(colour) {
-        var img_name = "cube_" + this.name + "_" + colour + "_" + this.disease_cubes[colour];
+        var img_name = "cube_" + this.city_name + "_" + colour + "_" + this.disease_cubes[colour];
         this.disease_cubes[colour]--;
         this.total_cubes--;
         this.diseases[colour].remove_cube();
@@ -102,8 +102,8 @@ class City {
         var adj_city;
         for (adj_city_name of this.adjacent_cities) {
             adj_city = cities[adj_city_name];
-            if (!adj_city.adjacent_cities.includes(this.name)) {
-                console.error(this.name + " has " + adj_city_name + " as adj but not vice versa")
+            if (!adj_city.adjacent_cities.includes(this.city_name)) {
+                console.error(this.city_name + " has " + adj_city_name + " as adj but not vice versa")
             }
         }
     }
@@ -171,7 +171,7 @@ module.exports = {
         var cities = {};
         var c;
         for (c of city_list) {
-            cities[c.name] = c;
+            cities[c.city_name] = c;
         }
         return cities;
     },

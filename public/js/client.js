@@ -1,3 +1,5 @@
+
+
 jQuery(function ($) {
     'use strict';
 
@@ -149,8 +151,9 @@ jQuery(function ($) {
             Client.$doc.on("click", "#button_charter_flight", Client.charter_flight);
             Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
             Client.$doc.on("click", "#button_treat_disease", Client.treatDisease);
-            Client.$doc.on("click", "#button_build_research_station", () => IO.socket.emit("build_research_station"));
+            Client.$doc.on("click", "#button_build_research_station", () => IO.socket.emit("build_research_station", Client.actions_data.role_name));
             Client.$doc.on("click", "#button_share_knowledge", Client.share_knowledge);
+            Client.$doc.on("click", "#button_special_action", Client.special_action);
             Client.$doc.on("click", "#button_cure", Client.cure);
             Client.$doc.on("click", "#button_pass", () => IO.socket.emit("pass"));
         },
@@ -796,6 +799,45 @@ jQuery(function ($) {
                 null,
                 false,
                 heading
+            )
+        },
+
+        special_action: function(){
+            if (Client.actions_data.role_name == "Operations Expert"){
+                Client.special_action_operations_expert_chose_card();
+            }
+        },
+
+        special_action_operations_expert_chose_card: function(){
+            function next_step(card){Client.special_action_operations_expert_chose_destination(card);};
+            var possible_cards = Client.actions_data.special_action_data.cards;
+            Client._ask_question(
+                possible_cards,
+                (card) => next_step(card),
+                1,
+                null,
+                true,
+                "Discard which city card?"
+            )
+        },
+
+        special_action_operations_expert_chose_destination: function(discard_card_name){
+            var possible_destinations = Client.actions_data.special_action_data.destinations;
+            var colours = Client.actions_data.special_action_data.colours;
+            function next_step(destination){ 
+                IO.socket.emit(
+                    "operations_expert_fly_from_research_station", 
+                    {
+                        destination: destination, 
+                        card_name: discard_card_name
+            })}
+            Client._ask_question(
+                possible_destinations,
+                (destination) => next_step(destination),
+                1,
+                colours,
+                true,
+                "Chose your destination"
             )
         },
 

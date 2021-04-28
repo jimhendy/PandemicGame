@@ -97,16 +97,40 @@ class Pandemic {
             actions.push("treat_disease");
         }
         if (
-            has_current_city_card
+            (has_current_city_card || player.role_name == "Operations Expert")
             &&
             this.game.n_research_stations < this.game.max_n_research_stations
             &&
-            !this.game.research_station_cities.includes(city_name)
+            !city.has_research_station
         ) {
             actions.push("build_research_station");
         }
         if (city.has_research_station && this.game.n_research_stations > 1)
             actions.push("shuttle_flight")
+        
+        var special_action_data = null;
+        if (player.role_name == "Operations Expert" && city.has_research_station && !player.used_special_action_this_turn){
+            
+            for (const card of player.player_cards){
+                if (card.is_city){
+                    if (!actions.includes("special_action")){
+                        actions.push("special_action")
+                        special_action_data = {};
+                        special_action_data.cards = [];
+                        special_action_data.destinations = [];
+                        special_action_data.colours = [];
+                        special_action_data.description = "Move from a research station to any city by discarding any City card"
+                    }
+                    special_action_data.cards.push(card.card_name);
+                }
+            }
+            if (actions.includes("special_action")){
+                for (const dest of Object.values(this.game.cities)){
+                    special_action_data.destinations.push(dest.city_name);
+                    special_action_data.colours.push(dest.native_disease_colour);
+                }
+            }        
+        }
 
         var players_in_same_city = [];
         for (const p of this.game.players){
@@ -199,12 +223,14 @@ class Pandemic {
             "enableActions",
             {
                 actions: actions,
+                role_name: player.role_name,
                 adjacent_cities: city.adjacent_cities,
                 research_station_cities: this.game.research_station_cities,
                 curable_colours: colours_that_can_be_cured,
                 n_cards_to_cure: player.n_cards_to_cure,
                 current_city_cubes: city.disease_cubes,
-                share_knowledge_data: share_knowledge_data
+                share_knowledge_data: share_knowledge_data,
+                special_action_data: special_action_data
             })
         this.io.in(this.game_id).emit(
             "updatePlayerTurns",
@@ -409,12 +435,15 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
-    player_build_research_station() {
+    player_build_research_station(role_name) {
         var player = this.game.current_player;
         var city_name = player.city_name;
         this.game.add_research_station(city_name);
-        player.discard_card(city_name);
-        this.game.player_deck.discard([city_name]);
+
+        if (role_name == "Operations Expert"){
+            player.discard_card(city_name);
+            this.game.player_deck.discard([city_name]);
+        }
 
         this._check_end_of_user_turn();
     }
@@ -480,6 +509,22 @@ class Pandemic {
             )
             this.assess_player_options();
         }
+    }
+
+    player_fly_using_card(data){
+        var destination_city_name = data.destination;
+        var discard_card_name = data.card_name;
+        this.game.current_player.used_special_action_this_turn = true;
+        var player = this.game.current_player;
+        this.io.in(this.game_id).emit("logMessage",
+            { message: player.player_name + " takes a special flight to " + destination_city_name }
+        )
+
+        player.discard_card(discard_card_name);
+        this.game.player_deck.discard([discard_card_name]);
+
+        this._move_pawn(destination_city_name);
+        this._check_end_of_user_turn();
     }
 
 }

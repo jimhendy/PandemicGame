@@ -54,6 +54,8 @@ function bindSocketEvents(socket){
 
     socket.on("shareKnowledgeProposal", (data) => pandemic.player_shareKnowledgeProposal(data))
     socket.on("shareKnowledgeResponse", (data) => pandemic.player_shareKnowledgeResponse(data));
+
+    socket.on("operations_expert_fly_from_research_station", (data) => pandemic.player_fly_using_card(data))
 }
 
 // Events

@@ -158,9 +158,9 @@ class PlayerCard {
             this.img_name = "player_card_event_" + this.card_name;
             this.image_file = "images/game/player_cards/Special Event - " + this.card_name + ".jpg"
         } else if (this.is_city) {
-            this.img_name = "player_card_" + this.city.name
-            this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.name) + ".jpg"
-            this.card_name = this.city.name;
+            this.img_name = "player_card_" + this.city.city_name
+            this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.city_name) + ".jpg"
+            this.card_name = this.city.city_name;
         }
     }
 
@@ -170,7 +170,7 @@ class PlayerCard {
             is_city: this.is_city,
             is_event: this.is_event,
 
-            city_name: this.is_city ? this.city.name : null,
+            city_name: this.is_city ? this.city.city_name : null,
             img_name: this.img_name,
             card_name: this.card_name,
 

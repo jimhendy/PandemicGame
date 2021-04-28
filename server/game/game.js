@@ -41,9 +41,9 @@ class PandemicGame {
         this.colour_to_cities = {};
         for (const c of Object.values(this.cities)) {
             if (Object.keys(this.colour_to_cities).includes(c.native_disease_colour)) {
-                this.colour_to_cities[c.native_disease_colour].push(c.name)
+                this.colour_to_cities[c.native_disease_colour].push(c.city_name)
             } else {
-                this.colour_to_cities[c.native_disease_colour] = [c.name]
+                this.colour_to_cities[c.native_disease_colour] = [c.city_name]
             }
         }
         for (const k of Object.keys(this.colour_to_cities))
@@ -70,6 +70,7 @@ class PandemicGame {
             this.io.to(this.current_player.socket_id).emit("disableActions");
         }
         this.current_player = this.players[this.round % this.players.length];
+        this.current_player.used_special_action_this_turn = false;
         this.io.in(this.game_id).emit(
             "newPlayersTurn", this.current_player.player_name
         )
