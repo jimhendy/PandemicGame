@@ -248,7 +248,7 @@ class Pandemic {
         this.io.in(this.game_id).emit("logMessage",
             { message: player.player_name + " drives/ferries to " + destination_city_name }
         )
-        player.move_pawn(this.game.cities[destination_city_name]);
+        this._move_pawn(destination_city_name);
         this._check_end_of_user_turn();
     }
 
@@ -261,7 +261,7 @@ class Pandemic {
         player.discard_card(destination_city_name);
         this.game.player_deck.discard([destination_city_name]);
 
-        player.move_pawn(this.game.cities[destination_city_name]);
+        this._move_pawn(destination_city_name);
 
         this._check_end_of_user_turn();
     }
@@ -272,7 +272,7 @@ class Pandemic {
             { message: player.player_name + " takes shuttle flight to " + destination_city_name }
         )
 
-        player.move_pawn(this.game.cities[destination_city_name]);
+        this._move_pawn(destination_city_name);
         this._check_end_of_user_turn();
     }
 
@@ -287,8 +287,21 @@ class Pandemic {
         player.discard_card(origin_city_name);
         this.game.player_deck.discard([origin_city_name]);
 
-        player.move_pawn(this.game.cities[destination_city_name]);
+        this._move_pawn(destination_city_name);
         this._check_end_of_user_turn();
+    }
+
+    _move_pawn(destination){
+        var player = this.game.current_player;
+        var city = this.game.cities[destination]
+        player.move_pawn(city);
+        if (player.role_name == "Medic"){
+            for (const [colour,d] of Object.entries(this.game.diseases)){
+                if (d.cured && city.disease_cubes[colour]>0){
+                    this._treat_disease_for_free(colour);
+                }
+            }
+        }
     }
 
     _check_end_of_user_turn() {
@@ -367,18 +380,24 @@ class Pandemic {
     }
 
     player_treatDisease(data) {
+        this._treat_disease_for_free(data.colour);
+        this._check_end_of_user_turn();
+    }
+
+    _treat_disease_for_free(colour){
         var player = this.game.current_player;
         var city_name = player.city_name;
-        var colour = data.colour;
 
         this.io.in(this.game_id).emit("logMessage",
             { message: player.player_name + " treats the " + colour + " disease in " + city_name }
         )
         var city = this.game.cities[city_name];
         
-        this.game.diseases[colour].remove_cube();
-        city.remove_cube(colour);
-        this._check_end_of_user_turn();
+        var n_removes = player.role_name == "Medic" ? city.disease_cubes[colour] : 1
+        for (var i=0; i<n_removes; i++){
+            this.game.diseases[colour].remove_cube();
+            city.remove_cube(colour);
+        }
         this.game.update_infection_count();
     }
 
