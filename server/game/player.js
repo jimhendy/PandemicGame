@@ -32,7 +32,7 @@ class Player{
     receive_card_from_other_player(card_data){
         this.player_cards.push(card_data);
         this.io.to(this.socket_id).emit(
-            "receiveCardsStraightToHand", card_data
+            "addPlayerCardToHand", card_data
         );
     }
 

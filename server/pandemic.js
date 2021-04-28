@@ -130,7 +130,7 @@ class Pandemic {
                 // require other player to have this card
                 var players_with_current_city = [];
                 for (const p of players_in_same_city){
-                    if (p.player_cards.includes(city_name))
+                    if (utils.objects_attribute_contains_value(p.player_cards, "city_name", city_name))
                         players_with_current_city.push(p)
                 }
                 if (players_with_current_city.length > 1){
@@ -411,8 +411,13 @@ class Pandemic {
             var other_player = this.game.players.filter(
                 (p) => {return p.player_name == data.trade_data.other_player}
             )[0]
-            var card_data = other_player.discard_card(data.trade_data.card);
-            this.game.current_player.receive_card_from_other_player(card_data);
+
+            var take_player = data.trade_data.direction == "Take" ? this.game.current_player : other_player;
+            var give_player = data.trade_data.direction != "Take" ? this.game.current_player : other_player;
+
+            var card_data = give_player.discard_card(data.trade_data.card);
+            this.io.to(give_player.socket_id).emit("refreshPlayerHand")
+            take_player.receive_card_from_other_player(card_data);
             this._check_end_of_user_turn();
         } else {
             this.io.in(this.game_id).emit(

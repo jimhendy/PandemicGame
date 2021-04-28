@@ -48,6 +48,7 @@ jQuery(function ($) {
 
             IO.socket.on("incoming_shareKnowledgeProposal", Client.incoming_shareKnowledgeProposal);
             IO.socket.on("addPlayerCardToHand", Client.addPlayerCardToHand)
+            IO.socket.on("refreshPlayerHand", Client.refreshPlayerHand)
 
             IO.socket.on("gameOver", Client.gameOver);
         },
@@ -801,11 +802,10 @@ jQuery(function ($) {
         },
 
         incoming_shareKnowledgeProposal(data){
-            console.log("incoming proposal")
             function reply_func(answer){
                 IO.socket.emit("shareKnowledgeResponse", {answer: answer, trade_data: data.trade_data, current_player: data.trade_player})
             }
-            var is_give = data.trade_data.direct_flight == "Take"; // direction reversed for this player
+            var is_give = data.trade_data.direction == "Take"; // direction reversed for this player
             var heading = is_give ? "Give " : "Receive ";
             heading += data.trade_data.card;
             heading += is_give ? " to " : " from ";

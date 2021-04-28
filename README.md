@@ -5,11 +5,11 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* Share knowledge (some way working. Can't initiate trade if don't own the card. Trade does not complete.)
 * Special role actions
 * Event cards
 * log file
-* show other players the deal animations
+* show other players the deal animations from different perspective
+* clear & redraw all images after animation
 
 Initial deal should only be seen by player. All other draws should be shown to everyone. Other players cards should come/go to from different location.
 
