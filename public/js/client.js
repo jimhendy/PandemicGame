@@ -266,8 +266,6 @@ jQuery(function ($) {
                 data.dest_dy,
                 data.dt,
                 Client.images
-            ).then(
-                () => clearAndRedrawCanvas(Client.images[data.img_name], Client.images)
             )
         },
 

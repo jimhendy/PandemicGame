@@ -29,10 +29,10 @@ function clearImage(image) {
 };
 
 function clearAndRedrawCanvas(image, other_images){
-    $("body").toggleClass("refresh");
+    //$("body").toggleClass("refresh");
     // Above seems to work for now...
 
-    /*
+    
     return new Promise(
         resolve => {
         var context = image.data.ctx;
@@ -50,11 +50,17 @@ function clearAndRedrawCanvas(image, other_images){
         );
 
         for (const i of images_to_redraw){
-            createImage(i);
+            _redraw_image(i, context);
         }
         resolve();
     })
-    */
+    
+}
+
+function _redraw_image(image, context){
+    if (image.moving) return
+    var img = image.img;
+    context.drawImage(img, img.canvas_x, img.canvas_y, img.width, img.height);
 }
 
 function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 25) {
@@ -62,6 +68,7 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
     var img_object = image.img;
     var context = image.data.ctx;
     var canvas = image.data.canvas;
+    image.moving = true;
 
     var images_to_redraw = [];
     for (const [oi_name, oi] of Object.entries(other_images)){
@@ -125,12 +132,10 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
                     img_object.canvas_y = final_y;
                     img_object.width = final_dx;
                     img_object.height = final_dy;
+                    image.moving = false;
                     clearInterval(id);
                     for (const oi of images_to_redraw){
-                        // Redraw everything on this canvas
-                        context.drawImage(
-                            oi.img, oi.img.canvas_x, oi.img.canvas_y, oi.img.width, oi.img.height
-                        );
+                        _redraw_image(oi, context);
                     }
                     resolve();
                 } else {
@@ -149,12 +154,10 @@ function move(image, destination_x, destination_y, destination_dx, destination_d
                 for (const oi of images_to_redraw){
                     // Only redraw if overlap
                     if (oi.img.canvas_x <= 1.1*(x+width) && (oi.img.canvas_x+oi.img.width) >= 0.9*x &&
-                        oi.img.canvas_y <= 1.1*(y+height) && (oi.img.canvas_y+oi.img.height) >= 0.9*y ) 
-                        context.drawImage(
-                            oi.img, oi.img.canvas_x, oi.img.canvas_y, oi.img.width, oi.img.height
-                        );
+                        oi.img.canvas_y <= 1.1*(y+height) && (oi.img.canvas_y+oi.img.height) >= 0.9*y )
+                        _redraw_image(oi, context);
                 };
             }
         } // end of resolve
-    );
+    ).then( () => clearAndRedrawCanvas(image, other_images))
 };

@@ -5,11 +5,10 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* Special role actions
+* Special role actions (CP, D, OE & QS)
 * Event cards
 * log file
 * show other players the deal animations from different perspective
-* clear & redraw all images after animation
 
 Initial deal should only be seen by player. All other draws should be shown to everyone. Other players cards should come/go to from different location.
 
