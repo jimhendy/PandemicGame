@@ -809,7 +809,7 @@ jQuery(function ($) {
             var heading = is_give ? "Give " : "Receive ";
             heading += data.trade_data.card;
             heading += is_give ? " to " : " from ";
-            heading += data.trade_player;
+            heading += data.trade_player + "?";
             Client._ask_question(
                 ["Yes", "No"],
                 (answer) => reply_func(answer),

@@ -1,5 +1,6 @@
 const utils = require("./game/utils")
-const Game = require('./game/game')
+const Game = require('./game/game');
+const { objects_attribute_contains_value } = require("./game/utils");
 
 class Pandemic {
     constructor(io) {
@@ -149,7 +150,42 @@ class Pandemic {
                 }
 
             }
+            // Researcher special action
+            if (player.role_name == "Researcher"){
+                for (const c of player.player_cards){
+                    if (!c.is_city || c.card_name == city_name) 
+                        continue // Current city already included from above
+                    if (!actions.includes("share_knowledge")) // Need to test here to avoid trying to trade event cards
+                        actions.push("share_knowledge")
+                    for (const p of players_in_same_city){
+                        share_knowledge_data.push({
+                            other_player: p.player_name,
+                            card: c.card_name,
+                            direction: "Give"
+                        })
+                    }
+                }
+            } else {
+                // Some other player may be researcher
+                for (const p of players_in_same_city){
+                    if (p.role_name == "Researcher"){
+                        for (const c of p.player_cards){
+                            if (!c.is_city || c.card_name == city_name) 
+                                continue // Current city already included from above
+                            if (!actions.includes("share_knowledge")) // Need to test here to avoid trying to trade event cards
+                                actions.push("share_knowledge")
+                            share_knowledge_data.push({
+                                other_player: p.player_name,
+                                card: c.card_name,
+                                direction: "Take"
+                            })
+                        }
+                    }
+                }
+            }
         }
+
+        
 
         var colours_that_can_be_cured = null;
         if (city.has_research_station) {
