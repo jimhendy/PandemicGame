@@ -1,5 +1,3 @@
-
-
 jQuery(function ($) {
     'use strict';
 
@@ -51,6 +49,8 @@ jQuery(function ($) {
             IO.socket.on("incoming_shareKnowledgeProposal", Client.incoming_shareKnowledgeProposal);
             IO.socket.on("addPlayerCardToHand", Client.addPlayerCardToHand)
             IO.socket.on("refreshPlayerHand", Client.refreshPlayerHand)
+
+            IO.socket.on("dispatcher_move_request", Client.dispatcher_move_request);
 
             IO.socket.on("gameOver", Client.gameOver);
         },
@@ -425,17 +425,104 @@ jQuery(function ($) {
         },
 
         drive_ferry: function () {
-            Client._ask_question(
-                Client.actions_data.adjacent_cities,
-                (destination) => IO.socket.emit("player_drive_ferry", destination)
-            );
+            if (Client.actions_data.role_name == "Dispatcher"){
+                var possible_players = {};
+                for (const p of Client.actions_data.player_data)
+                    possible_players[p.player_name] = p.adjacent_cities;
+                Client._ask_question(
+                    Object.keys(possible_players),
+                    (player) => {
+                        Client._ask_question(
+                            possible_players[player],
+                            (destination) => {
+                                if (player == Client.data.player_name){
+                                    // Moving himself
+                                    IO.socket.emit("player_drive_ferry", destination)
+                                } else {
+                                    IO.socket.emit(
+                                        "dispatcher_move_request", 
+                                        {player_name:player, destination: destination}
+                                    )
+                                }
+                            },
+                            1,
+                            null,
+                            true,
+                            "Please chose the destination"
+                        )
+                    },
+                    1,
+                    null,
+                    true,
+                    "Who would you like to drive/ferry?"
+                )
+            } else {
+                // Simple drive/ferry for current player
+                Client._ask_question(
+                    Client.actions_data.adjacent_cities,
+                    (destination) => IO.socket.emit("player_drive_ferry", destination),
+                    1,
+                    null,
+                    true,
+                    "Please chose the destination"
+                );
+            }
         },
 
         direct_flight: function () {
+            // Fly to a city discarding the destination
+            var possible_destinations = Object.keys(Client.data.city_cards)
+
+            if (Client.actions_data.role_name == "Dispatcher"){
+                var possible_players = array_from_objects_list(Client.actions_data.player_data, "player_name");
+                
+                Client._ask_question(
+                    possible_players,
+                    (player) => {
+                        Client._ask_question(
+                            possible_destinations,
+                            (destination) => {
+                                if (player == Client.data.player_name){
+                                    // Moving himself
+                                    IO.socket.emit("player_direct_flight", destination)
+                                } else {
+                                    IO.socket.emit(
+                                        "dispatcher_move_request", 
+                                        {player_name:player, destination: destination, discard_card_name: destination}
+                                    )
+                                }
+                            },
+                            1,
+                            null,
+                            true,
+                            "Please chose the destination"
+                        )
+                    },
+                    1,
+                    null,
+                    true,
+                    "Who would you like to move?"
+                )
+            } else {
+                // Simple move for current player
+                Client._ask_question(
+                    possible_destinations,
+                    (destination) => IO.socket.emit("player_direct_flight", destination),
+                    1,
+                    null,
+                    true,
+                    "Please chose the destination"
+                );
+            }
+
+            /*
+
+
             Client._ask_question(
                 Object.keys(Client.data.city_cards),
                 (destination) => IO.socket.emit("player_direct_flight", destination)
             );
+            */
         },
 
         treatDisease: function(data){
@@ -583,6 +670,8 @@ jQuery(function ($) {
             if (title) {
                 var heading = document.createElement("h3");
                 heading.textContent = title;
+                heading.style.marginTop = "1%";
+                heading.style.marginBottom = "1%";
                 form.appendChild(heading)
             }
 
@@ -839,6 +928,18 @@ jQuery(function ($) {
                 true,
                 "Chose your destination"
             )
+        },
+
+        dispatcher_move_request: function(data){
+            Client._ask_question(
+                ["Yes", "No"],
+                (resp) => IO.socket.emit("dispatcher_move_response", {data:data, response:resp}),
+                1,
+                null,
+                false,
+                "Allow the Dispatcher to move your pawn to " + data.destination + "?"
+            )
+
         },
 
         gameOver: function(data){

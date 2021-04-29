@@ -1,6 +1,6 @@
 const utils = require("./game/utils")
 const Game = require('./game/game');
-const { objects_attribute_contains_value } = require("./game/utils");
+const { objects_attribute_contains_value, dict_from_objects } = require("./game/utils");
 
 class Pandemic {
     constructor(io) {
@@ -209,7 +209,18 @@ class Pandemic {
             }
         }
 
-        
+        var player_data = [];
+        for (const p of this.game.players){
+            player_data.push(
+                {
+                    player_name: p.player_name,
+                    role_name: p.role_name,
+                    city_name: p.city_name,
+                    adjacent_cities: this.game.cities[p.city_name].adjacent_cities,
+                    is_current_player: p == this.game.current_player
+                }
+            )
+        }
 
         var colours_that_can_be_cured = null;
         if (city.has_research_station) {
@@ -230,7 +241,8 @@ class Pandemic {
                 n_cards_to_cure: player.n_cards_to_cure,
                 current_city_cubes: city.disease_cubes,
                 share_knowledge_data: share_knowledge_data,
-                special_action_data: special_action_data
+                special_action_data: special_action_data,
+                player_data: player_data
             })
         this.io.in(this.game_id).emit(
             "updatePlayerTurns",
@@ -278,6 +290,42 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
+    dispatcher_move_request(data){
+        this.io.to(this.game.current_player.socket_id).emit("disableActions");
+        var player = null;
+        for (const p of this.game.players)
+            if (p.player_name == data.player_name)
+                player = p
+        this.io.in(this.game_id).emit(
+            "logMessage", 
+            {
+                message: this.game.current_player.player_name + " wants to move " + player.player_name + " to " + data.destination
+            }
+        )
+        this.io.to(player.socket_id).emit("dispatcher_move_request", data);
+    }
+
+    dispatcher_move_response(data){
+        if (data.response == "Yes"){
+            var player = null;
+            for (const p of this.game.players)
+                if (p.player_name == data.data.player_name)
+                    player = p
+            this.io.in(this.game_id).emit("logMessage",
+                { message: this.game.current_player.player_name + " move " + player.player_name + " to " + data.data.destination }
+            )
+            if (Object.keys(data.data).includes("discard_card_name")){
+                this.game.current_player.discard_card(data.data.discard_card_name);
+                this.game.player_deck.discard([data.data.discard_card_name]);
+            }
+            this._move_pawn(data.data.destination, player);
+            this._check_end_of_user_turn();
+        } else {
+            this.io.to(this.game_id).emit("logMessage", {message: "Dispatcher move denied"})
+            this.assess_player_options();
+        }
+    }
+
     player_direct_flight(destination_city_name) {
         var player = this.game.current_player;
         this.io.in(this.game_id).emit("logMessage",
@@ -317,8 +365,8 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
-    _move_pawn(destination){
-        var player = this.game.current_player;
+    _move_pawn(destination, player=null){
+        var player = player == null ? this.game.current_player : player;
         var city = this.game.cities[destination]
         player.move_pawn(city);
         if (player.role_name == "Medic"){

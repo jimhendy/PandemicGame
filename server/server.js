@@ -56,6 +56,9 @@ function bindSocketEvents(socket){
     socket.on("shareKnowledgeResponse", (data) => pandemic.player_shareKnowledgeResponse(data));
 
     socket.on("operations_expert_fly_from_research_station", (data) => pandemic.player_fly_using_card(data))
+
+    socket.on("dispatcher_move_request", (data)=>pandemic.dispatcher_move_request(data));
+    socket.on("dispatcher_move_response", (data)=>pandemic.dispatcher_move_response(data));
 }
 
 // Events
