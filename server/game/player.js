@@ -18,6 +18,7 @@ class Player{
         this.player_num = player_num;
 
         this.used_special_action_this_turn = false;
+        this.contingency_planner_event_card = null;
     }
 
     add_player_cards(cards_data){
@@ -83,6 +84,10 @@ class Player{
             }
         )
         this.io.to(this.socket_id).emit("changeLocation", this.city_name);
+    }
+
+    too_many_cards(){
+        return this.player_cards.length > this.max_hand_cards;
     }
 
 }

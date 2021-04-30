@@ -23,11 +23,13 @@ class PlayerDeck {
                 new PlayerCard(city)
             )
         }
+        
         for (const ev of this.event_card_names){
             this.deck.push(
                 new PlayerCard(null, false, null, ev)
             )
         }
+        
         utils.shuffle(this.deck);
 
         this.io.in(this.game_id).emit(
