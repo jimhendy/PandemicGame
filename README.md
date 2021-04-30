@@ -13,6 +13,18 @@ TODO:
 * tooltip for chosen role abilities
 * landing page image does not show on phone
 
+* Should pandemic.assess_actions only provide an array of objects to the client where we then present a series of options
+ [
+     {action: "Drive/Ferry", player_name: "Jim", is_current_player: true, destination: "London", discard_card_name: null, is_dispatcher_moving_other_player: false, emit_response: "player_move"},
+     {action: "Cure", player_name: "Jim"}
+
+ ]
+ 
+Of all (remaining) available actions present choices via Client._ask_question...
+How to loop an unknown number of times? - recursion
+
+
+
 Initial deal should only be seen by player. All other draws should be shown to everyone. Other players cards should come/go to from different location.
 
 ## Installation

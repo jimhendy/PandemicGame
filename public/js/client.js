@@ -1,3 +1,4 @@
+
 jQuery(function ($) {
     'use strict';
 
@@ -28,7 +29,7 @@ jQuery(function ($) {
 
             IO.socket.on("logMessage", Client.logMessage);
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
-            IO.socket.on("colourToCitiesMap", (map) => {Client.colour_to_cities = map;})
+            IO.socket.on("colourToCitiesMap", (map) => { Client.colour_to_cities = map; })
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
             IO.socket.on("drawInfectionCards", Client.drawInfectionCards);
@@ -79,6 +80,7 @@ jQuery(function ($) {
         },
         images: {},
         button_names: ["drive_ferry", "direct_flight", "charter_flight", "shuttle_flight", "build_research_station", "treat_disease", "cure", "share_knowledge", "special_action", "pass"],
+        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response"],
 
         init: function () {
             Client.cacheElements();
@@ -308,8 +310,8 @@ jQuery(function ($) {
                 dt: 0.5,
                 animationCanvas: true
             }
-            if (card_data.is_epidemic){
-                return new Promise((resolve)=>{
+            if (card_data.is_epidemic) {
+                return new Promise((resolve) => {
                     Client.createImage(data);
                     Client.moveImage(data).then(
                         () => {
@@ -369,7 +371,7 @@ jQuery(function ($) {
             else if (data.is_event)
                 Client.data.event_cards[data.card_name] = data;
             else
-                IO.error({message: "Bad card found " + data})
+                IO.error({ message: "Bad card found " + data })
 
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
@@ -418,30 +420,78 @@ jQuery(function ($) {
         },
 
         enableActions: function (data) {
-            Client.actions_data = data;
-            for (const btn of Client.button_names) {
-                Client.$buttons[btn].disabled = !(data.actions.includes(btn))
+            Client.action_data = data;
+            Client.present_actions(Client.action_data);
+        },
+
+
+        present_actions: function (remaining_actions, level = 0, answers = null) {
+
+            console.log(remaining_actions);
+
+            if (level > 20) {
+                IO.error({ message: "Something has gone wrong" })
+                console.error(remaining_actions)
+                return
+            }
+
+            if (remaining_actions.length == 1) {
+                // Single choice left, use it
+                var response_data = remaining_actions[0];
+                response_data.answers = answers;
+                IO.socket.emit("action_response", response_data)
+                return;
+            }
+
+            answers = answers == null ? {} : answers;
+            var question = Client.question_order[level];
+
+            if (Object.keys(remaining_actions[0]).includes(question)) {
+                Client._ask_question(
+                    array_from_objects_list(remaining_actions, question, true),
+                    (answer) => {
+                        var new_remaining_actions = remaining_actions.filter(
+                            (a) => { return a[question] == answer; }
+                        );
+                        // We may have chosen multiple options which do not correspond to a single option in the array
+                        // If this is the case, chose a single option from the available ones to maintain metadata in the options object
+                        if (!new_remaining_actions.length) {
+                            new_remaining_actions = [remaining_actions[0]];
+                            // We remove the false data that was not chosen
+                            delete new_remaining_actions[0][question];
+                        }
+                        answers[question] = answer;
+                        Client.present_actions(new_remaining_actions, level + 1, answers);
+                    },
+                    remaining_actions[0][question + "__n_choices"] || 1,
+                    array_from_objects_list(remaining_actions, question + "__colour") || null,
+                    level > 0 && remaining_actions[0][question + "__cancel_button"],
+                    remaining_actions[0][question + "__title"] || null,
+                    remaining_actions[0][question + "__checkboxes"] || false,
+                )
+            } else {
+                Client.present_actions(remaining_actions, level + 1, answers)
             }
         },
 
         drive_ferry: function () {
-            if (Client.actions_data.role_name == "Dispatcher"){
+            if (Client.actions_data.role_name == "Dispatcher") {
                 var possible_players = {};
                 for (const p of Client.actions_data.player_data)
-                    possible_players[p.player_name] = p.adjacent_cities;
+                    possible_players[p.player_name] = p.adjacent_city_names;
                 Client._ask_question(
                     Object.keys(possible_players),
                     (player) => {
                         Client._ask_question(
                             possible_players[player],
                             (destination) => {
-                                if (player == Client.data.player_name){
+                                if (player == Client.data.player_name) {
                                     // Moving himself
                                     IO.socket.emit("player_drive_ferry", destination)
                                 } else {
                                     IO.socket.emit(
-                                        "dispatcher_move_request", 
-                                        {player_name:player, destination: destination}
+                                        "dispatcher_move_request",
+                                        { player_name: player, destination: destination }
                                     )
                                 }
                             },
@@ -459,7 +509,7 @@ jQuery(function ($) {
             } else {
                 // Simple drive/ferry for current player
                 Client._ask_question(
-                    Client.actions_data.adjacent_cities,
+                    Client.actions_data.adjacent_city_names,
                     (destination) => IO.socket.emit("player_drive_ferry", destination),
                     1,
                     null,
@@ -473,22 +523,22 @@ jQuery(function ($) {
             // Fly to a city discarding the destination
             var possible_destinations = Object.keys(Client.data.city_cards)
 
-            if (Client.actions_data.role_name == "Dispatcher"){
+            if (Client.actions_data.role_name == "Dispatcher") {
                 var possible_players = array_from_objects_list(Client.actions_data.player_data, "player_name");
-                
+
                 Client._ask_question(
                     possible_players,
                     (player) => {
                         Client._ask_question(
                             possible_destinations,
                             (destination) => {
-                                if (player == Client.data.player_name){
+                                if (player == Client.data.player_name) {
                                     // Moving himself
                                     IO.socket.emit("player_direct_flight", destination)
                                 } else {
                                     IO.socket.emit(
-                                        "dispatcher_move_request", 
-                                        {player_name:player, destination: destination, discard_card_name: destination}
+                                        "dispatcher_move_request",
+                                        { player_name: player, destination: destination, discard_card_name: destination }
                                     )
                                 }
                             },
@@ -525,11 +575,11 @@ jQuery(function ($) {
             */
         },
 
-        treatDisease: function(data){
-            function reply_func(colour) { IO.socket.emit("treatDisease", {colour: colour}); };
+        treatDisease: function (data) {
+            function reply_func(colour) { IO.socket.emit("treatDisease", { colour: colour }); };
             var available_colours = [];
-            for (const [colour, num] of Object.entries(Client.actions_data.current_city_cubes)){
-                if (num > 0){
+            for (const [colour, num] of Object.entries(Client.actions_data.current_city_cubes)) {
+                if (num > 0) {
                     available_colours.push(colour);
                 }
             }
@@ -549,7 +599,7 @@ jQuery(function ($) {
             if (Object.keys(Client.data.city_cards).includes(card_name))
                 delete Client.data.city_cards[card_name]
             if (Object.keys(Client.data.event_cards).includes(card_name))
-                delete Client.data.event_cards[card_name]                
+                delete Client.data.event_cards[card_name]
             Client.refreshPlayerHand();
         },
 
@@ -602,7 +652,7 @@ jQuery(function ($) {
             })
         },
 
-        epidemicDraw: async function(data){
+        epidemicDraw: async function (data) {
             for (var i = 0; i < data.cards.length; i++) {
                 Client.createImage(data.cards[i]);
                 await Client.moveImage(data.cards[i]).then(() => {
@@ -612,7 +662,7 @@ jQuery(function ($) {
         },
 
         shuttle_flight: function (data) {
-            var possible_destinations = Client.actions_data.research_station_cities.filter(
+            var possible_destinations = Client.actions_data.research_station_city_names.filter(
                 (d) => { return d != Client.data.city_name }
             )
             Client._ask_question(
@@ -655,7 +705,7 @@ jQuery(function ($) {
             checkboxes = false
         ) {
 
-            if (options.length == 1 && n_choices == 1){
+            if (options.length == 1 && n_choices == 1) {
                 go_callback(options[0])
                 return;
             } else if (options.length == n_choices) {
@@ -709,8 +759,11 @@ jQuery(function ($) {
                 cancel_btn.onclick = function (event) {
                     event.preventDefault();
                     Client.$playerSelectionArea.innerHTML = "";
+                    Client.present_actions(Client.action_data);
+                    /*                    
                     Client.$playerSelectionArea.style.display = "none";
                     Client.$playerActionsArea.style.display = "flex";
+                    */
                 }
                 button_div.appendChild(cancel_btn);
             }
@@ -797,7 +850,7 @@ jQuery(function ($) {
             )
         },
 
-        _cure_single_disease: function(colour) {
+        _cure_single_disease: function (colour) {
             function reply_func(cards) { IO.socket.emit("player_cure", cards); };
             var n_discard = Client.actions_data.n_cards_to_cure;
             var possible_cards = Client.actions_data.curable_colours[colour];
@@ -812,14 +865,14 @@ jQuery(function ($) {
             )
         },
 
-        share_knowledge: function(){
+        share_knowledge: function () {
             Client._shareKnowledgeOtherPlayerQuestion();
         },
 
-        _shareKnowledgeOtherPlayerQuestion: function(){
+        _shareKnowledgeOtherPlayerQuestion: function () {
             var possible_players = array_from_objects_list(Client.actions_data.share_knowledge_data, "other_player");
             possible_players = [...new Set(possible_players)]; // remove possible duplicates
-            function next_step(player){ Client._shareKnowledgeGiveOrTake(player); }
+            function next_step(player) { Client._shareKnowledgeGiveOrTake(player); }
             Client._ask_question(
                 possible_players,
                 (player) => next_step(player),
@@ -830,13 +883,13 @@ jQuery(function ($) {
             )
         },
 
-        _shareKnowledgeGiveOrTake: function(player){
+        _shareKnowledgeGiveOrTake: function (player) {
             var possible_trades = Client.actions_data.share_knowledge_data.filter(
-                (t) => {return t.other_player == player;}
+                (t) => { return t.other_player == player; }
             )
             var possible_directions = array_from_objects_list(possible_trades, "direction");
             possible_directions = [...new Set(possible_directions)];
-            function next_step(direction){ Client._shareKnowledgeCard(possible_trades, direction); }
+            function next_step(direction) { Client._shareKnowledgeCard(possible_trades, direction); }
             Client._ask_question(
                 possible_directions,
                 (direction) => next_step(direction),
@@ -847,12 +900,12 @@ jQuery(function ($) {
             )
         },
 
-        _shareKnowledgeCard: function(trades, direction){
+        _shareKnowledgeCard: function (trades, direction) {
             var possible_trades = trades.filter(
-                (t) => {return t.direction == direction;}
+                (t) => { return t.direction == direction; }
             )
             var possible_cards = array_from_objects_list(possible_trades, "card");
-            function next_step(card){ Client._submitShareKnowledgeProposal(possible_trades, card); }
+            function next_step(card) { Client._submitShareKnowledgeProposal(possible_trades, card); }
             Client._ask_question(
                 possible_cards,
                 (card) => next_step(card),
@@ -863,18 +916,18 @@ jQuery(function ($) {
             )
         },
 
-        _submitShareKnowledgeProposal: function(trades, card){
-            for (const t of trades){
-                if (t.card == card){
+        _submitShareKnowledgeProposal: function (trades, card) {
+            for (const t of trades) {
+                if (t.card == card) {
                     IO.socket.emit("shareKnowledgeProposal", t)
                     break;
                 }
             }
         },
 
-        incoming_shareKnowledgeProposal(data){
-            function reply_func(answer){
-                IO.socket.emit("shareKnowledgeResponse", {answer: answer, trade_data: data.trade_data, current_player: data.trade_player})
+        incoming_shareKnowledgeProposal(data) {
+            function reply_func(answer) {
+                IO.socket.emit("shareKnowledgeResponse", { answer: answer, trade_data: data.trade_data, current_player: data.trade_player })
             }
             var is_give = data.trade_data.direction == "Take"; // direction reversed for this player
             var heading = is_give ? "Give " : "Receive ";
@@ -891,14 +944,14 @@ jQuery(function ($) {
             )
         },
 
-        special_action: function(){
-            if (Client.actions_data.role_name == "Operations Expert"){
+        special_action: function () {
+            if (Client.actions_data.role_name == "Operations Expert") {
                 Client.special_action_operations_expert_chose_card();
             }
         },
 
-        special_action_operations_expert_chose_card: function(){
-            function next_step(card){Client.special_action_operations_expert_chose_destination(card);};
+        special_action_operations_expert_chose_card: function () {
+            function next_step(card) { Client.special_action_operations_expert_chose_destination(card); };
             var possible_cards = Client.actions_data.special_action_data.cards;
             Client._ask_question(
                 possible_cards,
@@ -910,16 +963,17 @@ jQuery(function ($) {
             )
         },
 
-        special_action_operations_expert_chose_destination: function(discard_card_name){
+        special_action_operations_expert_chose_destination: function (discard_card_name) {
             var possible_destinations = Client.actions_data.special_action_data.destinations;
             var colours = Client.actions_data.special_action_data.colours;
-            function next_step(destination){ 
+            function next_step(destination) {
                 IO.socket.emit(
-                    "operations_expert_fly_from_research_station", 
+                    "operations_expert_fly_from_research_station",
                     {
-                        destination: destination, 
+                        destination: destination,
                         card_name: discard_card_name
-            })}
+                    })
+            }
             Client._ask_question(
                 possible_destinations,
                 (destination) => next_step(destination),
@@ -930,10 +984,10 @@ jQuery(function ($) {
             )
         },
 
-        dispatcher_move_request: function(data){
+        dispatcher_move_request: function (data) {
             Client._ask_question(
                 ["Yes", "No"],
-                (resp) => IO.socket.emit("dispatcher_move_response", {data:data, response:resp}),
+                (resp) => IO.socket.emit("dispatcher_move_response", { data: data, response: resp }),
                 1,
                 null,
                 false,
@@ -942,12 +996,12 @@ jQuery(function ($) {
 
         },
 
-        gameOver: function(data){
+        gameOver: function (data) {
             var blockingDiv = document.getElementById("blockingDiv")
             blockingDiv.style.opacity = 0.7;
 
             var gameOverDiv = document.getElementById("gameOverDiv");
-            gameOverDiv.style.display ="block";
+            gameOverDiv.style.display = "block";
 
             var gameOverMessage = document.getElementById("game-over-message");
             gameOverMessage.textContent = data.message;

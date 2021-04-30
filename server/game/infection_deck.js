@@ -175,7 +175,7 @@ class InfectionDeck {
         if (qs.length) {
             qs = qs[0];
             cities.push(qs.city_name);
-            for (const c of this.cities[qs.city_name].adjacent_cities)
+            for (const c of this.cities[qs.city_name].adjacent_city_names)
                 cities.push(c)
         } else if (medic.length) {
             medic = medic[0];

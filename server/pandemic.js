@@ -1,6 +1,7 @@
 const utils = require("./game/utils")
 const Game = require('./game/game');
 const { objects_attribute_contains_value, dict_from_objects } = require("./game/utils");
+const disease = require("./game/disease");
 
 class Pandemic {
     constructor(io) {
@@ -84,8 +85,28 @@ class Pandemic {
         var city_name = player.city_name;
         var city = this.game.cities[city_name];
 
-        var actions = ["drive_ferry", "pass"]
+        var actions = [];
 
+
+
+        this._assess_drive_ferry(actions, player, city);
+        this._assess_direct_flight(actions, player, city);
+        this._assess_charter_flight(actions, player, city);
+        this._assess_shuttle_flight(actions, player, city);
+
+        this._assess_build_research_station(actions, player, city);
+        this._assess_treat_disease(actions, player, city);
+        this._assess_share_knowledge(actions, player, city);
+        this._assess_discover_a_cure(actions, player, city);
+
+        this._assess_pass(actions, player, city);
+
+        if (player.role_name == "Operations Expert")
+            this._assess_operations_expert_actions(actions, player, city);
+        else if (player.role_name == "Dispatcher")
+            this._assess_dispatcher_actions(actions, player, city);
+
+        /*
         if (player.player_cards.length > 0) {
             actions.push("direct_flight");
         }
@@ -216,7 +237,7 @@ class Pandemic {
                     player_name: p.player_name,
                     role_name: p.role_name,
                     city_name: p.city_name,
-                    adjacent_cities: this.game.cities[p.city_name].adjacent_cities,
+                    adjacent_city_names: this.game.cities[p.city_name].adjacent_city_names,
                     is_current_player: p == this.game.current_player
                 }
             )
@@ -229,14 +250,14 @@ class Pandemic {
                 actions.push("cure");
             }
         }
-
+        
         this.io.to(player.socket_id).emit(
             "enableActions",
             {
                 actions: actions,
                 role_name: player.role_name,
-                adjacent_cities: city.adjacent_cities,
-                research_station_cities: this.game.research_station_cities,
+                adjacent_city_names: city.adjacent_city_names,
+                research_station_city_names: this.game.research_station_city_names,
                 curable_colours: colours_that_can_be_cured,
                 n_cards_to_cure: player.n_cards_to_cure,
                 current_city_cubes: city.disease_cubes,
@@ -244,6 +265,11 @@ class Pandemic {
                 special_action_data: special_action_data,
                 player_data: player_data
             })
+        */
+        this.io.to(player.socket_id).emit(
+            "enableActions",
+            actions,
+        )
         this.io.in(this.game_id).emit(
             "updatePlayerTurns",
             {
@@ -254,8 +280,322 @@ class Pandemic {
         )
     }
 
-    _curable_colours() {
-        var player = this.game.current_player;
+    // ====================================================== Assess player actions
+
+    _assess_pass(actions, player, city) {
+        actions.push(
+            {
+                player_name: player.player_name,
+                action: "Pass",
+                response_function: "player_pass"
+            }
+        )
+    }
+
+    _assess_drive_ferry(actions, player, city, response_function = "player_move") {
+        for (const c of city.adjacent_city_names) {
+            actions.push(
+                {
+                    player_name: player.player_name,
+                    destination: c,
+                    action: "Drive/Ferry",
+                    response_function: response_function,
+                    current_player_name: this.game.current_player.player_name
+                }
+            )
+        }
+    }
+
+    _assess_direct_flight(actions, player, city, player_cards = null, response_function = "player_move") {
+        player_cards = player_cards || player.player_cards;
+        for (const c of player_cards) {
+            if ((c.city_name == city.city_name) || !c.is_city) { continue; }
+            actions.push(
+                {
+                    player_name: player.player_name,
+                    destination: c.city_name,
+                    action: "Direct Flight",
+                    discard_card_name: c.card_name,
+                    response_function: response_function,
+                    current_player_name: this.game.current_player.player_name
+                }
+            )
+        }
+    }
+
+    _assess_charter_flight(actions, player, city, player_cards = null, response_function = "player_move") {
+        // Fly anywhere by discarding current city
+        player_cards = player_cards || player.player_cards;
+        for (const c of player_cards) {
+            if (c.card_name == city.city_name) {
+                for (const [dest_name, dest] of Object.entries(this.game.cities)) {
+                    if (dest_name == city.city_name) continue
+                    actions.push(
+                        {
+                            player_name: player.player_name,
+                            destination: dest_name,
+                            destination__colour: dest.native_disease_colour,
+                            action: "Charter Flight",
+                            discard_card_name: c.card_name,
+                            response_function: response_function,
+                            current_player_name: this.game.current_player.player_name
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    _assess_shuttle_flight(actions, player, city, response_function = "player_move") {
+        if (city.has_research_station) {
+            for (const c of this.game.research_station_city_names) {
+                if (c == city.city_name) continue;
+                actions.push(
+                    {
+                        player_name: player.player_name,
+                        action: "Shuttle Flight",
+                        destination: c,
+                        response_function: response_function,
+                        current_player_name: this.game.current_player.player_name
+                    }
+                )
+            }
+        }
+    }
+
+    _assess_build_research_station(actions, player, city) {
+        if (city.has_research_station) return;
+        if (this.game.research_station_city_names.length >= this.game.max_n_research_stations) {
+            // Technically the rules allow us to move a research station in this case ** TODO
+            return;
+        }
+        if (player.role_name == "Operations Expert") {
+            actions.push(
+                {
+                    action: "Build Research Station",
+                    player_name: player.player_name,
+                    response_function: "player_build_research_station",
+                    destination: city.city_name
+                }
+            )
+        } else {
+            // Normal roles
+            for (const c of player.player_cards) {
+                if (c.card_name == city.city_name) {
+                    actions.push(
+                        {
+                            action: "Build Research Station",
+                            discard_card_name: c.card_name,
+                            player_name: player.player_name,
+                            response_function: "player_build_research_station",
+                            destination: city.city_name
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    _assess_treat_disease(actions, player, city) {
+        for (const [colour, current_cubes] of Object.entries(city.disease_cubes)) {
+            if (current_cubes > 0) {
+                actions.push(
+                    {
+                        action: "Treat Disease",
+                        disease_colour: utils.toTitleCase(colour),
+                        player_name: player.player_name,
+                        response_function: "player_treat_disease"
+                    }
+                )
+            }
+        }
+    }
+
+    _assess_share_knowledge(actions, player, city) {
+        for (const other_player of this.game.players) {
+            if (other_player == player) continue;
+            if (other_player.city_name != city.city_name) continue;
+
+            // Give this city
+            for (const pc of player.player_cards) {
+                if (!pc.is_city) continue;
+                if (pc.card_name == city.city_name || player.role_name == "Researcher") {
+                    actions.push(
+                        {
+                            action: "Share Knowledge",
+                            player_name: other_player.player_name,
+                            player_name__title: "Chose player to trade with",
+                            current_player_name: player.player_name,
+                            discard_card_name: pc.card_name,
+                            share_direction: "Give",
+                            share_direction__title: "Chose trade direction",
+                            response_function: "player_share_knowledge_proposal"
+                        }
+                    )
+                }
+            }
+
+            // Take this city
+            for (const pc of other_player.player_cards) {
+                if (!pc.is_city) continue;
+                if (pc.card_name == city.city_name || other_player.role_name == "Researcher") {
+                    actions.push(
+                        {
+                            action: "Share Knowledge",
+                            player_name: other_player.player_name,
+                            player_name__title: "Chose player to trade with",
+                            current_player_name: player.player_name,
+                            discard_card_name: pc.card_name,
+                            share_direction: "Take",
+                            share_direction__title: "Chose trade direction",
+                            response_function: "player_share_knowledge_proposal"
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    _assess_discover_a_cure(actions, player, city) {
+        var colours_that_can_be_cured = null;
+        if (city.has_research_station) {
+            colours_that_can_be_cured = this._curable_colours(player);
+            for (const [colour, cards] of Object.entries(colours_that_can_be_cured)) {
+                for (const c of cards) {
+                    actions.push(
+                        {
+                            player_name: player.player_name,
+                            action: "Discover A Cure",
+                            disease_colour: colour,
+                            discard_card_name: c,
+                            discard_card_name__n_choices: player.n_cards_to_cure,
+                            discard_card_name__checkboxes: true,
+                            response_function: "player_cure"
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    // =========================================================== Assess role specific player actions
+
+    _assess_dispatcher_actions(actions, player, city) {
+        var response_function = "player_move_proposal";
+
+        // Move any pawn to any city containing another pawn
+        for (const p1 of this.game.players) {
+            for (const p2 of this.game.players) {
+                if (p1 == p2) continue;
+                if (p1.city_name == p2.city_name) continue
+                actions.push(
+                    {
+                        action: "Special - Move pawn to city with another pawn",
+                        destination: p2.city_name,
+                        player_name: p1.player_name,
+                        response_function: p1 == player ? "player_move" : response_function, // don't need permission from yourself
+                        current_player_name: player.player_name
+                    }
+                )
+            }
+        }
+
+        // Move another pawn as if it were your own
+        var player_cards = player.player_cards;
+        for (const p of this.game.players) {
+            if (p == player) continue;
+            var player_city = this.game.cities[p.city_name];
+            this._assess_drive_ferry(actions, p, player_city, response_function)
+            this._assess_direct_flight(actions, p, player_city, player_cards, response_function)
+            this._assess_charter_flight(actions, p, player_city, player_cards, response_function)
+            this._assess_shuttle_flight(actions, p, player_city, response_function)
+        }
+    }
+
+    _assess_operations_expert_actions(actions, player, city) {
+        if (city.has_research_station) {
+            for (const c of player.player_cards) {
+                if (c.is_city) {
+                    for (const [dest_name, dest] of Object.entries(this.game.cities)) {
+                        actions.push(
+                            {
+                                action: "Special - Research Station to any city",
+                                player_name: player.player_name,
+                                destination: dest_name,
+                                destination__colour: dest.native_disease_colour,
+                                destination__title: "Chose destination",
+                                discard_card_name: c.card_name,
+                                discard_card_name__title: "Discard which City card?",
+                                response_function: "player_move"
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // ==================
+
+    action_response(data) {
+        this[data.response_function](data);
+    }
+
+    // ==================
+
+    player_pass(data) {
+        var player = this._player_by_name(data.player_name)
+        this.io.in(this.game_id).emit("logMessage",
+            { message: player.player_name + " is too scared to do anything and passes" }
+        )
+        this.game.player_used_actions = player.actions_per_turn + 1;
+        this._check_end_of_user_turn();
+    }
+
+    player_move(data) {
+        var player = this._player_by_name(data.player_name)
+        this.io.in(this.game_id).emit("logMessage",
+            { message: this.game.current_player.player_name + " moves (" + data.action + ") to " + data.destination }
+        )
+        this._discard_cards(player, data)
+        this._move_pawn(data.destination, player);
+        this._check_end_of_user_turn();
+    }
+
+    player_treat_disease(data) {
+        this._treat_disease_for_free(data.disease_colour.toLowerCase());
+        this._check_end_of_user_turn();
+    }
+
+    player_build_research_station(data) {
+        var player = this._player_by_name(data.player_name)
+        var city_name = data.destination;
+        this.game.add_research_station(city_name);
+        this._discard_cards(player, data)
+        this._check_end_of_user_turn();
+    }
+
+    player_cure(data) {
+        var player = this._player_by_name(data.player_name);
+        var colour = data.disease_colour;
+        var disease = this.game.diseases[colour];
+        this.io.in(this.game_id).emit(
+            "logMessage",
+            { message: player.player_name + " cured the " + colour + " disease" }
+        )
+        for (const c of data.answers.discard_card_name)
+            player.discard_card(c);
+        this.game.player_deck.discard(data.answers.discard_card_name);
+        disease.cure();
+
+        this._check_end_of_user_turn();
+    }
+
+    // =======================
+
+
+    _curable_colours(player) {
+
         var colour_to_cities = {};
         for (const c of player.player_cards) {
             if (!c.is_city)
@@ -268,18 +608,19 @@ class Pandemic {
                 colour_to_cities[col] = [c.city_name]
             }
         }
-        for (const k of Object.keys(colour_to_cities))
-            colour_to_cities[k].sort()
-
         for (const [d_colour, disease] of Object.entries(this.game.diseases)) {
             if (!Object.keys(colour_to_cities).includes(d_colour))
                 continue;
             if (disease.cured || colour_to_cities[d_colour].length < player.n_cards_to_cure)
                 delete colour_to_cities[d_colour]
         }
+        for (const k of Object.keys(colour_to_cities))
+            colour_to_cities[k].sort()
 
         return colour_to_cities;
     }
+
+    /*
 
     player_drive_ferry(destination_city_name) {
         var player = this.game.current_player;
@@ -325,53 +666,21 @@ class Pandemic {
             this.assess_player_options();
         }
     }
+    */
 
-    player_direct_flight(destination_city_name) {
-        var player = this.game.current_player;
-        this.io.in(this.game_id).emit("logMessage",
-            { message: player.player_name + " takes direct flight to " + destination_city_name }
-        )
-
-        player.discard_card(destination_city_name);
-        this.game.player_deck.discard([destination_city_name]);
-
-        this._move_pawn(destination_city_name);
-
-        this._check_end_of_user_turn();
+    _player_by_name(player_name) {
+        for (const p of this.game.players)
+            if (p.player_name == player_name)
+                return p
     }
 
-    player_shuttle_flight(destination_city_name) {
-        var player = this.game.current_player;
-        this.io.in(this.game_id).emit("logMessage",
-            { message: player.player_name + " takes shuttle flight to " + destination_city_name }
-        )
-
-        this._move_pawn(destination_city_name);
-        this._check_end_of_user_turn();
-    }
-
-    player_charter_flight(data) {
-        var destination_city_name = data.destination_city_name;
-        var origin_city_name = data.origin_city_name;
-        var player = this.game.current_player;
-        this.io.in(this.game_id).emit("logMessage",
-            { message: player.player_name + " takes charter flight to " + destination_city_name }
-        )
-
-        player.discard_card(origin_city_name);
-        this.game.player_deck.discard([origin_city_name]);
-
-        this._move_pawn(destination_city_name);
-        this._check_end_of_user_turn();
-    }
-
-    _move_pawn(destination, player=null){
+    _move_pawn(destination, player = null) {
         var player = player == null ? this.game.current_player : player;
         var city = this.game.cities[destination]
         player.move_pawn(city);
-        if (player.role_name == "Medic"){
-            for (const [colour,d] of Object.entries(this.game.diseases)){
-                if (d.cured && city.disease_cubes[colour]>0){
+        if (player.role_name == "Medic") {
+            for (const [colour, d] of Object.entries(this.game.diseases)) {
+                if (d.cured && city.disease_cubes[colour] > 0) {
                     this._treat_disease_for_free(colour);
                 }
             }
@@ -383,18 +692,16 @@ class Pandemic {
         var player = this.game.current_player;
 
         this.check_disease_status();
-        this.check_game_status();// TODO Test for game won/lost
+        if (this.check_game_status()) return;
 
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
             var n_epidemics_drawn = this.game.player_deck.drawPlayerCards(2, player);
             if (n_epidemics_drawn) {
-                if (this.game.resolve_epidemics(n_epidemics_drawn)){    
+                if (this.game.resolve_epidemics(n_epidemics_drawn)) {
                     return;
                 }
                 this.check_disease_status();
-                this.check_game_status();
-
             }
             if (player.player_cards.length > player.max_hand_cards) {
                 // current player's turn over but needs to discard player cards
@@ -407,7 +714,7 @@ class Pandemic {
                 );
             } else {
                 // current player's turn over and no cards to discard so can go straight on to next player
-                if(this.infect_cities()) // Will return true if game over
+                if (this.infect_cities()) // Will return true if game over
                     return;
                 this.game.new_player_turn();
             }
@@ -448,17 +755,14 @@ class Pandemic {
             this.game.current_player.discard_card(c);
         }
         this.game.player_deck.discard(cards);
-        if(this.infect_cities())
+        if (this.infect_cities())
             return;
         this.game.new_player_turn();
     }
 
-    player_treatDisease(data) {
-        this._treat_disease_for_free(data.colour);
-        this._check_end_of_user_turn();
-    }
 
-    _treat_disease_for_free(colour){
+
+    _treat_disease_for_free(colour) {
         var player = this.game.current_player;
         var city_name = player.city_name;
 
@@ -466,100 +770,129 @@ class Pandemic {
             { message: player.player_name + " treats the " + colour + " disease in " + city_name }
         )
         var city = this.game.cities[city_name];
-        
-        var n_removes = player.role_name == "Medic" ? city.disease_cubes[colour] : 1
-        for (var i=0; i<n_removes; i++){
+        var disease = this.game.diseases[colour];
+
+        var n_removes = (player.role_name == "Medic" || disease.cured) ? city.disease_cubes[colour] : 1
+        for (var i = 0; i < n_removes; i++) {
             city.remove_cube(colour);
         }
         this.game.update_infection_count();
     }
 
-    player_pass() {
-        var player = this.game.current_player;
-        this.io.in(this.game_id).emit("logMessage",
-            { message: player.player_name + " is too scared to do anything and passes" }
-        )
-        this.game.player_used_actions = player.actions_per_turn + 1;
-        this._check_end_of_user_turn();
+    _discard_cards(player, data) {
+        if (Object.keys(data).includes("discard_card_name")) {
+            var card_names = data.discard_card_name;
+            if (!Array.isArray(card_names))
+                card_names = [card_names];
+            this.game.player_deck.discard(card_names)
+            for (const c of card_names) {
+                player.discard_card(c)
+            }
+        }
     }
 
-    player_build_research_station(role_name) {
-        var player = this.game.current_player;
-        var city_name = player.city_name;
-        this.game.add_research_station(city_name);
+    // ===================================================== Proposals & Responses
 
-        if (role_name == "Operations Expert"){
-            player.discard_card(city_name);
-            this.game.player_deck.discard([city_name]);
+    player_move_proposal(data) {
+        var other_player = this._player_by_name(data.player_name)
+        this.io.in(this.game_id).emit(
+            "logMessage",
+            { message: data.current_player_name + " wants to move " + other_player.player_name + " to " + data.destination }
+        )
+
+        var question = "Allow " + data.current_player_name + " to move you to " + data.destination + "?";
+        var action = {
+            action: "response",
+            response_function: "player_move_response",
+            response__title: question,
+            response__cancel_button: false,
+            move_proposal: data
         }
 
-        this._check_end_of_user_turn();
-    }
-
-    player_cure(cards) {
-        var player = this.game.current_player;
-        var colour = this.game.cities[cards[0]].native_disease_colour;
-        var disease = this.game.diseases[colour];
-        this.io.in(this.game_id).emit(
-            "logMessage",
-            { message: player.player_name + " cured the " + colour + " disease" }
-        )
-        for (const c of cards)
-            player.discard_card(c);
-        this.game.player_deck.discard(cards);
-        disease.cure();
-
-        this._check_end_of_user_turn();
-    }
-
-    player_shareKnowledgeProposal(data){
-        var player = this.game.current_player;
-        this.io.to(player.socket_id).emit("disableActions");
-        var other_player = this.game.players.filter(
-            (p) => {return p.player_name == data.other_player}
-        )[0]
-        this.io.in(this.game_id).emit(
-            "logMessage",
-            {
-                message: player.player_name + " wants to trade " + data.card + " with " + data.other_player
-            }
-        )
         this.io.to(other_player.socket_id).emit(
-            "incoming_shareKnowledgeProposal", 
-            {
-                trade_data: data,
-                trade_player: player.player_name
-            }
+            "enableActions",
+            [
+                Object.assign({ ...action }, { response: "Yes" }),
+                Object.assign({ ...action }, { response: "No" })
+            ]
         )
     }
 
-    player_shareKnowledgeResponse(data){
-        if (data.answer == "Yes"){
+    player_move_response(data) {
+        if (data.response == "Yes") {
             this.io.in(this.game_id).emit(
                 "logMessage",
-                {message: data.trade_data.other_player + " accepted the trade"}
+                { message: data.move_proposal.player_name + " accepted the move" }
             )
-            var other_player = this.game.players.filter(
-                (p) => {return p.player_name == data.trade_data.other_player}
-            )[0]
+            var current_player = this._player_by_name(data.move_proposal.current_player_name);
+            var move_player = this._player_by_name(data.move_proposal.player_name);
 
-            var take_player = data.trade_data.direction == "Take" ? this.game.current_player : other_player;
-            var give_player = data.trade_data.direction != "Take" ? this.game.current_player : other_player;
+            this._discard_cards(current_player, data.move_proposal)
+            this._move_pawn(data.move_proposal.destination, move_player);
+            this._check_end_of_user_turn();
+        } else {
+            this.io.in(this.game_id).emit(
+                "logMessage",
+                { message: data.move_proposal.player_name + " refused the move" }
+            )
+            this.assess_player_options();
+        }
+    }
 
-            var card_data = give_player.discard_card(data.trade_data.card);
+
+    player_share_knowledge_proposal(data) {
+        var other_player = this._player_by_name(data.player_name)
+        this.io.in(this.game_id).emit(
+            "logMessage",
+            { message: data.current_player_name + " wants to trade " + data.discard_card_name + " with " + data.player_name }
+        )
+        var direction = data.share_direction == "Give" ? "Receive " : "Give ";
+        var from_to = data.share_direction == "Give" ? " from " : " to "
+        var question = direction + " " + data.discard_card_name + from_to + data.current_player_name + "?";
+
+        var action = {
+            action: "response",
+            response_function: "player_share_knowledge_response",
+            response__title: question,
+            response__cancel_button: false,
+            share_proposal: data
+        }
+
+        this.io.to(other_player.socket_id).emit(
+            "enableActions",
+            [
+                Object.assign({ ...action }, { response: "Yes" }),
+                Object.assign({ ...action }, { response: "No" })
+            ]
+        )
+    }
+
+    player_share_knowledge_response(data) {
+        if (data.response == "Yes") {
+            this.io.in(this.game_id).emit(
+                "logMessage",
+                { message: data.share_proposal.player_name + " accepted the trade" }
+            )
+            var player = this._player_by_name(data.share_proposal.current_player_name);
+            var other_player = this._player_by_name(data.share_proposal.player_name);
+
+            var take_player = data.share_proposal.share_direction == "Take" ? player : other_player;
+            var give_player = data.share_proposal.share_direction != "Take" ? player : other_player;
+
+            var card_data = give_player.discard_card(data.share_proposal.discard_card_name);
             this.io.to(give_player.socket_id).emit("refreshPlayerHand")
             take_player.receive_card_from_other_player(card_data);
             this._check_end_of_user_turn();
         } else {
             this.io.in(this.game_id).emit(
                 "logMessage",
-                {message: data.trade_data.other_player + " refused the trade"}
+                { message: data.share_proposal.player_name + " refused the trade" }
             )
             this.assess_player_options();
         }
     }
-
-    player_fly_using_card(data){
+    /*
+    player_fly_using_card(data) {
         var destination_city_name = data.destination;
         var discard_card_name = data.card_name;
         this.game.current_player.used_special_action_this_turn = true;
@@ -574,6 +907,7 @@ class Pandemic {
         this._move_pawn(destination_city_name);
         this._check_end_of_user_turn();
     }
+    */
 
 }
 

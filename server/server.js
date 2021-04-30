@@ -39,10 +39,14 @@ function bindSocketEvents(socket){
     socket.on("enquireAvailableActions", (data)=>pandemic.assess_player_options(data));
     socket.on("playerCardsReceived", (data)=>pandemic.clientNotesPlayerCardsReceived(data))
 
+    socket.on("action_response", (data)=>pandemic.action_response(data));
+
     socket.on("player_drive_ferry", (destination)=>pandemic.player_drive_ferry(destination));
     socket.on("player_direct_flight", (destination)=>pandemic.player_direct_flight(destination));
     socket.on("player_shuttle_flight", (destination)=>pandemic.player_shuttle_flight(destination));
     socket.on("player_charter_flight", (data)=>pandemic.player_charter_flight(data));
+    
+    socket.on("player_move", (data)=>pandemic.player_move(data));
 
     socket.on("player_cure", (cards) => pandemic.player_cure(cards));
 
