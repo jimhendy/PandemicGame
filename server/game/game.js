@@ -24,6 +24,8 @@ class PandemicGame {
         this.research_station_city_names = [];
 
         this.current_player = null;
+
+        this.queue = []; // {function: func_name, args: func_args, description: desc}
     }
 
     add_player(data) {
@@ -38,32 +40,31 @@ class PandemicGame {
         this.infection_deck = new InfectionDeck(this.io, this.game_id, this.cities, this.players, this.diseases)
         this.player_deck = new PlayerDeck(this.io, this.game_id, this.cities)
 
-        this.colour_to_cities = {};
-        for (const c of Object.values(this.cities)) {
-            if (Object.keys(this.colour_to_cities).includes(c.native_disease_colour)) {
-                this.colour_to_cities[c.native_disease_colour].push(c.city_name)
-            } else {
-                this.colour_to_cities[c.native_disease_colour] = [c.city_name]
-            }
-        }
-        for (const k of Object.keys(this.colour_to_cities))
-            this.colour_to_cities[k].sort()
-        this.io.in(this.game_id).emit(
-            "colourToCitiesMap",
-            this.colour_to_cities
-        )
-
-        this.infection_deck.initial_deal();
-        this.player_deck.initial_deal(this.players, this.n_initial_player_cards());
-
-        this.add_research_station("Atlanta")
-
+        this.add_to_queue({ function: this.add_research_station, args: ["Atlanta"], description: "Adding initial research station in Atlanta" });
+        this.add_research_station("Atlanta");
         for (var p of this.players) {
             p.place_pawn(this.cities["Atlanta"]);
         }
 
+        this.infection_deck.initial_deal();
+        this.player_deck.initial_deal(this.players, this.n_initial_player_cards());
+
         this.update_infection_count();
     }
+
+    add_to_queue(data, front = false) {
+        if (front) {
+            this.queue.shift(data)
+        } else {
+            this.queue.push(data)
+        }
+    }
+
+    run_from_queue(){
+
+    }
+
+
 
     new_player_turn() {
         if (this.current_player) {

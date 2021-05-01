@@ -205,7 +205,6 @@ jQuery(function ($) {
             Client.$infectionCounterLog = $("#infection_counter");
             Client.$gameLog = document.getElementById("game_log");
             Client.$playerSelectionArea = document.getElementById("player_selection_area");
-            Client.$playerActionsArea = document.getElementById("player_actions");
             Client.$playerLocation = document.getElementById("player_location")
         },
 
@@ -570,12 +569,8 @@ jQuery(function ($) {
                 cancel_btn.innerHTML = "Cancel";
                 cancel_btn.onclick = function (event) {
                     event.preventDefault();
-                    Client.$playerSelectionArea.innerHTML = "";
+                    Client.hide_selections();
                     Client.present_actions(Client.action_data);
-                    /*                    
-                    Client.$playerSelectionArea.style.display = "none";
-                    Client.$playerActionsArea.style.display = "flex";
-                    */
                 }
                 button_div.appendChild(cancel_btn);
             }
@@ -584,8 +579,6 @@ jQuery(function ($) {
             ok_btn.innerHTML = "Go";
             ok_btn.onclick = function (event) {
                 event.preventDefault();
-                Client.$playerSelectionArea.style.display = "none";
-                Client.$playerActionsArea.style.display = "flex";
                 var selection = null;
                 if (checkboxes) {
                     selection = [];
@@ -596,16 +589,14 @@ jQuery(function ($) {
                 } else {
                     selection = document.querySelector('input[name="choice"]:checked').value;
                 }
-                Client.$playerSelectionArea.innerHTML = "";
+                Client.hide_selections();
                 if (go_callback)
                     go_callback(selection);
             }
             button_div.appendChild(ok_btn);
 
             Client.$playerSelectionArea.appendChild(form);
-            Client.$playerSelectionArea.style.display = "flex";
-            Client.$playerActionsArea.style.display = "none";
-            Client.$playerSelectionArea.scrollTop = 0;
+            Client.show_selections();
 
             if (checkboxes) {
                 ok_btn.disabled = true;
@@ -647,6 +638,20 @@ jQuery(function ($) {
                 }
             }
 
+        },
+
+        show_selections: function(){
+            //Client.$playerSelectionArea.style.display = "block";
+            Client.$playerSelectionArea.style.height = "20%";
+            Client.$gameLog.style.height = "calc(15% - 4px)";
+            Client.$playerSelectionArea.scrollTop = 0;
+        },
+
+        hide_selections: function(){
+            Client.$playerSelectionArea.innerHTML = "";
+            Client.$playerSelectionArea.style.height = "0%";
+            //Client.$playerSelectionArea.style.display = "none";
+            Client.$gameLog.style.height = "calc(35% - 4px)"
         },
 
 

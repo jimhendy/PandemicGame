@@ -73,53 +73,25 @@
             style="width:100%; height:100%; position:absolute; top:0;"></canvas>
         <canvas id="animationCanvas" width=2056 height=2056
             style="width:100%; height:100%; position:absolute; top:0;"></canvas>
-        <div id="blockingDiv" style="width:100%; height:100%; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;"></div>
-        <div id="gameOverDiv" style="text-align:center; width:100%; height: 100%; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
+        <div id="blockingDiv"
+            style="width:100%; height:100%; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;">
+        </div>
+        <div id="gameOverDiv"
+            style="text-align:center; width:100%; height: 100%; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
             <h1 style="background-color: white;">Game Over</h1>
             <div id="game-over-message" style="background-color: white;"></div>
         </div>
     </div>
     <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100%;">
-        <div id="player_area" style="width=100%; height:70%;">
-            <div style="height: 6%;">
-                <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">
-                    Your Location: <span id="player_location" style="font-weight: bold;">Atlanta</span></p>
-                <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">Current
-                    Turn: <span id="current_player" style="font-weight: bold;"></span></p>
-            </div>
-            <div id="player_card_store"
-                style="overflow: hidden; position: relative; height: 64%;"></div>
-            <div id="player_selection_area" style="display: none; height: 30%; overflow-y: scroll;"></div>
-            <div id="player_actions"
-                style="display: flex; flex-direction: column; margin-top: 0px; margin-bottom: 0px; height: 30%; overflow-y: hidden">
-                <button disabled=true class="game-button" id="button_drive_ferry"
-                    title="Move to a city connected by a white line.">Drive/Ferry</button>
-                <button disabled=true class="game-button" id="button_direct_flight"
-                    title="Discard a City card to move to the city named on the card.">Direct Flight</button>
-                <button disabled=true class="game-button" id="button_charter_flight"
-                    title="Discard the City card that matches the city you are in to move to any city.">Charter
-                    Flight</button>
-                <button disabled=true class="game-button" id="button_shuttle_flight"
-                    title="Move from a city with a research station to any other city that has a research station.">Shuttle
-                    Flight</button>
-                <button disabled=true class="game-button" id="button_build_research_station"
-                    title="Discard the City card that matches the city you are in to place a research station there.">Build
-                    Research Station</button>
-                <button disabled=true class="game-button" id="button_treat_disease"
-                    title="Remove 1 disease cube from the city you are in. If this colour is cured, remove all cubes of that colour from the city.">Treat
-                    Disease</button>
-                <button disabled=true class="game-button" id="button_cure"
-                    title="At any research station, discard 4 City cards of the same disease colour to cure that disease.">Cure</button>
-                <button disabled=true class="game-button" id="button_share_knowledge"
-                    title="Either give the card that matches the city you are in to another player or take that card from another player. The other player must also be in the city with you.">Share
-                    Knowledge</button>
-                <button disabled=true class="game-button" id="button_special_action"
-                    title="Take a special action for your role if available.">Special Action</button>
-                <button disabled=true class="game-button" id="button_pass"
-                    title="Just give up and skip this turn.">Pass</button>
-            </div>
+        <div style="height: 4%;">
+            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">
+                Your Location: <span id="player_location" style="font-weight: bold;">Atlanta</span></p>
+            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">Current
+                Turn: <span id="current_player" style="font-weight: bold;"></span></p>
         </div>
-        <div id="game_log" class="log-box">
+        <div id="player_card_store" style="overflow: hidden; position: relative; height: 46%;"></div>
+        <div id="player_selection_area" style="display: block; height: 0%; overflow-y: scroll; margin: 0px; transition: height 500ms linear;"></div>
+        <div id="game_log" class="log-box" style="height: calc(15% - 4px + 20%); transition: height 500ms linear;">
             <p style="font-weight: bold;" class="log-message">Game Started</p>
         </div>
         <div id="infection_counter" class="log-box">Infection Counter</div>
