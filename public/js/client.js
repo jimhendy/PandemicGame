@@ -1,3 +1,4 @@
+
 jQuery(function ($) {
     'use strict';
 
@@ -28,7 +29,6 @@ jQuery(function ($) {
 
             IO.socket.on("logMessage", Client.logMessage);
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
-            IO.socket.on("colourToCitiesMap", (map) => {Client.colour_to_cities = map;})
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
             IO.socket.on("drawInfectionCards", Client.drawInfectionCards);
@@ -36,21 +36,16 @@ jQuery(function ($) {
             IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
             IO.socket.on("discardPlayerCardFromHand", Client.remove_player_card_from_hand);
             IO.socket.on("discardPlayerCards", Client.discardPlayerCards);
-            IO.socket.on("reducePlayerHand", Client.reducePlayerHand);
 
             IO.socket.on("epidemicDraw", Client.epidemicDraw);
 
             IO.socket.on("enableActions", Client.enableActions);
-            IO.socket.on("disableActions", Client.disableActions);
 
             IO.socket.on("changeLocation", Client.changeLocation);
             IO.socket.on("updatePlayerTurns", Client.updatePlayerTurns);
 
-            IO.socket.on("incoming_shareKnowledgeProposal", Client.incoming_shareKnowledgeProposal);
             IO.socket.on("addPlayerCardToHand", Client.addPlayerCardToHand)
             IO.socket.on("refreshPlayerHand", Client.refreshPlayerHand)
-
-            IO.socket.on("dispatcher_move_request", Client.dispatcher_move_request);
 
             IO.socket.on("gameOver", Client.gameOver);
         },
@@ -78,7 +73,7 @@ jQuery(function ($) {
             loaction: "Atlanta"
         },
         images: {},
-        button_names: ["drive_ferry", "direct_flight", "charter_flight", "shuttle_flight", "build_research_station", "treat_disease", "cure", "share_knowledge", "special_action", "pass"],
+        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response"],
 
         init: function () {
             Client.cacheElements();
@@ -98,10 +93,14 @@ jQuery(function ($) {
             Client.$gameOverTemplate = $('#game-over-template').html()
         },
 
+        // ============================================ Landing screen
+
         showLandingScreen: function () {
             Client.$gameArea.html(Client.$landingScreen);
             Client.data.current_page = "landing";
         },
+
+        // ============================================  Role choice screen
 
         showRoleChoiceScreen: function (data) {
             Client.$gameArea.html(Client.$roleChoiceScreen);
@@ -145,17 +144,6 @@ jQuery(function ($) {
             Client.$doc.on("submit", "#player_details_form", Client.playerJoinForm);
             Client.$doc.on("click", ".role-card", Client.roleCardSelected);
             Client.$doc.on("click", "#player-ready-button", Client.waitForOtherRoles)
-
-            Client.$doc.on("click", "#button_drive_ferry", Client.drive_ferry);
-            Client.$doc.on("click", "#button_direct_flight", Client.direct_flight);
-            Client.$doc.on("click", "#button_charter_flight", Client.charter_flight);
-            Client.$doc.on("click", "#button_shuttle_flight", Client.shuttle_flight);
-            Client.$doc.on("click", "#button_treat_disease", Client.treatDisease);
-            Client.$doc.on("click", "#button_build_research_station", () => IO.socket.emit("build_research_station", Client.actions_data.role_name));
-            Client.$doc.on("click", "#button_share_knowledge", Client.share_knowledge);
-            Client.$doc.on("click", "#button_special_action", Client.special_action);
-            Client.$doc.on("click", "#button_cure", Client.cure);
-            Client.$doc.on("click", "#button_pass", () => IO.socket.emit("pass"));
         },
 
         waitForOtherRoles: function () {
@@ -179,6 +167,8 @@ jQuery(function ($) {
             IO.socket.emit("roleChosen", Client.data);
             $('#player-ready-button').attr("disabled", false);
         },
+
+        // =================================================    Playing the game
 
         clearUserScreen: function (event) {
             Client.$gameArea.html("");
@@ -217,12 +207,9 @@ jQuery(function ($) {
             Client.$playerSelectionArea = document.getElementById("player_selection_area");
             Client.$playerActionsArea = document.getElementById("player_actions");
             Client.$playerLocation = document.getElementById("player_location")
-
-            Client.$buttons = {};
-            for (const b of Client.button_names) {
-                Client.$buttons[b] = document.getElementById('button_' + b);
-            }
         },
+
+        // =============================================   Image utils
 
         createImage: function (data) {
             Client._addCtxAndCanvas(data);
@@ -238,26 +225,6 @@ jQuery(function ($) {
                     data.canvas
                 )
             };
-        },
-
-        _addCtxAndCanvas: function (data) {
-            if (data.blinkCanvas) {
-                data.ctx = Client.$ctxBlink;
-                data.canvas = Client.$canvasBlink;
-            } else if (data.cardCanvas) {
-                data.ctx = Client.$ctxCard;
-                data.canvas = Client.$canvasCard;
-            } else if (data.animationCanvas) {
-                data.ctx = Client.$ctxAnimation;
-                data.canvas = Client.$canvasAnimation;
-            } else {
-                data.ctx = Client.$ctx;
-                data.canvas = Client.$canvasBoard;
-            }
-        },
-
-        updateInfectionCounter: function (text) {
-            Client.$infectionCounterLog.html(text);
         },
 
         moveImage: function (data) {
@@ -285,6 +252,29 @@ jQuery(function ($) {
             delete Client.images[img_name];
         },
 
+        _addCtxAndCanvas: function (data) {
+            if (data.blinkCanvas) {
+                data.ctx = Client.$ctxBlink;
+                data.canvas = Client.$canvasBlink;
+            } else if (data.cardCanvas) {
+                data.ctx = Client.$ctxCard;
+                data.canvas = Client.$canvasCard;
+            } else if (data.animationCanvas) {
+                data.ctx = Client.$ctxAnimation;
+                data.canvas = Client.$canvasAnimation;
+            } else {
+                data.ctx = Client.$ctx;
+                data.canvas = Client.$canvasBoard;
+            }
+        },
+
+        // =============================================
+
+        updateInfectionCounter: function (text) {
+            Client.$infectionCounterLog.html(text);
+        },
+
+
         receivePlayerCards: async function (cards) {
             for (let c of cards) {
                 await Client.receivePlayerCard(c);
@@ -308,8 +298,8 @@ jQuery(function ($) {
                 dt: 0.5,
                 animationCanvas: true
             }
-            if (card_data.is_epidemic){
-                return new Promise((resolve)=>{
+            if (card_data.is_epidemic) {
+                return new Promise((resolve) => {
                     Client.createImage(data);
                     Client.moveImage(data).then(
                         () => {
@@ -369,7 +359,7 @@ jQuery(function ($) {
             else if (data.is_event)
                 Client.data.event_cards[data.card_name] = data;
             else
-                IO.error({message: "Bad card found " + data})
+                IO.error({ message: "Bad card found " + data })
 
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
@@ -418,130 +408,57 @@ jQuery(function ($) {
         },
 
         enableActions: function (data) {
-            Client.actions_data = data;
-            for (const btn of Client.button_names) {
-                Client.$buttons[btn].disabled = !(data.actions.includes(btn))
-            }
+            Client.action_data = data;
+            Client.present_actions(Client.action_data)
         },
 
-        drive_ferry: function () {
-            if (Client.actions_data.role_name == "Dispatcher"){
-                var possible_players = {};
-                for (const p of Client.actions_data.player_data)
-                    possible_players[p.player_name] = p.adjacent_cities;
+        present_actions: function (remaining_actions, level = 0, answers = null) {
+
+            console.log(remaining_actions);
+
+            if (level > 20) {
+                IO.error({ message: "Something has gone wrong" })
+                console.error(remaining_actions)
+                return
+            }
+
+            if (remaining_actions.length == 1) {
+                // Single choice left, use it
+                var response_data = remaining_actions[0];
+                response_data.answers = answers;
+                IO.socket.emit("action_response", response_data)
+                return;
+            }
+
+            answers = answers == null ? {} : answers;
+            var question = Client.question_order[level];
+
+            if (Object.keys(remaining_actions[0]).includes(question)) {
                 Client._ask_question(
-                    Object.keys(possible_players),
-                    (player) => {
-                        Client._ask_question(
-                            possible_players[player],
-                            (destination) => {
-                                if (player == Client.data.player_name){
-                                    // Moving himself
-                                    IO.socket.emit("player_drive_ferry", destination)
-                                } else {
-                                    IO.socket.emit(
-                                        "dispatcher_move_request", 
-                                        {player_name:player, destination: destination}
-                                    )
-                                }
-                            },
-                            1,
-                            null,
-                            true,
-                            "Please chose the destination"
-                        )
+                    array_from_objects_list(remaining_actions, question, true),
+                    (answer) => {
+                        var new_remaining_actions = remaining_actions.filter(
+                            (a) => { return a[question] == answer; }
+                        );
+                        // We may have chosen multiple options which do not correspond to a single option in the array
+                        // If this is the case, chose a single option from the available ones to maintain metadata in the options object
+                        if (!new_remaining_actions.length) {
+                            new_remaining_actions = [remaining_actions[0]];
+                            // We remove the false data that was not chosen
+                            delete new_remaining_actions[0][question];
+                        }
+                        answers[question] = answer;
+                        Client.present_actions(new_remaining_actions, level + 1, answers);
                     },
-                    1,
-                    null,
-                    true,
-                    "Who would you like to drive/ferry?"
+                    remaining_actions[0][question + "__n_choices"] || 1,
+                    array_from_objects_list(remaining_actions, question + "__colour") || null,
+                    level > 0 && remaining_actions[0][question + "__cancel_button"],
+                    remaining_actions[0][question + "__title"] || null,
+                    remaining_actions[0][question + "__checkboxes"] || false,
                 )
             } else {
-                // Simple drive/ferry for current player
-                Client._ask_question(
-                    Client.actions_data.adjacent_cities,
-                    (destination) => IO.socket.emit("player_drive_ferry", destination),
-                    1,
-                    null,
-                    true,
-                    "Please chose the destination"
-                );
+                Client.present_actions(remaining_actions, level + 1, answers)
             }
-        },
-
-        direct_flight: function () {
-            // Fly to a city discarding the destination
-            var possible_destinations = Object.keys(Client.data.city_cards)
-
-            if (Client.actions_data.role_name == "Dispatcher"){
-                var possible_players = array_from_objects_list(Client.actions_data.player_data, "player_name");
-                
-                Client._ask_question(
-                    possible_players,
-                    (player) => {
-                        Client._ask_question(
-                            possible_destinations,
-                            (destination) => {
-                                if (player == Client.data.player_name){
-                                    // Moving himself
-                                    IO.socket.emit("player_direct_flight", destination)
-                                } else {
-                                    IO.socket.emit(
-                                        "dispatcher_move_request", 
-                                        {player_name:player, destination: destination, discard_card_name: destination}
-                                    )
-                                }
-                            },
-                            1,
-                            null,
-                            true,
-                            "Please chose the destination"
-                        )
-                    },
-                    1,
-                    null,
-                    true,
-                    "Who would you like to move?"
-                )
-            } else {
-                // Simple move for current player
-                Client._ask_question(
-                    possible_destinations,
-                    (destination) => IO.socket.emit("player_direct_flight", destination),
-                    1,
-                    null,
-                    true,
-                    "Please chose the destination"
-                );
-            }
-
-            /*
-
-
-            Client._ask_question(
-                Object.keys(Client.data.city_cards),
-                (destination) => IO.socket.emit("player_direct_flight", destination)
-            );
-            */
-        },
-
-        treatDisease: function(data){
-            function reply_func(colour) { IO.socket.emit("treatDisease", {colour: colour}); };
-            var available_colours = [];
-            for (const [colour, num] of Object.entries(Client.actions_data.current_city_cubes)){
-                if (num > 0){
-                    available_colours.push(colour);
-                }
-            }
-            Client._ask_question(
-                available_colours,
-                (colour) => reply_func(colour),
-                1,
-                null,
-                true,
-                "Treat which disease?",
-                false
-            )
         },
 
         remove_player_card_from_hand: function (card_name) {
@@ -549,14 +466,8 @@ jQuery(function ($) {
             if (Object.keys(Client.data.city_cards).includes(card_name))
                 delete Client.data.city_cards[card_name]
             if (Object.keys(Client.data.event_cards).includes(card_name))
-                delete Client.data.event_cards[card_name]                
+                delete Client.data.event_cards[card_name]
             Client.refreshPlayerHand();
-        },
-
-        disableActions: function () {
-            for (const btn of Client.button_names) {
-                Client.$buttons[btn].disabled = true;
-            }
         },
 
         changeLocation: function (city_name) {
@@ -566,21 +477,6 @@ jQuery(function ($) {
 
         updatePlayerTurns: function (data) {
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
-        },
-
-        reducePlayerHand: function (data) {
-            var current_hand_size = data.current_cards.length;
-            var n_discard = current_hand_size - data.max_cards
-            var heading = "Select " + n_discard + (n_discard == 1 ? " card" : " cards") + " to discard"
-            Client._ask_question(
-                data.current_cards,
-                (cards) => { IO.socket.emit("submitReducePlayerHand", cards) },
-                n_discard,
-                null,
-                false,
-                heading,
-                true
-            )
         },
 
         drawInfectionCards: async function (data) {
@@ -602,47 +498,13 @@ jQuery(function ($) {
             })
         },
 
-        epidemicDraw: async function(data){
+        epidemicDraw: async function (data) {
             for (var i = 0; i < data.cards.length; i++) {
                 Client.createImage(data.cards[i]);
                 await Client.moveImage(data.cards[i]).then(() => {
                     Client.removeImage("infection_discard")
                 });
             }
-        },
-
-        shuttle_flight: function (data) {
-            var possible_destinations = Client.actions_data.research_station_cities.filter(
-                (d) => { return d != Client.data.city_name }
-            )
-            Client._ask_question(
-                possible_destinations,
-                (destination) => IO.socket.emit("player_shuttle_flight", destination)
-            );
-        },
-
-        charter_flight: function () {
-            var colours = [];
-            var possible_destinations = [];
-            for (const [colour, cities] of Object.entries(Client.colour_to_cities)) {
-                for (const c of cities) {
-                    if (c == Client.data.city_name)
-                        continue;
-                    possible_destinations.push(c);
-                    colours.push(colour);
-                }
-            }
-            Client._ask_question(
-                possible_destinations,
-                (destination) => IO.socket.emit(
-                    "player_charter_flight",
-                    {
-                        destination_city_name: destination,
-                        origin_city_name: Client.data.city_name
-                    }),
-                1,
-                colours
-            );
         },
 
         _ask_question: function (
@@ -655,7 +517,7 @@ jQuery(function ($) {
             checkboxes = false
         ) {
 
-            if (options.length == 1 && n_choices == 1){
+            if (options.length == 1 && n_choices == 1) {
                 go_callback(options[0])
                 return;
             } else if (options.length == n_choices) {
@@ -709,8 +571,11 @@ jQuery(function ($) {
                 cancel_btn.onclick = function (event) {
                     event.preventDefault();
                     Client.$playerSelectionArea.innerHTML = "";
+                    Client.present_actions(Client.action_data);
+                    /*                    
                     Client.$playerSelectionArea.style.display = "none";
                     Client.$playerActionsArea.style.display = "flex";
+                    */
                 }
                 button_div.appendChild(cancel_btn);
             }
@@ -784,170 +649,13 @@ jQuery(function ($) {
 
         },
 
-        cure: function () {
-            var possible_colours = Object.keys(Client.actions_data.curable_colours);
-            Client._ask_question(
-                possible_colours,
-                (colour) => Client._cure_single_disease(colour),
-                1,
-                null,
-                true,
-                "Choose which disease to cure",
-                false
-            )
-        },
 
-        _cure_single_disease: function(colour) {
-            function reply_func(cards) { IO.socket.emit("player_cure", cards); };
-            var n_discard = Client.actions_data.n_cards_to_cure;
-            var possible_cards = Client.actions_data.curable_colours[colour];
-            Client._ask_question(
-                possible_cards,
-                (cards) => { reply_func(cards) },
-                Client.actions_data.n_cards_to_cure,
-                null,
-                true,
-                "Select the " + n_discard + " cards to cure",
-                true
-            )
-        },
-
-        share_knowledge: function(){
-            Client._shareKnowledgeOtherPlayerQuestion();
-        },
-
-        _shareKnowledgeOtherPlayerQuestion: function(){
-            var possible_players = array_from_objects_list(Client.actions_data.share_knowledge_data, "other_player");
-            possible_players = [...new Set(possible_players)]; // remove possible duplicates
-            function next_step(player){ Client._shareKnowledgeGiveOrTake(player); }
-            Client._ask_question(
-                possible_players,
-                (player) => next_step(player),
-                1,
-                null,
-                true,
-                "Chose a player to trade with"
-            )
-        },
-
-        _shareKnowledgeGiveOrTake: function(player){
-            var possible_trades = Client.actions_data.share_knowledge_data.filter(
-                (t) => {return t.other_player == player;}
-            )
-            var possible_directions = array_from_objects_list(possible_trades, "direction");
-            possible_directions = [...new Set(possible_directions)];
-            function next_step(direction){ Client._shareKnowledgeCard(possible_trades, direction); }
-            Client._ask_question(
-                possible_directions,
-                (direction) => next_step(direction),
-                1,
-                null,
-                true,
-                "Which direction to trade?"
-            )
-        },
-
-        _shareKnowledgeCard: function(trades, direction){
-            var possible_trades = trades.filter(
-                (t) => {return t.direction == direction;}
-            )
-            var possible_cards = array_from_objects_list(possible_trades, "card");
-            function next_step(card){ Client._submitShareKnowledgeProposal(possible_trades, card); }
-            Client._ask_question(
-                possible_cards,
-                (card) => next_step(card),
-                1,
-                null,
-                true,
-                "Which card to " + direction.toLowerCase() + "?"
-            )
-        },
-
-        _submitShareKnowledgeProposal: function(trades, card){
-            for (const t of trades){
-                if (t.card == card){
-                    IO.socket.emit("shareKnowledgeProposal", t)
-                    break;
-                }
-            }
-        },
-
-        incoming_shareKnowledgeProposal(data){
-            function reply_func(answer){
-                IO.socket.emit("shareKnowledgeResponse", {answer: answer, trade_data: data.trade_data, current_player: data.trade_player})
-            }
-            var is_give = data.trade_data.direction == "Take"; // direction reversed for this player
-            var heading = is_give ? "Give " : "Receive ";
-            heading += data.trade_data.card;
-            heading += is_give ? " to " : " from ";
-            heading += data.trade_player + "?";
-            Client._ask_question(
-                ["Yes", "No"],
-                (answer) => reply_func(answer),
-                1,
-                null,
-                false,
-                heading
-            )
-        },
-
-        special_action: function(){
-            if (Client.actions_data.role_name == "Operations Expert"){
-                Client.special_action_operations_expert_chose_card();
-            }
-        },
-
-        special_action_operations_expert_chose_card: function(){
-            function next_step(card){Client.special_action_operations_expert_chose_destination(card);};
-            var possible_cards = Client.actions_data.special_action_data.cards;
-            Client._ask_question(
-                possible_cards,
-                (card) => next_step(card),
-                1,
-                null,
-                true,
-                "Discard which city card?"
-            )
-        },
-
-        special_action_operations_expert_chose_destination: function(discard_card_name){
-            var possible_destinations = Client.actions_data.special_action_data.destinations;
-            var colours = Client.actions_data.special_action_data.colours;
-            function next_step(destination){ 
-                IO.socket.emit(
-                    "operations_expert_fly_from_research_station", 
-                    {
-                        destination: destination, 
-                        card_name: discard_card_name
-            })}
-            Client._ask_question(
-                possible_destinations,
-                (destination) => next_step(destination),
-                1,
-                colours,
-                true,
-                "Chose your destination"
-            )
-        },
-
-        dispatcher_move_request: function(data){
-            Client._ask_question(
-                ["Yes", "No"],
-                (resp) => IO.socket.emit("dispatcher_move_response", {data:data, response:resp}),
-                1,
-                null,
-                false,
-                "Allow the Dispatcher to move your pawn to " + data.destination + "?"
-            )
-
-        },
-
-        gameOver: function(data){
+        gameOver: function (data) {
             var blockingDiv = document.getElementById("blockingDiv")
             blockingDiv.style.opacity = 0.7;
 
             var gameOverDiv = document.getElementById("gameOverDiv");
-            gameOverDiv.style.display ="block";
+            gameOverDiv.style.display = "block";
 
             var gameOverMessage = document.getElementById("game-over-message");
             gameOverMessage.textContent = data.message;

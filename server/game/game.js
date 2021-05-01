@@ -21,7 +21,7 @@ class PandemicGame {
         this.round = 0;
         this.n_research_stations = 0;
         this.max_n_research_stations = 6;
-        this.research_station_cities = [];
+        this.research_station_city_names = [];
 
         this.current_player = null;
     }
@@ -106,8 +106,8 @@ class PandemicGame {
         this.n_research_stations++;
         var city = this.cities[city_name];
         city.add_research_station();
-        this.research_station_cities.push(city_name);
-        this.research_station_cities.sort();
+        this.research_station_city_names.push(city_name);
+        this.research_station_city_names.sort();
         this.io.in(this.game_id).emit(
             "createImage",
             {

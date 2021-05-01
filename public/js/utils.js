@@ -1,8 +1,10 @@
-function array_from_objects_list(objects_list, attribute) {
+function array_from_objects_list(objects_list, attribute, unique=false) {
     var results = [];
     for (var i = 0; i < objects_list.length; i++) {
         results.push(objects_list[i][attribute])
     }
+    if (unique)
+        results = [...new Set(results)];
     return results;
 }
 
