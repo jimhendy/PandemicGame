@@ -5,7 +5,7 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* Special role actions (CP, D)
+* Special role actions (CP)
 * Event cards
 * log file
 * show other players the deal animations from different perspective
@@ -13,17 +13,13 @@ TODO:
 * tooltip for chosen role abilities
 * landing page image does not show on phone
 
-* Should pandemic.assess_actions only provide an array of objects to the client where we then present a series of options
- [
-     {action: "Drive/Ferry", player_name: "Jim", is_current_player: true, destination: "London", discard_card_name: null, is_dispatcher_moving_other_player: false, emit_response: "player_move"},
-     {action: "Cure", player_name: "Jim"}
+* Allow players to use event cards on other players turns and between infect and intesify of epidemics
 
- ]
- 
-Of all (remaining) available actions present choices via Client._ask_question...
-How to loop an unknown number of times? - recursion
+* Queue of function: args for pandmeic.js to allow event cards to skip in front
+* Could also allow animations to be sent to client and next one only sent when first is complete
+* pandemic.emit(action), pandemic=waiting, client.do_action, client.emit(action_complete), pandemic.unshift().action 
 
-
+* Client should ask for confirmation only for submission (?)
 
 Initial deal should only be seen by player. All other draws should be shown to everyone. Other players cards should come/go to from different location.
 

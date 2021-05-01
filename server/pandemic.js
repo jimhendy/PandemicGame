@@ -434,11 +434,38 @@ class Pandemic {
     }
 
     player_play_event_card(data){
+        // Need to interupt other players and remove options
+        if (data.discard_card_name == "Airlift"){
+            this.event_card_airflit(data);
+        }
+        
+    }
+
+    _after_event_card(data){
         var player = this._player_by_name(data.player_name)
-        // play it
         if (player.too_many_cards())
             return this.reduce_player_hand_size(player)
         this._check_end_of_user_turn();
+    }
+
+    // ======================================================== Event Cards
+
+    event_card_airflit(data){
+        var player = this._player_by_name(data.player_name)
+        var actions = [];
+        for (const p of this.game.players){
+            for (const [dest_name, dest] of this.game.cities){
+                actions.push(
+                    {
+                        player_name: p.player_name,
+                        current_player_name: player.player_name,
+                        destination: dest_name,
+                        destination__colour: dest.native_disease_colour,
+                        response_function: "player_move_proposal"
+                    }
+                )
+            }
+        }
     }
 
     // ======================================== Utils
@@ -579,7 +606,7 @@ class Pandemic {
         var event_cards = player.player_cards.filter(
             (c) => {return c.is_event;}
         )
-        
+
         for (const c of player.player_cards){
             actions.push(
                 {
@@ -637,7 +664,7 @@ class Pandemic {
 
     // ===================================================== Proposals & Responses
 
-    player_move_proposal(data) {
+    player_move_proposal(data, next_function="assess_player_options") {
         var other_player = this._player_by_name(data.player_name)
         this.io.in(this.game_id).emit(
             "logMessage",
@@ -650,7 +677,8 @@ class Pandemic {
             response_function: "player_move_response",
             response__title: question,
             response__cancel_button: false,
-            move_proposal: data
+            move_proposal: data,
+            next_function: next_function
         }
 
         this.io.to(other_player.socket_id).emit(
@@ -679,7 +707,7 @@ class Pandemic {
                 "logMessage",
                 { message: data.move_proposal.player_name + " refused the move" }
             )
-            this.assess_player_options();
+            this[data.next_function](data);
         }
     }
 
