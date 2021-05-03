@@ -102,7 +102,3 @@ html{
 .game-button{
     height: 10%
 }
-
-.div{ 
-    transition: visibility 0s, opacity 2s linear;
-}

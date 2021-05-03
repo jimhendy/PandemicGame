@@ -61,7 +61,11 @@ class PandemicGame {
     }
 
     run_from_queue(){
-
+        var instruction = this.queue.shift();
+        if (instruction.description)
+            console.log(instruction.description)
+        this.responses_to_progress = instruction.responses_to_progress;
+        instruction.function(instruction.args())
     }
 
 
