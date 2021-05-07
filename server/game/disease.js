@@ -20,17 +20,26 @@ class Disease {
         this.img_name = "vial_" + this.colour
 
         this.io.in(this.game_id).emit(
-            "createImage",
+            "clientAction",
             {
-                img_type: "vial",
-                img_name: this.img_name,
-                image_file: this.vial_file,
-                x: this.x_loc_frac,
-                y: this.y_loc_frac,
-                dx: this.dx_frac,
-                dy: this.dy_frac
+                function: "createImage",
+                args:{
+                    img_type: "vial",
+                    img_name: this.img_name,
+                    image_file: this.vial_file,
+                    x: this.x_loc_frac,
+                    y: this.y_loc_frac,
+                    dx: this.dx_frac,
+                    dy: this.dy_frac
+                }
             }
         )
+
+        // Bind Events
+        this.add_cube = this.add_cube.bind(this);
+        this.remove_cube = this.remove_cube.bind(this);
+        this.cure = this.cure.bind(this);
+        this.eradicate = this.eradicate.bind(this);
     }
 
     add_cube(){

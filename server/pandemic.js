@@ -26,7 +26,7 @@ class Pandemic {
     add_user(data, socket) {
         this.users[data.socket_id] = data;
         console.info('Player "' + data.player_name + '" joining game');
-        socket.emit("userJoinRoom", this._role_choice_data());
+        socket.emit("clientAction", { function: "showRoleChoiceScreen", args: this._role_choice_data() });
     }
 
     _role_choice_data() {
@@ -49,7 +49,7 @@ class Pandemic {
 
     assign_role(data) {
         this.users[data.socket_id].role = data.role;
-        this.io.in(this.game_id).emit('reloadRolesSelection', this._role_choice_data());
+        this.io.in(this.game_id).emit("clientAction", {function:'updateRoles', args:this._role_choice_data()});
     }
 
     player_waiting(socket_id) {
@@ -61,13 +61,22 @@ class Pandemic {
         this.start_game();
     }
 
+    action_complete(){
+        this.game.queue.add_response();
+    }
+
     start_game() {
         this.game = new Game(this.io, this.game_id);
-        for (const [key, value] of Object.entries(this.users)) {
-            this.game.add_player(value);
+        for (const p of Object.values(this.users)) {
+            this.game.add_player(p);
         }
-        this.io.in(this.game_id).emit('startGame', this._role_choice_data());
+
+        this.io.in(this.game_id).emit(
+            "clientAction", 
+            {function:'startGame', args:this._role_choice_data()}
+        );
         this.game.initial_game_setup();
+        this.game.queue.start();
     }
 
     clientNotesPlayerCardsReceived() {
@@ -433,15 +442,15 @@ class Pandemic {
         this._check_end_of_user_turn();
     }
 
-    player_play_event_card(data){
+    player_play_event_card(data) {
         // Need to interupt other players and remove options
-        if (data.discard_card_name == "Airlift"){
+        if (data.discard_card_name == "Airlift") {
             this.event_card_airflit(data);
         }
-        
+
     }
 
-    _after_event_card(data){
+    _after_event_card(data) {
         var player = this._player_by_name(data.player_name)
         if (player.too_many_cards())
             return this.reduce_player_hand_size(player)
@@ -450,11 +459,11 @@ class Pandemic {
 
     // ======================================================== Event Cards
 
-    event_card_airflit(data){
+    event_card_airflit(data) {
         var player = this._player_by_name(data.player_name)
         var actions = [];
-        for (const p of this.game.players){
-            for (const [dest_name, dest] of this.game.cities){
+        for (const p of this.game.players) {
+            for (const [dest_name, dest] of this.game.cities) {
                 actions.push(
                     {
                         player_name: p.player_name,
@@ -604,10 +613,10 @@ class Pandemic {
         var n_discard = player.player_cards.length - player.max_hand_cards;
         var heading = "Select " + n_discard + (n_discard == 1 ? " card" : " cards") + " to discard"
         var event_cards = player.player_cards.filter(
-            (c) => {return c.is_event;}
+            (c) => { return c.is_event; }
         )
 
-        for (const c of player.player_cards){
+        for (const c of player.player_cards) {
             actions.push(
                 {
                     player_name: player.player_name,
@@ -625,7 +634,7 @@ class Pandemic {
             )
         }
 
-        for (const ev of event_cards){
+        for (const ev of event_cards) {
             actions.push(
                 {
                     player_name: player.player_name,
@@ -640,7 +649,7 @@ class Pandemic {
         this.io.to(player.socket_id).emit(
             "enableActions",
             actions,
-        )        
+        )
     }
 
     reduce_player_hand_size_response(data) {
@@ -664,7 +673,7 @@ class Pandemic {
 
     // ===================================================== Proposals & Responses
 
-    player_move_proposal(data, next_function="assess_player_options") {
+    player_move_proposal(data, next_function = "assess_player_options") {
         var other_player = this._player_by_name(data.player_name)
         this.io.in(this.game_id).emit(
             "logMessage",

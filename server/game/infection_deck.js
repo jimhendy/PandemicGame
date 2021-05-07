@@ -1,10 +1,11 @@
 const utils = require("./utils")
 
 class InfectionDeck {
-    constructor(io, game_id, cities, players, diseases) {
+    constructor(io, game_id, queue, cities, players, diseases) {
 
         this.io = io;
         this.game_id = game_id;
+        this.queue = queue;
 
         this.cities = cities;
         this.diseases = diseases;
@@ -23,11 +24,21 @@ class InfectionDeck {
 
         this._create_deck_image();
 
+        // Bind events
+        this._create_deck_image = this._create_deck_image.bind(this);
+        this._infection_deck_image_data = this._infection_deck_image_data.bind(this);
+        this.initial_deal = this.initial_deal.bind(this);
+        this._discard_card_data = this._discard_card_data.bind(this);
+        this._discard_city_card = this._discard_city_card.bind(this);
+        this.draw = this.draw.bind(this);
+        this.epidemic_intensify = this.epidemic_intensify.bind(this);
+        this._get_protected_cities = this._get_protected_cities.bind(this);
+
     }
 
     _create_deck_image() {
         this.io.in(this.game_id).emit(
-            "createImage", this._infection_deck_image_data()
+            "clientAction", { function: "createImage", args: this._infection_deck_image_data() }
         )
     }
 
@@ -47,35 +58,49 @@ class InfectionDeck {
     initial_deal() {
         var city_name;
         var city;
+
         for (var cubes = 3; cubes >= 1; cubes--) {
             for (var c = 0; c < 3; c++) {
+
                 city_name = this.deck.pop();
                 city = this.cities[city_name];
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: "🕱 " + city_name + " was infected with " + cubes + " cube(s)",
-                        style: {
-                            color: city.native_disease_colour,
-                            "font-weight": "bold"
-                        }
-                    }
-                )
+
+                this._discard_city_card(city, cubes);
                 for (var n = 0; n < cubes; n++) {
-                    city.add_cube();
+                    this.queue.add_task(city.add_cube, null, "all", "Adding initial deal cubes to " + city_name);
                 }
                 this.discarded.push(city_name);
             }
         }
-        this._discard_city_card(city);
     }
 
-    _discard_city_card(city) {
+    _discard_city_card(city, cubes) {
         var data = this._discard_card_data(city)
-        data.x = this.discard_location[0]
-        data.y = this.discard_location[1]
-        this.io.in(this.game_id).emit(
-            "discardInfectionCard", data
+        this.queue.add_task(
+            () => this.io.to(this.game_id).emit(
+                "parallel_actions",
+                {
+                    parallel_actions_args: [
+                        {
+                            function: "series_actions",
+                            args: {
+                                series_actions_args: [
+                                    { function: "createImage", args: data },
+                                    { function: "moveImage", args: data }
+                                ]
+                            }
+                        },
+                        {
+                            function: "logMessage",
+                            args: {
+                                message: "🕱 " + city.city_name + " was infected with " + cubes + " cube(s)",
+                                style: { color: city.native_disease_colour, "font-weight": "bold" }
+                            }
+                        }
+                    ],
+                    return: true
+                }
+            ), null, "all", "Discarding " + city.city_name + " infection deck card"
         )
     }
 
@@ -177,7 +202,7 @@ class InfectionDeck {
             cities.push(qs.city_name);
             for (const c of this.cities[qs.city_name].adjacent_city_names)
                 cities.push(c)
-        } 
+        }
         if (medic.length) {
             medic = medic[0];
             if (this.diseases[colour].cured)

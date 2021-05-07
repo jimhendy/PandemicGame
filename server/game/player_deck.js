@@ -1,9 +1,12 @@
+const city = require("./city");
 const utils = require("./utils");
 
 class PlayerDeck {
-    constructor(io, game_id, cities, n_epidemics = 4) {
+    constructor(io, game_id, queue, cities, n_epidemics = 4) {
         this.io = io;
         this.game_id = game_id;
+        this.queue = queue;
+
         this.cities = cities;
         this.n_epidemics = n_epidemics;
 
@@ -23,13 +26,13 @@ class PlayerDeck {
                 new PlayerCard(city)
             )
         }
-        
-        for (const ev of this.event_card_names){
+
+        for (const ev of this.event_card_names) {
             this.deck.push(
                 new PlayerCard(null, false, null, ev)
             )
         }
-        
+
         utils.shuffle(this.deck);
 
         this.io.in(this.game_id).emit(
@@ -45,6 +48,14 @@ class PlayerDeck {
                 cardCanvas: true
             }
         )
+
+        // Bind Events
+        this.initial_deal = this.initial_deal.bind(this);
+        this._add_epidemics = this._add_epidemics.bind(this);
+        this.drawPlayerCards = this.drawPlayerCards.bind(this);
+        this.emit_data = this.emit_data.bind(this);
+        this.discard = this.discard.bind(this);
+        this._give_player_card = this._give_player_card.bind(this);
 
     }
 
@@ -75,42 +86,123 @@ class PlayerDeck {
 
 
     drawPlayerCards(n_cards, player) {
-        var player_cards = [];
+        //var player_cards = [];
         var new_epidemics = 0;
         for (var i = 0; i < n_cards; i++) {
-            
             var card = this.deck.pop();
             this.cards_in_player_hands[card.card_name] = card;
-            player_cards.push(this.emit_data(card));
+            if (card.is_epidemic)
+                new_epidemics += card.is_epidemic;
+            this._give_player_card(player, card)
 
-            if (card.is_epidemic){
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: "An Epidemic card was drawn!",
-                        fontWeight: "bold"
-                    }
-                )
-                new_epidemics++;
-            } else {
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: "🃟 " + player.player_name + ' received player card "' + card.card_name + '"',
-                        style: {
-                            color: card.is_city ? card.city.native_disease_colour : null
-                        }
-                    }
-                )
-            }
         }
-        player.add_player_cards(player_cards);
         return new_epidemics;
+    }
+
+    _give_player_card(player, card) {
+        var card_data = this.emit_data(card);
+        Object.assign(card_data,
+            {
+                dest_x: 0.3,
+                dest_y: 0.2,
+                dest_dx: 0.3,
+                dest_dy: 0.6,
+                dt: 0.5,
+                animationCanvas: true
+            }
+        )
+
+        if (card.is_epidemic) {
+            // Do epidemic
+            var card_data_pause = Object.assign({ ...card_data }, { dt: 1 })
+            this.queue.add_task(
+                () => this.io.to(this.game_id).emit(
+                    "parallel_actions",
+                    {
+                        parallel_actions_args: [{
+                            function: "series_actions",
+                            args: {
+                                series_actions_args: [
+                                    { function: "createImage", args: card_data },
+                                    { function: "moveImage", args: card_data },
+                                    { function: "moveImage", args: card_data_pause },
+                                    { function: "removeImage", args: card_data.img_name }
+                                ]
+                            }
+                        },
+                        {
+                            function: "logMessage",
+                            args: {
+                                message: "An Epidemic card was drawn!",
+                                fontWeight: "bold"
+                            }
+                        }],
+                        return: true
+                    }
+                )
+            )
+        } else {
+            // Not an epidemic card
+            var message = {
+                function: "logMessage",
+                args: {
+                    message: "🃟 " + player.player_name + ' received player card "' + card.card_name + '"',
+                    style: { color: card.is_city ? card.city.native_disease_colour : null }
+                }
+            }
+            var card_data_dest_player = Object.assign({ ...card_data }, { "dest_x": 1.2 });
+            var card_data_dest_others = Object.assign({ ...card_data }, { "dest_x": -0.4 });
+            console.log(player.socket_id);
+            this.queue.add_task(
+                () => {
+                    // Receiving player card
+                    this.io.to(player.socket_id).emit(
+                        "parallel_actions",
+                        {
+                            parallel_actions_args: [{
+                                function: "series_actions",
+                                args: {
+                                    series_actions_args: [
+                                        { function: "createImage", args: card_data },
+                                        { function: "moveImage", args: card_data },
+                                        { function: "moveImage", args: card_data_dest_player },
+                                        { function: "addPlayerCardToHand", args: card_data},
+                                        { function: "refreshPlayerHand"},
+                                    ]
+                                }
+                            },
+                                message],
+                            return: true
+                        }
+                    );
+                    // Other players
+                    this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                        "parallel_actions",
+                        {
+                            parallel_actions_args: [{
+                                    function: "series_actions",
+                                    args: {
+                                        series_actions_args: [
+                                            { function: "createImage", args: card_data },
+                                            { function: "moveImage", args: card_data },
+                                            { function: "moveImage", args: card_data_dest_others }
+                                        ]
+                                    }
+                                },
+                                message],
+                            return: true
+                        }
+                    );
+                },
+                // Remaining args for add_task
+                null, "all", "Dealing " + card.card_name + " to " + player.player_name
+            )
+        }
     }
 
     emit_data(card) {
         var data = card.emit_data()
-        data.x =this.deck_location[0]
+        data.x = this.deck_location[0]
         data.y = this.deck_location[1]
         data.dx = this.card_width_frac
         data.dy = this.card_height_frac
@@ -144,11 +236,11 @@ class PlayerDeck {
 }
 
 class PlayerCard {
-    constructor(city = null, epidemic = false, epidemic_num = null, event_name=null) {
+    constructor(city = null, epidemic = false, epidemic_num = null, event_name = null) {
         this.city = city;
 
         this.is_city = city != null;
-        this.is_event = event_name != null ;
+        this.is_event = event_name != null;
         this.is_epidemic = epidemic;
 
         if (this.is_epidemic) {
@@ -164,6 +256,9 @@ class PlayerCard {
             this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.city_name) + ".jpg"
             this.card_name = this.city.city_name;
         }
+
+        // Bind Events
+        this.emit_data = this.emit_data.bind(this);
     }
 
     emit_data() {
@@ -178,7 +273,7 @@ class PlayerCard {
 
             image_file: this.image_file,
 
-            
+
         }
     }
 }

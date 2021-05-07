@@ -13,7 +13,7 @@ jQuery(function ($) {
 
             IO.socket.on("connected", IO.onConnected);
             IO.socket.on("error", IO.error);
-
+            /*
             // Game setup
             IO.socket.on("clearUserScreen", Client.clearUserScreen);
             IO.socket.on("reloadLandingScreen", Client.showLandingScreen);
@@ -48,6 +48,11 @@ jQuery(function ($) {
             IO.socket.on("refreshPlayerHand", Client.refreshPlayerHand)
 
             IO.socket.on("gameOver", Client.gameOver);
+            */
+            IO.socket.on("clientAction", Client.actionDirector);
+
+            IO.socket.on("parallel_actions", Client.parallel_actions);
+            IO.socket.on("series_actions", Client.series_actions);
         },
 
         onConnected: function () {
@@ -56,6 +61,10 @@ jQuery(function ($) {
 
         error: function (data) {
             alert(data.message);
+        },
+
+        actionComplete: function () {
+            IO.socket.emit("action_complete")
         }
 
     };
@@ -67,10 +76,8 @@ jQuery(function ($) {
             passcode: null,
             player_name: null,
             current_page: null,
-            city_cards: {},
-            event_cards: {},
             player_cards: {},
-            loaction: "Atlanta"
+            loaction: null
         },
         images: {},
         question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response"],
@@ -81,6 +88,56 @@ jQuery(function ($) {
             Client.bindEvents();
         },
 
+
+        // =================================================== Action Directors 
+        // ALL Client functions should accept an object (dictionary) 
+        // data = {function: "function_name", args: [{...}], return: false/true}
+
+        actionDirector: async function (data) {
+            // Expects a single function-args combo
+            var ret_value = await Client[data.function](data.args)
+            if (data.return) {
+                console.log("Returning from actionDirector");
+                console.log(data);
+                IO.actionComplete();
+            }
+            return ret_value;
+        },
+
+
+        parallel_actions: function (data) {
+            // data should be an array of function-args combos
+            console.log(data);
+            var promises = [];
+            for (const a of data.parallel_actions_args) {
+                promises.push(Client.actionDirector(a))
+            }
+            return Promise.all(promises).then(
+                () => {
+                    if (data.return) {
+                        console.log("parallel actions complete")
+                        console.log(data)
+                        IO.actionComplete()
+                    }
+                }
+            );
+        },
+
+        series_actions: async function (data) {
+            // data should be an array of function-args combos
+            console.log(data)
+            for (const a of data.series_actions_args) {
+                await Client.actionDirector(a);
+            }
+            if (data.return) {
+                console.log("series action complete")
+                console.log(data)
+                IO.actionComplete();
+            }
+        },
+
+        // ====================================================================
+
         cacheElements: function () {
             Client.$doc = $(document);
 
@@ -90,7 +147,6 @@ jQuery(function ($) {
             Client.$roleChoiceScreen = $('#role-choice-screen-template').html();
             Client.$waitingForRolesTemplate = $('#waiting-for-role-choices-template').html();
             Client.$gameBoardTemplate = $('#game-board-template').html()
-            Client.$gameOverTemplate = $('#game-over-template').html()
         },
 
         // ============================================ Landing screen
@@ -210,20 +266,21 @@ jQuery(function ($) {
 
         // =============================================   Image utils
 
-        createImage: function (data) {
+        createImage: async function (data) {
             Client._addCtxAndCanvas(data);
             //if (Object.keys(Client.images).includes(data.img_name))
             //    console.log("Image name already exists: " + data.img_name)
+            var img = await createImage(
+                data.image_file,
+                data.ctx,
+                data.x, data.y,
+                data.dx, data.dy,
+                data.canvas
+            )
             Client.images[data.img_name] = {
                 data: data,
-                img: createImage(
-                    data.image_file,
-                    data.ctx,
-                    data.x, data.y,
-                    data.dx, data.dy,
-                    data.canvas
-                )
-            };
+                img: img
+            }
         },
 
         moveImage: function (data) {
@@ -235,7 +292,7 @@ jQuery(function ($) {
                 data.dest_dy,
                 data.dt,
                 Client.images
-            )
+            );
         },
 
         alterImage: function (data) {
@@ -247,8 +304,9 @@ jQuery(function ($) {
 
         removeImage: function (img_name) {
             var img = Client.images[img_name];
-            clearImage(img)
-            delete Client.images[img_name];
+            clearImage(img).then(
+                () => { delete Client.images[img_name] }
+            );
         },
 
         _addCtxAndCanvas: function (data) {
@@ -270,17 +328,19 @@ jQuery(function ($) {
         // =============================================
 
         updateInfectionCounter: function (text) {
-            Client.$infectionCounterLog.html(text);
+            Client.$infectionCounterLog.html(text)
         },
 
-
+        /*
         receivePlayerCards: async function (cards) {
             for (let c of cards) {
                 await Client.receivePlayerCard(c);
             }
-            IO.socket.emit("playerCardsReceived");
+            //IO.socket.emit("playerCardsReceived");
+            IO.actionComplete();
         },
-
+        /*
+        /*
         receivePlayerCard: function (card_data) {
             var data = {
                 img_type: "flying_card",
@@ -331,12 +391,14 @@ jQuery(function ($) {
                 });
             }
         },
-
+        */
+        /*
         discardPlayerCards: async function (cards) {
             for (let c of cards) {
                 await Client.discardPlayerCard(c);
             }
-            IO.socket.emit("playerCardDiscarded");
+            //IO.socket.emit("playerCardDiscarded");
+            IO.actionComplete();
         },
 
         discardPlayerCard: function (card_data) {
@@ -345,7 +407,7 @@ jQuery(function ($) {
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
         },
-
+        */
         addPlayerCardToHand: function (data) {
 
             var n_previous = Object.keys(Client.data.player_cards).length;
@@ -353,12 +415,6 @@ jQuery(function ($) {
             var x_offset = 5 * (n_previous + 1);
 
             Client.data.player_cards[data.card_name] = data;
-            if (data.is_city)
-                Client.data.city_cards[data.card_name] = data;
-            else if (data.is_event)
-                Client.data.event_cards[data.card_name] = data;
-            else
-                IO.error({ message: "Bad card found " + data })
 
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
@@ -391,13 +447,16 @@ jQuery(function ($) {
             }
             Client.$gameLog.prepend(new_message);
         },
-
+        /*
         discardInfectionCard: function (data) {
             if (Object.keys(Client.images).includes(data.img_name)) {
                 Client.removeImage(data.img_name)
             }
-            Client.createImage(data);
+            Client.createImage(data).then(
+                () => IO.actionComplete()
+            )
         },
+        */
 
         newPlayerTurn: function (player_name) {
             Client.$currentPlayerDiv.textContent = player_name
@@ -412,8 +471,6 @@ jQuery(function ($) {
         },
 
         present_actions: function (remaining_actions, level = 0, answers = null) {
-
-            console.log(remaining_actions);
 
             if (level > 20) {
                 IO.error({ message: "Something has gone wrong" })
@@ -462,10 +519,6 @@ jQuery(function ($) {
 
         remove_player_card_from_hand: function (card_name) {
             delete Client.data.player_cards[card_name];
-            if (Object.keys(Client.data.city_cards).includes(card_name))
-                delete Client.data.city_cards[card_name]
-            if (Object.keys(Client.data.event_cards).includes(card_name))
-                delete Client.data.event_cards[card_name]
             Client.refreshPlayerHand();
         },
 
@@ -477,7 +530,7 @@ jQuery(function ($) {
         updatePlayerTurns: function (data) {
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
         },
-
+        /*
         drawInfectionCards: async function (data) {
             for (var i = 0; i < data.cards.length; i++) {
                 if (i - 1 == data.empty_deck_deal) {
@@ -496,7 +549,12 @@ jQuery(function ($) {
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
         },
+        
+        infection_deck_draw: function (data) {
 
+        },
+
+        
         epidemicDraw: async function (data) {
             for (var i = 0; i < data.cards.length; i++) {
                 Client.createImage(data.cards[i]);
@@ -505,7 +563,7 @@ jQuery(function ($) {
                 });
             }
         },
-
+        */
         _ask_question: function (
             options,
             go_callback = null,
@@ -569,7 +627,7 @@ jQuery(function ($) {
                 cancel_btn.innerHTML = "Cancel";
                 cancel_btn.onclick = function (event) {
                     event.preventDefault();
-                    Client.hide_selections();
+                    Client._hide_selections();
                     Client.present_actions(Client.action_data);
                 }
                 button_div.appendChild(cancel_btn);
@@ -589,14 +647,14 @@ jQuery(function ($) {
                 } else {
                     selection = document.querySelector('input[name="choice"]:checked').value;
                 }
-                Client.hide_selections();
+                Client._hide_selections();
                 if (go_callback)
                     go_callback(selection);
             }
             button_div.appendChild(ok_btn);
 
             Client.$playerSelectionArea.appendChild(form);
-            Client.show_selections();
+            Client._show_selections();
 
             if (checkboxes) {
                 ok_btn.disabled = true;
@@ -640,14 +698,14 @@ jQuery(function ($) {
 
         },
 
-        show_selections: function(){
+        _show_selections: function () {
             //Client.$playerSelectionArea.style.display = "block";
             Client.$playerSelectionArea.style.height = "20%";
             Client.$gameLog.style.height = "calc(15% - 4px)";
             Client.$playerSelectionArea.scrollTop = 0;
         },
 
-        hide_selections: function(){
+        _hide_selections: function () {
             Client.$playerSelectionArea.innerHTML = "";
             Client.$playerSelectionArea.style.height = "0%";
             //Client.$playerSelectionArea.style.display = "none";

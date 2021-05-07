@@ -1,4 +1,3 @@
-const images = require('./images')
 
 class Markers {
     constructor(io, game_id) {
@@ -14,6 +13,17 @@ class Markers {
 
         this.create_outbreak_marker();
         this.create_infection_rate_marker();
+
+        // Bind Events
+        this.infection_rate = this.infection_rate.bind(this);
+        this.create_infection_rate_locations = this.create_infection_rate_locations.bind(this);
+        this.create_outbreak_marker = this.create_outbreak_marker.bind(this);
+        this.create_infection_rate_marker = this.create_infection_rate_marker.bind(this);
+        this.create_outbreak_marker_locations = this.create_outbreak_marker_locations.bind(this);
+        this._infection_rate_marker_data = this._infection_rate_marker_data.bind(this);
+        this._outbrak_marker_data = this._outbrak_marker_data.bind(this);
+        this.increase_infection_rate = this.increase_infection_rate.bind(this);
+        this.increase_outbreaks = this.increase_outbreaks.bind(this);
     };
 
     infection_rate(){
