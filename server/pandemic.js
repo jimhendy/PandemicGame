@@ -21,6 +21,41 @@ class Pandemic {
         this.game = null;
         this.initial_deal_complete = false;
         this.initial_clients_deals = 0;
+
+        // Bind Events
+        this.assess_player_options = this.assess_player_options.bind(this);
+        this.update_current_player = this.update_current_player.bind(this);
+
+        // assess events
+        this._assess_drive_ferry = this._assess_drive_ferry.bind(this);
+        this._assess_direct_flight = this._assess_direct_flight.bind(this);
+        this._assess_charter_flight = this._assess_charter_flight.bind(this);
+        this._assess_shuttle_flight = this._assess_shuttle_flight.bind(this);
+        this._assess_treat_disease = this._assess_treat_disease.bind(this);
+        this._assess_build_research_station = this._assess_build_research_station.bind(this);
+        this._assess_share_knowledge = this._assess_share_knowledge.bind(this);
+        this._assess_discover_a_cure = this._assess_discover_a_cure.bind(this);
+        this._assess_dispatcher_actions = this._assess_dispatcher_actions.bind(this);
+        this._assess_operations_expert_actions = this._assess_operations_expert_actions.bind(this);
+
+        // player events
+        this.player_pass = this.player_pass.bind(this);
+        this.player_move = this.player_move.bind(this);
+        this.player_move_proposal = this.player_move_proposal.bind(this);
+        this.player_move_response = this.player_move_response.bind(this);
+        this.player_share_knowledge_proposal = this.player_share_knowledge_proposal.bind(this);
+        this.player_share_knowledge_response = this.player_share_knowledge_response.bind(this);
+        this.player_cure = this.player_cure.bind(this);
+        this.player_treat_disease = this.player_treat_disease.bind(this);
+        this.player_build_research_station = this.player_build_research_station.bind(this);
+
+        this._curable_colours = this._curable_colours.bind(this);
+        this._player_by_name = this._player_by_name.bind(this);
+        this._treat_disease_for_free = this._treat_disease_for_free.bind(this);
+        this._move_pawn = this._move_pawn.bind(this);
+
+        this._check_end_of_user_turn = this._check_end_of_user_turn.bind(this);
+
     }
 
     add_user(data, socket) {
@@ -49,7 +84,7 @@ class Pandemic {
 
     assign_role(data) {
         this.users[data.socket_id].role = data.role;
-        this.io.in(this.game_id).emit("clientAction", {function:'updateRoles', args:this._role_choice_data()});
+        this.io.in(this.game_id).emit("clientAction", { function: 'updateRoles', args: this._role_choice_data() });
     }
 
     player_waiting(socket_id) {
@@ -61,9 +96,11 @@ class Pandemic {
         this.start_game();
     }
 
-    action_complete(){
+    action_complete() {
         this.game.queue.add_response();
     }
+
+    // =============================================  Starting Game
 
     start_game() {
         this.game = new Game(this.io, this.game_id);
@@ -72,11 +109,19 @@ class Pandemic {
         }
 
         this.io.in(this.game_id).emit(
-            "clientAction", 
-            {function:'startGame', args:this._role_choice_data()}
+            "clientAction",
+            { function: 'startGame', args: this._role_choice_data() }
         );
         this.game.initial_game_setup();
+        this.game.new_player_turn();
+        this.game.queue.add_task(
+            this.assess_player_options,
+            null,
+            0,
+            "Assessing player options"
+        )
         this.game.queue.start();
+
     }
 
     clientNotesPlayerCardsReceived() {
@@ -94,9 +139,9 @@ class Pandemic {
         var city_name = player.city_name;
         var city = this.game.cities[city_name];
 
+        this.update_current_player();
+
         var actions = [];
-
-
 
         this._assess_drive_ferry(actions, player, city);
         this._assess_direct_flight(actions, player, city);
@@ -115,17 +160,32 @@ class Pandemic {
         else if (player.role_name == "Dispatcher")
             this._assess_dispatcher_actions(actions, player, city);
 
-        this.io.to(player.socket_id).emit(
-            "enableActions",
-            actions,
+        // Queue should be empty after this is run
+        this.game.queue.add_task(
+            () => this.io.to(player.socket_id).emit(
+                "clientAction", { function: "enableActions", args: actions, return: false }
+            )
         )
-        this.io.in(this.game_id).emit(
-            "updatePlayerTurns",
-            {
-                player: player.player_name,
-                used_actions: this.game.player_used_actions,
-                total_actions: player.actions_per_turn
-            }
+
+    }
+
+    update_current_player() {
+        var player = this.game.current_player;
+        this.game.queue.add_task(
+            () => this.io.in(this.game_id).emit(
+                "clientAction",
+                {
+                    function: "updatePlayerTurns",
+                    args: {
+                        player: player.player_name,
+                        used_actions: this.game.player_used_actions,
+                        total_actions: player.actions_per_turn
+                    },
+                    return: true
+                }
+            ),
+            null,
+            "all"
         )
     }
 
@@ -157,6 +217,9 @@ class Pandemic {
 
     _assess_direct_flight(actions, player, city, player_cards = null, response_function = "player_move") {
         player_cards = player_cards || player.player_cards;
+        console.log("direct flight")
+        console.log(player_cards)
+        console.log(city)
         for (const c of player_cards) {
             if ((c.city_name == city.city_name) || !c.is_city) { continue; }
             actions.push(
@@ -170,6 +233,7 @@ class Pandemic {
                 }
             )
         }
+        console.log(actions);
     }
 
     _assess_charter_flight(actions, player, city, player_cards = null, response_function = "player_move") {
@@ -387,7 +451,13 @@ class Pandemic {
     // ==================
 
     action_response(data) {
-        this[data.response_function](data);
+        this.game.queue.add_task(
+            this[data.response_function],
+            data,
+            "all",
+            "Player action - " + data.response_function
+        )
+        this.game.queue.start();
     }
 
     // ==================
@@ -550,7 +620,7 @@ class Pandemic {
         var player = this.game.current_player;
 
         this.check_disease_status();
-        if (this.check_game_status()) return;
+        this.check_game_status() // if => return;
 
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
@@ -578,6 +648,7 @@ class Pandemic {
         if (this.infect_cities()) // Will return true if game over
             return;
         this.game.new_player_turn();
+        this.assess_player_options();
     }
 
     check_disease_status() {
@@ -647,8 +718,7 @@ class Pandemic {
             )
         }
         this.io.to(player.socket_id).emit(
-            "enableActions",
-            actions,
+            "clientAction", { function: "enableActions", args: actions }
         )
     }
 
@@ -691,11 +761,15 @@ class Pandemic {
         }
 
         this.io.to(other_player.socket_id).emit(
-            "enableActions",
-            [
-                Object.assign({ ...action }, { response: "Yes" }),
-                Object.assign({ ...action }, { response: "No" })
-            ]
+            "clientAction",
+            {
+                function: "enableActions",
+                args:
+                    [
+                        Object.assign({ ...action }, { response: "Yes" }),
+                        Object.assign({ ...action }, { response: "No" })
+                    ]
+            }
         )
     }
 
@@ -740,11 +814,15 @@ class Pandemic {
         }
 
         this.io.to(other_player.socket_id).emit(
-            "enableActions",
-            [
-                Object.assign({ ...action }, { response: "Yes" }),
-                Object.assign({ ...action }, { response: "No" })
-            ]
+            "clientAction",
+            {
+                function: "enableActions",
+                args:
+                    [
+                        Object.assign({ ...action }, { response: "Yes" }),
+                        Object.assign({ ...action }, { response: "No" })
+                    ]
+            }
         )
     }
 
@@ -761,7 +839,7 @@ class Pandemic {
             var give_player = data.share_proposal.share_direction != "Take" ? player : other_player;
 
             var card_data = give_player.discard_card(data.share_proposal.discard_card_name);
-            this.io.to(give_player.socket_id).emit("refreshPlayerHand")
+            this.io.to(give_player.socket_id).emit("clientAction", {function:"refreshPlayerHand"})
             take_player.receive_card_from_other_player(card_data);
 
             // Must ensure the receiever does not have > 7 cards

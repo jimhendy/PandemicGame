@@ -65,14 +65,8 @@ class PandemicGame {
 
 
     new_player_turn() {
-        if (this.current_player) {
-            this.io.to(this.current_player.socket_id).emit("disableActions");
-        }
         this.current_player = this.players[this.round % this.players.length];
         this.current_player.used_special_action_this_turn = false;
-        this.io.in(this.game_id).emit(
-            "newPlayersTurn", this.current_player.player_name
-        )
         this.player_used_actions = 0;
     }
 

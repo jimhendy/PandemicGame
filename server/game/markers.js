@@ -26,7 +26,7 @@ class Markers {
         this.increase_outbreaks = this.increase_outbreaks.bind(this);
     };
 
-    infection_rate(){
+    infection_rate() {
         if (this.infection_rate_loc < 3)
             return 2;
         else if (this.infection_rate_loc < 5)
@@ -40,7 +40,7 @@ class Markers {
         data.x = this.outbreak_locations[0][0]
         data.y = this.outbreak_locations[0][1]
         this.io.in(this.game_id).emit(
-            "createImage", data
+            "clientAction", { function: "createImage", args: data }
         );
     };
 
@@ -49,11 +49,11 @@ class Markers {
         data.x = this.infection_rate_locations[0][0]
         data.y = this.infection_rate_locations[0][1]
         this.io.in(this.game_id).emit(
-            "createImage", data
+            "clientAction", { function: "createImage", args: data }
         );
     };
 
-    _infection_rate_marker_data(){
+    _infection_rate_marker_data() {
         return {
             img_type: "marker",
             img_name: "infection_rate_marker",
@@ -64,7 +64,7 @@ class Markers {
         }
     }
 
-    _outbrak_marker_data(){
+    _outbrak_marker_data() {
         return {
             img_type: "marker",
             img_name: "outbreak_marker",
@@ -101,7 +101,7 @@ class Markers {
         ];
     }
 
-    increase_infection_rate(){
+    increase_infection_rate() {
         var data = this._infection_rate_marker_data();
         data.x = this.infection_rate_locations[this.infection_rate_loc][0]
         data.y = this.infection_rate_locations[this.infection_rate_loc][1]
@@ -109,30 +109,30 @@ class Markers {
         data.dest_x = this.infection_rate_locations[this.infection_rate_loc][0]
         data.dest_y = this.infection_rate_locations[this.infection_rate_loc][1]
         this.io.in(this.game_id).emit(
-            "moveImage", data
+            "clientAction", { function: "moveImage", args: data }
         );
     }
 
-    increase_outbreaks(n_outbreaks=1){
-        
+    increase_outbreaks(n_outbreaks = 1) {
+
         var data = this._outbrak_marker_data();
         data.x = this.outbreak_locations[this.outbreak_loc][0]
         data.y = this.outbreak_locations[this.outbreak_loc][1]
         this.outbreak_loc += n_outbreaks;
         var too_many_outbreaks = false;
-        if (this.outbreak_loc >= (this.outbreak_locations.length - 1)){
+        if (this.outbreak_loc >= (this.outbreak_locations.length - 1)) {
             this.io.in(this.game_id).emit(
-                "gameOver", {message: "Too many outbreaks, you lose!"}
+                "clientAction", { function: "gameOver", args: { message: "Too many outbreaks, you lose!" } }
             )
             too_many_outbreaks = true;
-            data.dest_x = this.outbreak_locations[this.outbreak_locations.length-1][0]
-            data.dest_y = this.outbreak_locations[this.outbreak_locations.length-1][1]
+            data.dest_x = this.outbreak_locations[this.outbreak_locations.length - 1][0]
+            data.dest_y = this.outbreak_locations[this.outbreak_locations.length - 1][1]
         } else {
             data.dest_x = this.outbreak_locations[this.outbreak_loc][0]
             data.dest_y = this.outbreak_locations[this.outbreak_loc][1]
         }
         this.io.in(this.game_id).emit(
-            "moveImage", data
+            "clientAction", { function: "moveImage", args: data }
         );
         return too_many_outbreaks;
     }

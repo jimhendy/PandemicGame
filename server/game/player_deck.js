@@ -36,16 +36,19 @@ class PlayerDeck {
         utils.shuffle(this.deck);
 
         this.io.in(this.game_id).emit(
-            "createImage",
+            "clientAction",
             {
-                img_type: "card",
-                img_name: "player_deck",
-                image_file: "images/game/player_cards/Back Player Card.gif",
-                x: this.deck_location[0],
-                y: this.deck_location[1],
-                dx: this.card_width_frac,
-                dy: this.card_height_frac,
-                cardCanvas: true
+                function: "createImage",
+                args: {
+                    img_type: "card",
+                    img_name: "player_deck",
+                    image_file: "images/game/player_cards/Back Player Card.gif",
+                    x: this.deck_location[0],
+                    y: this.deck_location[1],
+                    dx: this.card_width_frac,
+                    dy: this.card_height_frac,
+                    cardCanvas: true
+                }
             }
         )
 
@@ -101,6 +104,7 @@ class PlayerDeck {
 
     _give_player_card(player, card) {
         var card_data = this.emit_data(card);
+        player.add_player_card(card_data);
         Object.assign(card_data,
             {
                 dest_x: 0.3,
@@ -152,7 +156,6 @@ class PlayerDeck {
             }
             var card_data_dest_player = Object.assign({ ...card_data }, { "dest_x": 1.2 });
             var card_data_dest_others = Object.assign({ ...card_data }, { "dest_x": -0.4 });
-            console.log(player.socket_id);
             this.queue.add_task(
                 () => {
                     // Receiving player card

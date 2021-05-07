@@ -27,7 +27,7 @@ jQuery(function ($) {
             IO.socket.on("alterImage", Client.alterImage);
             IO.socket.on("removeImage", Client.removeImage);
 
-            IO.socket.on("logMessage", Client.logMessage);
+            
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
@@ -53,6 +53,8 @@ jQuery(function ($) {
 
             IO.socket.on("parallel_actions", Client.parallel_actions);
             IO.socket.on("series_actions", Client.series_actions);
+
+            IO.socket.on("logMessage", Client.logMessage);
         },
 
         onConnected: function () {
@@ -457,14 +459,14 @@ jQuery(function ($) {
             )
         },
         */
-
+        /*
         newPlayerTurn: function (player_name) {
             Client.$currentPlayerDiv.textContent = player_name
             if (player_name != Client.data.player_name)
                 return;
             IO.socket.emit("enquireAvailableActions", Client.data);
         },
-
+        */
         enableActions: function (data) {
             Client.action_data = data;
             Client.present_actions(Client.action_data)
