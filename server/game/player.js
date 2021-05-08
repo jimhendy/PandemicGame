@@ -1,10 +1,11 @@
 
 class Player{
 
-    constructor(io, game_id, player_name, role_name, socket_id, player_num){
+    constructor(io, game_id, queue, player_name, role_name, socket_id, player_num){
 
         this.io = io;
         this.game_id = game_id;
+        this.queue = queue;
 
         this.player_name = player_name;
         this.role_name = role_name;
@@ -42,6 +43,7 @@ class Player{
         }
         this.player_cards = this.player_cards.filter(
             function(c) { return c.card_name != card_name});
+        /*
         this.io.to(this.socket_id).emit(
             "clientAction",
             {
@@ -49,6 +51,7 @@ class Player{
                 args: card_name
             }
         );
+        */
         return card_data;
     };
 
@@ -74,27 +77,36 @@ class Player{
     }
 
     move_pawn(city) {
-        // 2 responses per change
         this.city_name = city.city_name;
-        this.io.in(this.game_id).emit(
-            "clientAction",
-            { 
-                function: "moveImage",
-                args: {
-                    img_name: "pawn_" + this.role_name,
-                    dest_x: city.location[0] + 0.02,
-                    dest_y: city.location[1] - 0.01 + (0.01 * this.player_num),
-                    dt: 1
-                },
-                return: true
-            }
-        )
-        this.io.to(this.socket_id).emit(
-            "clientAction",
-            { 
-                function:"changeLocation", 
-                args: this.city_name
-            }
+        var move_args = {
+            img_name: "pawn_" + this.role_name,
+            dest_x: city.location[0] + 0.02,
+            dest_y: city.location[1] - 0.01 + (0.01 * this.player_num),
+            dt: 1
+        }
+        this.queue.add_task(
+            ()=>{
+                this.io.to(this.socket_id).emit(
+                    "series_actions",
+                    {
+                        series_actions_args: [
+                            { function: "changeLocation", args: this.city_name },
+                            { function: "moveImage", args: move_args }
+                        ],
+                        return: true
+                    }
+                );
+                // Other players
+                this.io.sockets.sockets.get(this.socket_id).to(this.game_id).emit(
+                    "clientAction",
+                    {
+                        function: "moveImage",
+                        args: move_args,
+                        return: true
+                    }
+                );
+            },
+            null, "all", "Moving " + this.player_name + "'s pawn to " + this.city_name
         );
     }
 

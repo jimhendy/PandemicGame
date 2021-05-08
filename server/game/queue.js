@@ -37,7 +37,14 @@ class Queue {
     }
 
     add_task(func, args, n_players_response = 1, description = null, front = false) {
-        var n_responses = n_players_response == "all" ? this.n_players : n_players_response;
+        var n_responses;
+        if (n_players_response == "all")
+            n_responses = this.n_players
+        else if (n_players_response == "none"){
+            // Use this if we never want the queue to restart on its own but we will manually restart using "queue.start()"
+            n_responses = 999999}
+        else
+            n_responses = n_players_response;
         var args = Array.isArray(args) ? args : [args];
         var data = {
             func: func,
@@ -55,6 +62,10 @@ class Queue {
     add_response() {
         console.log("response received " + this.awaiting_responses)
         this.awaiting_responses--;
+        if (this.awaiting_responses < 0){
+            console.error("Negative queue.awaiting_responses, should not happen")
+            console.error(this._queue)
+        }
         this._check_next_task()
     }
 

@@ -37,6 +37,9 @@ function alter_image(image, new_image_file) {
 function clearImage(image) {
     return new Promise(
         resolve => {
+            console.log("=================================================================")
+            console.log("removing")
+            console.log(image)
             image.data.ctx.clearRect(
                 image.img.canvas_x, image.img.canvas_y, image.img.width, image.img.height
             );
@@ -94,7 +97,7 @@ async function move(image, destination_x, destination_y, destination_dx, destina
     var canvas = image.data.canvas;
     image.moving = true;
 
-    duration = 0.1
+    //duration = 0.1
 
     var images_to_redraw = [];
     for (const [oi_name, oi] of Object.entries(other_images)){
@@ -137,6 +140,9 @@ async function move(image, destination_x, destination_y, destination_dx, destina
 
 
             function frame() {
+
+                
+
                 if (i == n_steps) {
                     img_object.canvas_x = final_x;
                     img_object.canvas_y = final_y;
@@ -147,26 +153,32 @@ async function move(image, destination_x, destination_y, destination_dx, destina
                     for (const oi_1 of images_to_redraw) {
                         _redraw_image(oi_1, context);
                     }
+                    //_redraw_image(img_object, context);
                     resolve();
                 } else {
                     i++;
                     context.clearRect(
-                        x, y, width * 1.1, height * 1.1 // to avoid anti-ailiasing issues
+                        x, y, width + 1, height + 1 // to avoid anti-ailiasing issues
                     );
+                    
                     x += dx;
                     y += dy;
                     width += ddx;
                     height += ddy;
+
+                    // Redraw first so our moving object is on top
+                    for (const oi_2 of images_to_redraw) {
+                        // Only redraw if overlap
+                        if (oi_2.img.canvas_x <= 1.1 * (x + width) && (oi_2.img.canvas_x + oi_2.img.width) >= 0.9 * x &&
+                            oi_2.img.canvas_y <= 1.1 * (y + height) && (oi_2.img.canvas_y + oi_2.img.height) >= 0.9 * y)
+                            _redraw_image(oi_2, context);
+                    };
+
                     context.drawImage(
                         img_object, x, y, width, height
                     );
                 };
-                for (const oi_2 of images_to_redraw) {
-                    // Only redraw if overlap
-                    if (oi_2.img.canvas_x <= 1.1 * (x + width) && (oi_2.img.canvas_x + oi_2.img.width) >= 0.9 * x &&
-                        oi_2.img.canvas_y <= 1.1 * (y + height) && (oi_2.img.canvas_y + oi_2.img.height) >= 0.9 * y)
-                        _redraw_image(oi_2, context);
-                };
+                
             }
         } // end of resolve
     );

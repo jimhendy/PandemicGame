@@ -41,7 +41,7 @@ class PandemicGame {
     }
 
     add_player(data) {
-        var p = new Player(this.io, this.game_id, data.player_name, data.role, data.socket_id, this.players.length);
+        var p = new Player(this.io, this.game_id, this.queue, data.player_name, data.role, data.socket_id, this.players.length);
         this.players.push(p);
         this.queue.add_player();
     }
@@ -151,7 +151,7 @@ class PandemicGame {
                 return true;
             }
         }
-        this.update_infection_count();
+        this.queue.add_task(this.update_infection_count, null, "all");
         return false;
     }
 

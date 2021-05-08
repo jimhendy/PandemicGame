@@ -49,12 +49,17 @@ class Pandemic {
         this.player_treat_disease = this.player_treat_disease.bind(this);
         this.player_build_research_station = this.player_build_research_station.bind(this);
 
+        this.infect_cities = this.infect_cities.bind(this);
+
         this._curable_colours = this._curable_colours.bind(this);
         this._player_by_name = this._player_by_name.bind(this);
         this._treat_disease_for_free = this._treat_disease_for_free.bind(this);
         this._move_pawn = this._move_pawn.bind(this);
 
         this._check_end_of_user_turn = this._check_end_of_user_turn.bind(this);
+        this.reduce_player_hand_size = this.reduce_player_hand_size.bind(this);
+        this.reduce_player_hand_size_response = this.reduce_player_hand_size_response.bind(this);
+        this._discard_cards = this._discard_cards.bind(this);
 
     }
 
@@ -121,7 +126,6 @@ class Pandemic {
             "Assessing player options"
         )
         this.game.queue.start();
-
     }
 
     clientNotesPlayerCardsReceived() {
@@ -217,9 +221,6 @@ class Pandemic {
 
     _assess_direct_flight(actions, player, city, player_cards = null, response_function = "player_move") {
         player_cards = player_cards || player.player_cards;
-        console.log("direct flight")
-        console.log(player_cards)
-        console.log(city)
         for (const c of player_cards) {
             if ((c.city_name == city.city_name) || !c.is_city) { continue; }
             actions.push(
@@ -233,7 +234,6 @@ class Pandemic {
                 }
             )
         }
-        console.log(actions);
     }
 
     _assess_charter_flight(actions, player, city, player_cards = null, response_function = "player_move") {
@@ -478,6 +478,8 @@ class Pandemic {
         )
         if (data.action == "Research Station to any city")
             player.used_special_action_this_turn = true;
+        console.log("@@@@@@@@@@@@@@@@@@@@@@")
+        console.log(data)
         this._discard_cards(player, data)
         this._move_pawn(data.destination, player);
         this._check_end_of_user_turn();
@@ -517,7 +519,6 @@ class Pandemic {
         if (data.discard_card_name == "Airlift") {
             this.event_card_airflit(data);
         }
-
     }
 
     _after_event_card(data) {
@@ -616,6 +617,7 @@ class Pandemic {
     // =============================================== End of turn utils
 
     _check_end_of_user_turn() {
+        this.game.queue.start();
         this.game.player_used_actions++;
         var player = this.game.current_player;
 
@@ -649,6 +651,7 @@ class Pandemic {
             return;
         this.game.new_player_turn();
         this.assess_player_options();
+        this.game.queue.start();
     }
 
     check_disease_status() {
@@ -674,7 +677,12 @@ class Pandemic {
 
 
     infect_cities() {
-        return this.game.infect_cities();
+        this.game.queue.add_task(
+            this.game.infect_cities,
+            null,
+            "all",
+            "Infecting cities"
+        )
     }
 
     // =====================================  Reduce player hand size
@@ -717,28 +725,33 @@ class Pandemic {
                 }
             )
         }
-        this.io.to(player.socket_id).emit(
-            "clientAction", { function: "enableActions", args: actions }
+        this.game.queue.add_task(
+            () => this.io.to(player.socket_id).emit(
+                "clientAction", { function: "enableActions", args: actions }
+            ),
+            null,
+            "none", // Although we will not actually respond via IO.actionComplete but manually restart the queue in "pandemic.reduce_player_hand_size_response"
+            "Reducing player card hand size for " + player.player_name
         )
+        this.game.queue.start();
     }
 
     reduce_player_hand_size_response(data) {
         var player = this._player_by_name(data.player_name)
         this._discard_cards(player, data)
-        var next_function = data.next_function || "end_player_turn";
-        return this[next_function]();
+        this.game.queue.start()
     }
 
     _discard_cards(player, data) {
-        if (Object.keys(data.answers).includes("discard_card_name")) {
-            var card_names = data.answers.discard_card_name;
-            if (!Array.isArray(card_names))
-                card_names = [card_names];
-            this.game.player_deck.discard(card_names)
-            for (const c of card_names) {
-                player.discard_card(c)
-            }
+        var discards = [];
+        if (Object.keys(data.answers).includes("discard_card_name")){
+            discards = data.answers.discard_card_name;
+        } else if (Object.keys(data).includes("discard_card_name")){
+            discards = data.discard_card_name;
         }
+        if (!Array.isArray(discards))
+            discards = [discards];
+        this.game.player_deck.discard(discards, player)
     }
 
     // ===================================================== Proposals & Responses

@@ -109,7 +109,6 @@ jQuery(function ($) {
 
         parallel_actions: function (data) {
             // data should be an array of function-args combos
-            console.log(data);
             var promises = [];
             for (const a of data.parallel_actions_args) {
                 promises.push(Client.actionDirector(a))
@@ -127,7 +126,6 @@ jQuery(function ($) {
 
         series_actions: async function (data) {
             // data should be an array of function-args combos
-            console.log(data)
             for (const a of data.series_actions_args) {
                 await Client.actionDirector(a);
             }
@@ -305,8 +303,10 @@ jQuery(function ($) {
         },
 
         removeImage: function (img_name) {
+            console.log(img_name)
             var img = Client.images[img_name];
-            clearImage(img).then(
+            console.log(img)
+            return clearImage(img).then(
                 () => { delete Client.images[img_name] }
             );
         },
