@@ -15,7 +15,7 @@ function createImage(image_file, context, x_frac, y_frac, dx_frac, dy_frac, canv
             img.src = image_file;
 
             var i = 0;
-            var id = setInterval(wait.bind(this), 10)
+            var id = setInterval(wait, 10)
             function wait(){
                 i++;
                 if (i>5){

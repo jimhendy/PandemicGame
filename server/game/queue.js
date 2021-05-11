@@ -89,7 +89,7 @@ class Queue {
             game_over: game_over
         }
         if (front) {
-            this._queue.shift(data)
+            this._queue.unshift(data)
         } else {
             this._queue.push(data)
         }

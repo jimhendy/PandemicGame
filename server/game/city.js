@@ -39,7 +39,7 @@ class City {
     add_cube(cities, colour = null, ignore_cities = null) {
         // Might be ignoring this city as it has already outbroken
         if (ignore_cities && ignore_cities.includes(this.city_name))
-            return 0;
+            return;
 
         var colour = colour || this.native_disease_colour;
         var currrent_cubes = this.disease_cubes[colour];

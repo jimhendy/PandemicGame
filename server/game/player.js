@@ -12,7 +12,7 @@ class Player{
         this.socket_id = socket_id;
         this.actions_per_turn = 4;
         this.n_cards_to_cure = this.role_name == "Scientist" ? 4 : 5;
-        this.max_hand_cards = 9999997;
+        this.max_hand_cards = 77777;
         this.city_name = null;
         this.player_cards = [];
 

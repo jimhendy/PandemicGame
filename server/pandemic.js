@@ -126,7 +126,7 @@ class Pandemic {
         )
         this.game.queue.start();
     }
-
+    /*
     clientNotesPlayerCardsReceived() {
         if (!this.initial_deal_complete) {
             this.initial_clients_deals++;
@@ -136,6 +136,7 @@ class Pandemic {
         }
         this.game.new_player_turn();
     }
+    */
 
     assess_player_options() {
         var player = this.game.current_player;
@@ -627,7 +628,7 @@ class Pandemic {
 
     // =============================================== End of turn utils
 
-    _check_end_of_user_turn() {
+    async _check_end_of_user_turn() {
 
         this.game.player_used_actions++;
         var player = this.game.current_player;
@@ -639,11 +640,14 @@ class Pandemic {
             this.game.round++;
 
             this.game.player_deck.drawPlayerCards(2, player);
-            
-            if (player.too_many_cards())
+            await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize
+
+            if (player.too_many_cards()){
                 this.reduce_player_hand_size(player);
-            else 
-                this.end_player_turn();
+                await this.game.queue.run_until_empty(); // Ensure cards are removed before continuing
+            }
+            
+            this.end_player_turn();
         } else {
             // current player has another action
             this.assess_player_options();
@@ -720,22 +724,21 @@ class Pandemic {
                 }
             )
         }
+        
         this.game.queue.add_task(
             () => this.io.to(player.socket_id).emit(
                 "clientAction", { function: "enableActions", args: actions }
             ),
             null,
-            0, // Doesn't matter as queue will be empty after this
+            1,
             "Reducing player card hand size for " + player.player_name,
-            false
         )
-        this.game.queue.start();
     }
 
     reduce_player_hand_size_response(data) {
         var player = this._player_by_name(data.player_name)
         this._discard_cards(player, data)
-        this.end_player_turn();
+        // Don't have to simulate action here as _discard_cards will take over
     }
 
     _discard_cards(player, data) {
@@ -803,7 +806,7 @@ class Pandemic {
 
 
     player_share_knowledge_proposal(data) {
-        var other_player = this._player_by_name(data.player_name)
+        var other_player = this._player_by_name(data.player_name) // Not the current player
         this.io.in(this.game_id).emit(
             "logMessage",
             { message: data.current_player_name + " wants to trade " + data.discard_card_name + " with " + data.player_name }
@@ -851,7 +854,7 @@ class Pandemic {
 
             // Must ensure the receiever does not have > 7 cards
             if (take_player.too_many_cards()) {
-                return this.reduce_player_hand_size(take_player, "_check_end_of_user_turn");
+                this.reduce_player_hand_size(take_player);
             } else {
                 this._check_end_of_user_turn();
             }
