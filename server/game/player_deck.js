@@ -214,44 +214,42 @@ class PlayerDeck {
         // card_names is an array of the player card names
         console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         console.log(card_names)
-        for (var i=card_names.length-1; i>=0; i--){
-            console.log(i)
-            var cn = card_names[i];
-            console.log(cn)
-            var card = this.cards_in_player_hands[cn];
-
-            player.discard_card(cn);
-            delete this.cards_in_player_hands[cn];
-            this.discard_pile.push(card);
-
-            var final_card_data = Object.assign(
-                this.emit_data(card), {x: this.discard_location[0], y: this.discard_location[1]}
-            )
-            var initial_card_data = Object.assign({...final_card_data},
-                {
-                    x: null, // different starting points for current and other players
-                    y: 0,
-                    dx: 0.3,
-                    dy: 0.6,
-                    dest_x: this.discard_location[0],
-                    dest_y: this.discard_location[1],
-                    dest_dx: this.card_width_frac,
-                    dest_dy: this.card_height_frac,
-                    dt: 0.5,
-                    animationCanvas: true
-                }
-            )
-            var message = {
-                function: "logMessage",
-                args: {
-                    message: player.player_name + ' discards player card "' + card.card_name + '"',
-                    style: { color: card.is_city ? card.city.native_disease_colour : null }
-                }
-            }
-            var card_data_player = Object.assign({ ...initial_card_data }, { x: 1.01 });
-            var card_data_others = Object.assign({ ...initial_card_data }, { x: -initial_card_data.dx - 0.01 });
+        for (const card_name of card_names){
             this.queue.add_task(
-                () => {
+                (cn) => {
+                    var card = this.cards_in_player_hands[cn];
+
+                    player.discard_card(cn);
+                    delete this.cards_in_player_hands[cn];
+                    this.discard_pile.push(card);
+
+                    var final_card_data = Object.assign(
+                        this.emit_data(card), {x: this.discard_location[0], y: this.discard_location[1]}
+                    )
+                    var initial_card_data = Object.assign({...final_card_data},
+                        {
+                            x: null, // different starting points for current and other players
+                            y: 0,
+                            dx: 0.3,
+                            dy: 0.6,
+                            dest_x: this.discard_location[0],
+                            dest_y: this.discard_location[1],
+                            dest_dx: this.card_width_frac,
+                            dest_dy: this.card_height_frac,
+                            dt: 0.5,
+                            animationCanvas: true
+                        }
+                    )
+                    var message = {
+                        function: "logMessage",
+                        args: {
+                            message: player.player_name + ' discards player card "' + card.card_name + '"',
+                            style: { color: card.is_city ? card.city.native_disease_colour : null }
+                        }
+                    }
+                    var card_data_player = Object.assign({ ...initial_card_data }, { x: 1.01 });
+                    var card_data_others = Object.assign({ ...initial_card_data }, { x: -initial_card_data.dx - 0.01 });
+            
                     // Receiving player card
                     this.io.to(player.socket_id).emit(
                         "parallel_actions",
@@ -260,7 +258,7 @@ class PlayerDeck {
                                 function: "series_actions",
                                 args: {
                                     series_actions_args: [
-                                        { function: "remove_player_card_from_hand", args: final_card_data.card_name },
+                                        { function: "remove_player_card_from_hand", args: cn },
                                         { function: "refreshPlayerHand"},
                                         { function: "createImage", args: card_data_player },
                                         { function: "moveImage", args: card_data_player },
@@ -294,7 +292,7 @@ class PlayerDeck {
                     );
                 },
                 // Remaining args for add_task
-                null, "all", "Discarding " + card.card_name + " from " + player.player_name
+                card_name, "all", "Discarding " + card_name + " from " + player.player_name
             )
         }
     }

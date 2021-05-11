@@ -55,6 +55,7 @@ class Pandemic {
         this._move_pawn = this._move_pawn.bind(this);
 
         this._check_end_of_user_turn = this._check_end_of_user_turn.bind(this);
+        this._add_check_end_turn_to_queue = this._add_check_end_turn_to_queue.bind(this);
         this.reduce_player_hand_size = this.reduce_player_hand_size.bind(this);
         this.reduce_player_hand_size_response = this.reduce_player_hand_size_response.bind(this);
         this._discard_cards = this._discard_cards.bind(this);
@@ -452,20 +453,26 @@ class Pandemic {
 
     action_response(data) {        
         
-        // Add the next task to the queue to keep task order but don't expect any responses
+        // Add the next task to the queue to keep task order but don't expect any responses as server side methods
+        
         this.game.queue.add_task(
             this[data.response_function],
             data,
             0,
             "Player action - " + data.response_function
         )
+        // Can't always do check_end_of_user_turn as some responses are not a whole turn (e.g. reduce player hand size)
+        this.game.queue.start();
+    }
+
+    _add_check_end_turn_to_queue(){
         this.game.queue.add_task(
             this._check_end_of_user_turn,
             null,
             0,
             "Checking end of user turn"
         )
-        this.game.queue.start();
+        //this.game.queue.start();
     }
 
     // ==================
@@ -476,6 +483,7 @@ class Pandemic {
             { message: player.player_name + " is too scared to do anything and passes" }
         )
         this.game.player_used_actions = player.actions_per_turn + 1;
+        this._add_check_end_turn_to_queue();
     }
 
     player_move(data) {
@@ -489,10 +497,12 @@ class Pandemic {
         console.log(data)
         this._discard_cards(player, data)
         this._move_pawn(data.destination, player);
+        this._add_check_end_turn_to_queue();
     }
 
     player_treat_disease(data) {
         this._treat_disease_for_free(data.disease_colour.toLowerCase());
+        this._add_check_end_turn_to_queue();
     }
 
     player_build_research_station(data) {
@@ -500,6 +510,7 @@ class Pandemic {
         var city_name = data.destination;
         this.game.add_research_station(city_name);
         this._discard_cards(player, data)
+        this._add_check_end_turn_to_queue();
     }
 
     player_cure(data) {
@@ -514,6 +525,7 @@ class Pandemic {
             player.discard_card(c);
         this.game.player_deck.discard(data.answers.discard_card_name, player);
         disease.cure();
+        this._add_check_end_turn_to_queue();
     }
 
     player_play_event_card(data) {
@@ -610,12 +622,7 @@ class Pandemic {
 
         var n_removes = (player.role_name == "Medic" || disease.cured) ? city.disease_cubes[colour] : 1
         for (var i = 0; i < n_removes; i++) {
-            this.game.queue.add_task(
-                city.remove_cube,
-                colour,
-                "all",
-                "Removing " + colour + " cube from " + city_name + " as " + player.player_name + " treats disease."
-            )
+            city.remove_cube(colour)
         }
         this.game.update_infection_count();
     }
@@ -636,10 +643,10 @@ class Pandemic {
             this.game.player_deck.drawPlayerCards(2, player);
             //this.game.queue.start(); // Ensure the new cards are dealt BEFORE testing for hand size reduction
 
-            //if (player.too_many_cards())
-            //    this.reduce_player_hand_size(player);
-
-            this.end_player_turn();
+            if (player.too_many_cards())
+                this.reduce_player_hand_size(player);
+            else 
+                this.end_player_turn();
         } else {
             // current player has another action
             this.assess_player_options();
@@ -718,9 +725,9 @@ class Pandemic {
                 "clientAction", { function: "enableActions", args: actions }
             ),
             null,
-            1, // Although we will not actually respond via IO.actionComplete but manually restart the queue in "pandemic.reduce_player_hand_size_response"
+            0, // Doesn't matter as queue will be empty after this
             "Reducing player card hand size for " + player.player_name,
-            true // Push into queue at the front for immediate action
+            false
         )
         this.game.queue.start();
     }
@@ -728,11 +735,13 @@ class Pandemic {
     reduce_player_hand_size_response(data) {
         var player = this._player_by_name(data.player_name)
         this._discard_cards(player, data)
-        this.game.queue.start()
+        this.end_player_turn();
     }
 
     _discard_cards(player, data) {
         var discards = [];
+        console.log("DISCARDS")
+        console.log(data)
         if (Object.keys(data.answers).includes("discard_card_name")) {
             discards = data.answers.discard_card_name;
         } else if (Object.keys(data).includes("discard_card_name")) {
@@ -740,6 +749,7 @@ class Pandemic {
         }
         if (!Array.isArray(discards))
             discards = [discards];
+        console.log(discards)
         this.game.player_deck.discard(discards, player)
     }
 
