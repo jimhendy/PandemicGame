@@ -98,7 +98,7 @@ class InfectionDeck {
         if (log_message == null) {
             log_message = {
                 message: "🕱 " + city.city_name + " was infected with " + cubes + " cube(s)",
-                style: { color: city.native_disease_colour, "font-weight": "bold" }
+                style: { color: city.native_disease_colour }
             }
         }
         // Move the infection card from the deck

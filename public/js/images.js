@@ -13,7 +13,16 @@ function createImage(image_file, context, x_frac, y_frac, dx_frac, dy_frac, canv
             }
 
             img.src = image_file;
-            resolve(img);
+
+            var i = 0;
+            var id = setInterval(wait.bind(this), 10)
+            function wait(){
+                i++;
+                if (i>5){
+                    clearInterval(id);
+                    resolve(img);
+                }
+            }
         }
     );
 };

@@ -58,42 +58,68 @@ class Disease {
     }
 
     cure(){
-        this.io.in(this.game_id).emit(
-            "logMessage",
-            {
-                message: "The " + this.colour + " disease is cured!",
-                fontWeight: "bold",
-                color: this.colour
-            }
-        )
         this.cured = true;
-        this.io.in(this.game_id).emit(
-            "moveImage",
-            {
-                img_name: this.img_name,
-                dest_y: this.y_loc_cured_frac,
-                dt: 1
-            }
-        )
+        this.queue.add_task(
+            () => {
+                this.io.in(this.game_id).emit(
+                    "parallel_actions",
+                    {
+                        parallel_actions_args: [
+                            {
+                                function: "logMessage",
+                                args: {
+                                    message: "The " + this.colour + " disease is cured!",
+                                    fontWeight: "bold",
+                                    color: this.colour
+                                }
+                            },
+                            {
+                                function: "moveImage",
+                                args: {
+                                    img_name: this.img_name,
+                                    dest_y: this.y_loc_cured_frac,
+                                    dt: 1
+                                }
+                            }
+                        ],
+                        return: true
+                    }
+                )
+            },
+            null, "all", "Curing " + this.colour + " disease."
+        );
     }
 
     eradicate(){
-        this.io.in(this.game_id).emit(
-            "logMessage",
-            {
-                message: "The " + this.colour + " disease is ERADICATED!",
-                fontWeight: "bold",
-                color: this.colour
-            }
-        )
         this.eradicated = true;
-        this.io.in(this.game_id).emit(
-            "alterImage",
-            {
-                img_name: this.img_name,
-                new_image_file: this.vial_file_eradicated
-            }
-        )
+        this.queue.add_task(
+            () => {
+                this.io.in(this.game_id).emit(
+                    "parallel_actions",
+                    {
+                        parallel_actions_args: [
+                            {
+                                function: "logMessage",
+                                args: {
+                                    message: "The " + this.colour + " disease is ERADICATED!",
+                                    fontWeight: "bold",
+                                    color: this.colour
+                                }
+                            },
+                            {
+                                function: "alterImage",
+                                args: {
+                                    img_name: this.img_name,
+                                    new_image_file: this.vial_file_eradicated
+                                }
+                            }
+                        ],
+                        return: true
+                    }
+                )
+            },
+            null, "all", "Eradicating " + this.colour + " disease."
+        );
     }
 }
 

@@ -237,7 +237,8 @@ class PlayerDeck {
                             dest_dx: this.card_width_frac,
                             dest_dy: this.card_height_frac,
                             dt: 0.5,
-                            animationCanvas: true
+                            animationCanvas: true,
+                            cardCanvas: false
                         }
                     )
                     // Rename the animation image so we can remove it after drawing the image on the card canvas
