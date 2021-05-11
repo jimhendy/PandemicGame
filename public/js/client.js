@@ -166,8 +166,8 @@ jQuery(function ($) {
 
         updateRoles: function (data) {
             if (Client.data.current_page != "role_choice") {
-                console.error("Client asked to update roles but not on correct page")
-                console.error(Client.data)
+                //console.error("Client asked to update roles but not on correct page")
+                //console.error(Client.data)
                 return;
             }
 
@@ -303,9 +303,12 @@ jQuery(function ($) {
         },
 
         removeImage: function (img_name) {
-            console.log(img_name)
             var img = Client.images[img_name];
-            console.log(img)
+            if (img == null){
+                console.error("Asked to remove "+ img_name + ", but can't find image")
+                for (const i of Object.keys(Client.images))
+                    console.error(i);
+            }
             return clearImage(img).then(
                 () => { delete Client.images[img_name] }
             );
@@ -468,8 +471,6 @@ jQuery(function ($) {
         },
         */
         enableActions: function (data) {
-            console.log("Enabling actions")
-            console.log(data)
             Client.action_data = data;
             Client.present_actions(Client.action_data)
         },

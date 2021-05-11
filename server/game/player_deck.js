@@ -2,11 +2,14 @@ const city = require("./city");
 const utils = require("./utils");
 
 class PlayerDeck {
-    constructor(io, game_id, queue, cities, n_epidemics = 4) {
+    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 4) {
         this.io = io;
         this.game_id = game_id;
         this.queue = queue;
 
+        this.game = game;
+
+        this.markers = markers;
         this.cities = cities;
         this.n_epidemics = n_epidemics;
 
@@ -59,14 +62,13 @@ class PlayerDeck {
         this.emit_data = this.emit_data.bind(this);
         this.discard = this.discard.bind(this);
         this._give_player_card = this._give_player_card.bind(this);
-
     }
 
     initial_deal(players, n_initial_cards) {
         for (const p of players) {
             this.drawPlayerCards(n_initial_cards, p);
         }
-        //this._add_epidemics();
+        this._add_epidemics();
     };
 
     _add_epidemics() {
@@ -92,14 +94,12 @@ class PlayerDeck {
         for (var i = 0; i < n_cards; i++) {
             var card = this.deck.pop();
             this.cards_in_player_hands[card.card_name] = card;
-            console.log("========================================********************************  " + card.card_name)
             this._give_player_card(player, card)
         }
     }
 
     _give_player_card(player, card) {
         var card_data = this.emit_data(card);
-        player.add_player_card(card_data);
         Object.assign(card_data,
             {
                 dest_x: 0.3,
@@ -141,8 +141,10 @@ class PlayerDeck {
                 ),
                 null, "all", "Dealing epidemic card from player deck"
             )
+            this.game.resolve_epidemic();
         } else {
             // Not an epidemic card
+            player.add_player_card(card_data);
             var message = {
                 function: "logMessage",
                 args: {
@@ -212,8 +214,6 @@ class PlayerDeck {
 
     discard(card_names, player) {
         // card_names is an array of the player card names
-        console.log('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        console.log(card_names)
         for (const card_name of card_names){
             this.queue.add_task(
                 (cn) => {
@@ -240,6 +240,8 @@ class PlayerDeck {
                             animationCanvas: true
                         }
                     )
+                    // Rename the animation image so we can remove it after drawing the image on the card canvas
+                    initial_card_data.img_name += "_temp";
                     var message = {
                         function: "logMessage",
                         args: {
@@ -262,8 +264,8 @@ class PlayerDeck {
                                         { function: "refreshPlayerHand"},
                                         { function: "createImage", args: card_data_player },
                                         { function: "moveImage", args: card_data_player },
+                                        { function: "createImage", args: final_card_data},
                                         { function: "removeImage", args: card_data_player.img_name }, // Remove from animation canvas
-                                        { function: "createImage", args: final_card_data}
                                     ]
                                 }
                             },
@@ -281,8 +283,8 @@ class PlayerDeck {
                                         series_actions_args: [
                                             { function: "createImage", args: card_data_others },
                                             { function: "moveImage", args: card_data_others },
-                                            { function: "removeImage", args: card_data_others.img_name }, // Remove from animation canvas
-                                            { function: "createImage", args: final_card_data}
+                                            { function: "createImage", args: final_card_data},
+                                            { function: "removeImage", args: card_data_others.img_name } // Remove from animation canvas
                                         ]
                                     }
                                 },

@@ -1,9 +1,10 @@
 const utils = require("./utils")
 
 class Disease {
-    constructor(io, game_id, colour, x_loc){
+    constructor(io, game_id, queue, colour, x_loc){
         this.io = io;
         this.game_id = game_id;
+        this.queue = queue;
 
         this.colour = colour.toLowerCase();
         this.cured = false;
@@ -45,11 +46,9 @@ class Disease {
     add_cube(){
         this.cubes_on_board++;
         if (this.cubes_on_board > this.total_cubes){
-            this.io.in(this.game_id).emit(
-                "gameOver",
-                {
-                    message: utils.toTitleCase(this.colour) + " diease attempted to add more cubes than are provided in the game. Game Lost"
-                }
+            this.queue.add_task(
+                () => this.io.in(this.game_id).emit("clientAction", { function: "gameOver", args: { message: utils.toTitleCase(this.colour) + " diease attempted to add more cubes than are provided in the game. Game Lost" } }),
+                null, "game_over", "Game over as we have run out of " + this.colour + " cubes."
             )
         }
     }
@@ -99,12 +98,12 @@ class Disease {
 }
 
 module.exports = {
-    create_new_diseases: function(io, game_id){
+    create_new_diseases: function(io, game_id, queue){
         return {
-            "yellow": new Disease(io, game_id, "yellow", 0.328),
-            "red": new Disease(io, game_id, "red", 0.374),
-            "blue": new Disease(io, game_id, "blue", 0.42),
-            "black": new Disease(io, game_id, "black", 0.462)
+            "yellow": new Disease(io, game_id, queue, "yellow", 0.328),
+            "red": new Disease(io, game_id, queue, "red", 0.374),
+            "blue": new Disease(io, game_id, queue, "blue", 0.42),
+            "black": new Disease(io, game_id, queue, "black", 0.462)
         }
     },
     

@@ -16,7 +16,6 @@ class PandemicGame {
         this.players = [];
 
         this.epidemics = 0;
-        this.outbreaks = 0;
 
         this.round = 0;
         this.n_research_stations = 0;
@@ -36,7 +35,7 @@ class PandemicGame {
         this.update_infection_count = this.update_infection_count.bind(this);
         this.n_initial_player_cards = this.n_initial_player_cards.bind(this);
         this.infect_cities = this.infect_cities.bind(this);
-        this.resolve_epidemics = this.resolve_epidemics.bind(this);
+        this.resolve_epidemic = this.resolve_epidemic.bind(this);
         this.gameOver = this.gameOver.bind(this);
     }
 
@@ -47,13 +46,13 @@ class PandemicGame {
     }
 
     initial_game_setup() {
-        this.markers = new Markers(this.io, this.game_id);
-        this.diseases = Diseases.create_new_diseases(this.io, this.game_id);
+        this.markers = new Markers(this.io, this.game_id, this.queue);
+        this.diseases = Diseases.create_new_diseases(this.io, this.game_id, this.queue);
         this.cities = Cities.create_cities(this.io, this.game_id, this.queue, this.diseases, this.markers);
         this.infection_deck = new InfectionDeck(this.io, this.game_id, this.queue, this.cities, this.players, this.diseases, this.markers)
-        this.player_deck = new PlayerDeck(this.io, this.game_id, this.queue, this.cities)
+        this.player_deck = new PlayerDeck(this.io, this.game_id, this.queue, this, this.markers, this.cities)
 
-        this.queue.add_task(this.add_research_station, this.starting_city, "all", "Adding initial research station");
+        this.add_research_station(this.starting_city)
         for (var p of this.players) {
             this.queue.add_task(p.place_pawn, this.cities[this.starting_city], "all", "Placing initial pawn for " + p.player_name)
         }
@@ -103,39 +102,43 @@ class PandemicGame {
     }
 
     add_research_station(city_name) {
-        this.n_research_stations++;
-        var city = this.cities[city_name];
-        city.add_research_station();
-        this.research_station_city_names.push(city_name);
-        this.research_station_city_names.sort();
-        this.io.in(this.game_id).emit(
-            "clientAction",
-            {
-                function: "createImage",
-                args: {
-                    img_type: "research_station",
-                    img_name: "research_station_" + city_name,
-                    image_file: "images/game/Marker Research Station.png",
-                    x: this.cities[city_name].location[0],
-                    y: this.cities[city_name].location[1],
-                    dx: 0.02,
-                    dy: 0.02,
-                    respond: true
-                },
-                return: true
-            }
-        )
-        this.io.in(this.game_id).emit(
-            "clientAction",
-            {
-                function: "logMessage",
-                args: {
-                    message: "Research Station built in " + city_name,
-                    style: {
-                        color: city.native_disease_colour
+        this.queue.add_task(
+            (cn) => { 
+                this.n_research_stations++;
+                var city = this.cities[cn];
+                city.add_research_station();
+                this.research_station_city_names.push(cn);
+                this.research_station_city_names.sort();
+                this.io.in(this.game_id).emit(
+                    "clientAction",
+                    {
+                        function: "createImage",
+                        args: {
+                            img_type: "research_station",
+                            img_name: "research_station_" + cn,
+                            image_file: "images/game/Marker Research Station.png",
+                            x: this.cities[cn].location[0],
+                            y: this.cities[cn].location[1],
+                            dx: 0.02,
+                            dy: 0.02,
+                            respond: true
+                        },
+                        return: true
                     }
-                }
-            }
+                )
+                this.io.in(this.game_id).emit(
+                    "clientAction",
+                    {
+                        function: "logMessage",
+                        args: {
+                            message: "Research Station built in " + cn,
+                            style: {
+                                color: city.native_disease_colour
+                            }
+                        }
+                    }
+                )
+            }, city_name, "all", "Adding reasearch station to " + city_name
         )
     }
 
@@ -151,26 +154,16 @@ class PandemicGame {
 
     infect_cities() {
         this.infection_deck.draw(this.markers.infection_rate());
-        // outbreaks increase should be down via infection deck
         this.update_infection_count();
     }
 
-    resolve_epidemics(n_epidemics) {
-        for (var i = 0; i < n_epidemics; i++) {
-            this.epidemics++;
-            this.markers.increase_infection_rate();
-            var n_outbreaks = this.infection_deck.draw(1, true); // Infect stage
-            if (n_outbreaks) {
-                if (this.markers.increase_outbreaks(n_outbreaks)) {
-                    this.gameOver();
-                    return true;
-                }
-            }
-            // TODO Allow players chance to play event cards
-            this.infection_deck.epidemic_intensify();
-        }
+    resolve_epidemic() {
+        this.epidemics++;
+        this.markers.increase_infection_rate();
+        this.infection_deck.draw(1, true); // Infect stage
+        // TODO Allow players chance to play event cards
+        this.infection_deck.epidemic_intensify();
         this.update_infection_count();
-        return false;
     }
 
     gameOver() {

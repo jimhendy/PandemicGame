@@ -86,14 +86,16 @@ class InfectionDeck {
         }
     }
 
-    _infect_city(city_name, cubes, log_message=null) {
+    _infect_city(city_name, cubes, log_message = null) {
         var city = this.cities[city_name];
         var card_data = this._discard_card_data(city);
-        var final_card_data = Object.assign({...card_data}, {cardCanvas: true, animationCanvas: false})
+        var final_card_data = Object.assign({ ...card_data }, { cardCanvas: true, animationCanvas: false })
         final_card_data.x = final_card_data.dest_x;
         final_card_data.y = final_card_data.dest_y;
+        // Rename the animation image
+        card_data.img_name += "_temp";
         // Sort the message
-        if (log_message==null){
+        if (log_message == null) {
             log_message = {
                 message: "🕱 " + city.city_name + " was infected with " + cubes + " cube(s)",
                 style: { color: city.native_disease_colour, "font-weight": "bold" }
@@ -111,7 +113,8 @@ class InfectionDeck {
                                 series_actions_args: [
                                     { function: "createImage", args: card_data },
                                     { function: "moveImage", args: card_data },
-                                    { function: "createImage", args: final_card_data }
+                                    { function: "createImage", args: final_card_data },
+                                    { function: "removeImage", args: card_data.img_name }
                                 ]
                             }
                         },
@@ -126,7 +129,7 @@ class InfectionDeck {
         )
         // Add the cubes to the city
         for (var n = 0; n < cubes; n++) {
-            this.queue.add_task(city.add_cube, null, "all", "Adding cubes to " + city_name);
+            this.queue.add_task(city.add_cube, [this.cities], 0, "Adding cubes to " + city_name);
         }
         // Move this card into the discard pile in this code
         this.discarded.push(city_name);
@@ -163,8 +166,6 @@ class InfectionDeck {
                 var city_name = this.deck.shift(); // "pop" from the front
             else
                 var city_name = this.deck.pop();
-            console.log("INFECTING")
-            console.log(city_name);
             var colour = this.cities[city_name].native_disease_colour;
             var n_cubes = epidemic_draw ? 3 : 1;
             var log_message = null;
@@ -180,7 +181,7 @@ class InfectionDeck {
             }
 
             this._infect_city(city_name, n_cubes, log_message);
-            
+
             if (!this.deck.length) {
                 this._remove_deck_image();
             }
@@ -215,6 +216,8 @@ class InfectionDeck {
         for (var i = 0; i < discard_size; i++) {
             this.deck.push(this.discarded.pop())
         }
+        this._remove_discarded_image();
+        this._create_deck_image();
     }
 
 }

@@ -37,9 +37,6 @@ function alter_image(image, new_image_file) {
 function clearImage(image) {
     return new Promise(
         resolve => {
-            console.log("=================================================================")
-            console.log("removing")
-            console.log(image)
             image.data.ctx.clearRect(
                 image.img.canvas_x, image.img.canvas_y, image.img.width, image.img.height
             );

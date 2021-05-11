@@ -31,57 +31,52 @@ class City {
         // Bind Events
         this.add_cube = this.add_cube.bind(this);
         this.remove_cube = this.remove_cube.bind(this);
-        this.add_cube_image = this.add_cube_image.bind(this);
+        this._add_cube_image = this._add_cube_image.bind(this);
         this.check_connections = this.check_connections.bind(this);
         this.add_research_station = this.add_research_station.bind(this);
     };
 
     add_cube(cities, colour = null, ignore_cities = null) {
-        // Return number of outbreaks occuring due to this new cube
-
         // Might be ignoring this city as it has already outbroken
         if (ignore_cities && ignore_cities.includes(this.city_name))
             return 0;
 
-        var n_outbreaks = 0;
         var colour = colour || this.native_disease_colour;
         var currrent_cubes = this.disease_cubes[colour];
         if (currrent_cubes < 3) {
             this.disease_cubes[colour]++;
             this.total_cubes++;
             this.diseases[colour].add_cube();
-            this.add_cube_image(this.disease_cubes[colour], colour)
+            this._add_cube_image(this.disease_cubes[colour], colour)
         }
         else {
             // Outbreak
-            this.io.in(this.game_id).emit(
-                "clientAction",
-                {
-                    function: "logMessage",
-                    args: {
+            this.queue.add_task(
+                () => this.io.in(this.game_id).emit(
+                    "logMessage",
+                    {
                         message: "Outbreak of " + colour + " disease from " + this.city_name,
-                        style: { color: colour }
-                    }
-                }
+                        style: { color: colour, fontWeight: "bold" }
+                    }, 
+                ), null, 0, "Logging outbreak"
             )
+            this.markers.increase_outbreaks();
             if (ignore_cities) {
                 ignore_cities.push(this.city_name)
             }
             else {
                 var ignore_cities = [this.city_name]
             }
-            n_outbreaks++;
             var adj_city_name;
             var adj_city;
             for (adj_city_name of this.adjacent_city_names) {
                 adj_city = cities[adj_city_name];
-                n_outbreaks += adj_city.add_cube(cities, colour, ignore_cities);
+                adj_city.add_cube(cities, colour, ignore_cities);
             }
         }
-        return n_outbreaks;
     };
 
-    add_cube_image(cube_number, colour) {
+    _add_cube_image(cube_number, colour) {
         var x = this.location[0] + this.cube_x_offset * cube_number - 0.005;
         var y = this.location[1] + this.cubs_y_offsets[colour];
         this.io.in(this.game_id).emit(
@@ -96,7 +91,7 @@ class City {
                     blinkCanvas: true,
                     respond: false
                 },
-                return: true
+                return: false
             }
         )
     }
@@ -110,7 +105,7 @@ class City {
             () => this.io.in(this.game_id).emit(
                 "clientAction", {function: "removeImage", args: img_name, return: true}
             ),
-            null, "all", "Adding " + colour + " cube to " + this.city_name
+            null, "all", "Removing " + colour + " cube from " + this.city_name
         )
     }
 

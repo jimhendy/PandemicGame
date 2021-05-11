@@ -493,8 +493,6 @@ class Pandemic {
         )
         if (data.action == "Research Station to any city")
             player.used_special_action_this_turn = true;
-        console.log("@@@@@@@@@@@@@@@@@@@@@@")
-        console.log(data)
         this._discard_cards(player, data)
         this._move_pawn(data.destination, player);
         this._add_check_end_turn_to_queue();
@@ -641,8 +639,7 @@ class Pandemic {
             this.game.round++;
 
             this.game.player_deck.drawPlayerCards(2, player);
-            //this.game.queue.start(); // Ensure the new cards are dealt BEFORE testing for hand size reduction
-
+            
             if (player.too_many_cards())
                 this.reduce_player_hand_size(player);
             else 
@@ -653,11 +650,14 @@ class Pandemic {
         }
     }
 
-    end_player_turn() {
-        // current player's turn over and no cards to discard so can go straight on to next player
+    async end_player_turn() {
+        // current player's turn over, move on the next player
         this.game.infect_cities();
+        await this.game.queue.run_until_empty();
         this.game.new_player_turn();
         this.assess_player_options();
+        console.log("RESTARTING QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ")
+        console.log(this.game.queue.awaiting_responses)
         this.game.queue.start();
     }
 
@@ -740,8 +740,6 @@ class Pandemic {
 
     _discard_cards(player, data) {
         var discards = [];
-        console.log("DISCARDS")
-        console.log(data)
         if (Object.keys(data.answers).includes("discard_card_name")) {
             discards = data.answers.discard_card_name;
         } else if (Object.keys(data).includes("discard_card_name")) {
@@ -749,7 +747,6 @@ class Pandemic {
         }
         if (!Array.isArray(discards))
             discards = [discards];
-        console.log(discards)
         this.game.player_deck.discard(discards, player)
     }
 
