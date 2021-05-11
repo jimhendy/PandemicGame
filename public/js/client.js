@@ -468,6 +468,8 @@ jQuery(function ($) {
         },
         */
         enableActions: function (data) {
+            console.log("Enabling actions")
+            console.log(data)
             Client.action_data = data;
             Client.present_actions(Client.action_data)
         },

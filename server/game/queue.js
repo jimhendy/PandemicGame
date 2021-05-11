@@ -14,6 +14,8 @@ class Queue {
         this._queue = [];
         this.awaiting_responses = 0;
 
+        this.running = false;
+
         // Bind Events
         this.add_player = this.add_player.bind(this);
         this.start = this.start.bind(this);
@@ -23,26 +25,29 @@ class Queue {
         this.size = this.size.bind(this);
         this._check_next_task = this._check_next_task.bind(this);
 
-        //setInterval(this._check_next_task, 2000);
+        //setInterval(this._check_next_task, 5000);
     }
 
     add_player() { this.n_players++; }
 
     start() {
-        if (this.size()) {
+        console.log("starting queue")
+        this.running = true;
+        if (this.size()){
             this._next_task();
         } else {
             console.error("No tasks in queue")
         }
     }
 
-    add_task(func, args, n_players_response = 1, description = null, front = false) {
+    add_task(func, args, n_players_response, description = null, front = false, pause=false) {
+        /*
+        pause: stop the queue running after executing this task (before getting any responses)
+        */
+
         var n_responses;
         if (n_players_response == "all")
             n_responses = this.n_players
-        else if (n_players_response == "none"){
-            // Use this if we never want the queue to restart on its own but we will manually restart using "queue.start()"
-            n_responses = 999999}
         else
             n_responses = n_players_response;
         var args = Array.isArray(args) ? args : [args];
@@ -50,7 +55,8 @@ class Queue {
             func: func,
             args: args,
             n_responses: n_responses,
-            description: description
+            description: description,
+            pause: pause
         }
         if (front) {
             this._queue.shift(data)
@@ -70,7 +76,10 @@ class Queue {
     }
 
     _check_next_task(){
-        if (this.awaiting_responses == 0 && this.size()) {
+        console.info("Current queue size: " + this._queue.length + ", awaiting responses: " + this.awaiting_responses)
+        if (this.size())
+            console.log(this._queue[0])
+        if (this.awaiting_responses == 0 && this.size() && this.running) {
             this._next_task();
         }
     }
@@ -84,7 +93,9 @@ class Queue {
             console.info(instruction.description)
         this.awaiting_responses = instruction.n_responses;
         instruction.func(...instruction.args);
-        if (this.awaiting_responses == 0)
+        //instruction.func(instruction.args);
+        this.running = !instruction.pause;
+        if (this.awaiting_responses == 0 && this.running)
             this._next_task();
     }
 

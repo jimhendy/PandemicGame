@@ -89,16 +89,12 @@ class PlayerDeck {
 
 
     drawPlayerCards(n_cards, player) {
-        var new_epidemics = 0;
         for (var i = 0; i < n_cards; i++) {
             var card = this.deck.pop();
             this.cards_in_player_hands[card.card_name] = card;
-            if (card.is_epidemic)
-                new_epidemics += card.is_epidemic;
+            console.log("========================================********************************  " + card.card_name)
             this._give_player_card(player, card)
-
         }
-        return new_epidemics;
     }
 
     _give_player_card(player, card) {
@@ -142,7 +138,8 @@ class PlayerDeck {
                         }],
                         return: true
                     }
-                )
+                ),
+                null, "all", "Dealing epidemic card from player deck"
             )
         } else {
             // Not an epidemic card
@@ -233,7 +230,7 @@ class PlayerDeck {
             var initial_card_data = Object.assign({...final_card_data},
                 {
                     x: null, // different starting points for current and other players
-                    y: 0.5,
+                    y: 0,
                     dx: 0.3,
                     dy: 0.6,
                     dest_x: this.discard_location[0],
@@ -251,8 +248,8 @@ class PlayerDeck {
                     style: { color: card.is_city ? card.city.native_disease_colour : null }
                 }
             }
-            var card_data_player = Object.assign({ ...initial_card_data }, { x: 1.2 });
-            var card_data_others = Object.assign({ ...initial_card_data }, { x: -0.4 });
+            var card_data_player = Object.assign({ ...initial_card_data }, { x: 1.01 });
+            var card_data_others = Object.assign({ ...initial_card_data }, { x: -initial_card_data.dx - 0.01 });
             this.queue.add_task(
                 () => {
                     // Receiving player card

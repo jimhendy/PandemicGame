@@ -26,19 +26,42 @@ class InfectionDeck {
 
         // Bind events
         this._create_deck_image = this._create_deck_image.bind(this);
+        this._remove_deck_image = this._remove_deck_image.bind(this);
         this._infection_deck_image_data = this._infection_deck_image_data.bind(this);
         this.initial_deal = this.initial_deal.bind(this);
         this._discard_card_data = this._discard_card_data.bind(this);
-        this._discard_city_card = this._discard_city_card.bind(this);
+        this._infect_city = this._infect_city.bind(this);
         this.draw = this.draw.bind(this);
         this.epidemic_intensify = this.epidemic_intensify.bind(this);
         this._get_protected_cities = this._get_protected_cities.bind(this);
+        this._remove_discarded_image = this._remove_discarded_image.bind(this);
 
     }
 
     _create_deck_image() {
-        this.io.in(this.game_id).emit(
-            "clientAction", { function: "createImage", args: this._infection_deck_image_data() }
+        this.queue.add_task(
+            () => this.io.in(this.game_id).emit(
+                "clientAction", { function: "createImage", args: this._infection_deck_image_data(), return: true }
+            ),
+            null, "all", "Creating infection deck image"
+        )
+    }
+
+    _remove_deck_image() {
+        this.queue.add_task(
+            () => this.io.in(this.game_id).emit(
+                "clientAction", { function: "removeImage", args: this._infection_deck_image_data().img_name, return: true }
+            ),
+            null, "all", "Removing infection deck image"
+        )
+    }
+
+    _remove_discarded_image() {
+        this.queue.add_task(
+            () => this.io.in(this.game_id).emit(
+                "clientAction", { function: "removeImage", args: "infection_discard", return: true }
+            ),
+            null, "all", "Removing infection deck discard image"
         )
     }
 
@@ -56,26 +79,27 @@ class InfectionDeck {
     }
 
     initial_deal() {
-        var city_name;
-        var city;
-
         for (var cubes = 3; cubes >= 1; cubes--) {
             for (var c = 0; c < 3; c++) {
-
-                city_name = this.deck.pop();
-                city = this.cities[city_name];
-
-                this._discard_city_card(city, cubes);
-                for (var n = 0; n < cubes; n++) {
-                    this.queue.add_task(city.add_cube, null, "all", "Adding initial deal cubes to " + city_name);
-                }
-                this.discarded.push(city_name);
+                this._infect_city(this.deck.pop(), cubes);
             }
         }
     }
 
-    _discard_city_card(city, cubes) {
-        var data = this._discard_card_data(city)
+    _infect_city(city_name, cubes, log_message=null) {
+        var city = this.cities[city_name];
+        var card_data = this._discard_card_data(city);
+        var final_card_data = Object.assign({...card_data}, {cardCanvas: true, animationCanvas: false})
+        final_card_data.x = final_card_data.dest_x;
+        final_card_data.y = final_card_data.dest_y;
+        // Sort the message
+        if (log_message==null){
+            log_message = {
+                message: "🕱 " + city.city_name + " was infected with " + cubes + " cube(s)",
+                style: { color: city.native_disease_colour, "font-weight": "bold" }
+            }
+        }
+        // Move the infection card from the deck
         this.queue.add_task(
             () => this.io.to(this.game_id).emit(
                 "parallel_actions",
@@ -85,23 +109,27 @@ class InfectionDeck {
                             function: "series_actions",
                             args: {
                                 series_actions_args: [
-                                    { function: "createImage", args: data },
-                                    { function: "moveImage", args: data }
+                                    { function: "createImage", args: card_data },
+                                    { function: "moveImage", args: card_data },
+                                    { function: "createImage", args: final_card_data }
                                 ]
                             }
                         },
                         {
                             function: "logMessage",
-                            args: {
-                                message: "🕱 " + city.city_name + " was infected with " + cubes + " cube(s)",
-                                style: { color: city.native_disease_colour, "font-weight": "bold" }
-                            }
+                            args: log_message
                         }
                     ],
                     return: true
                 }
             ), null, "all", "Discarding " + city.city_name + " infection deck card"
         )
+        // Add the cubes to the city
+        for (var n = 0; n < cubes; n++) {
+            this.queue.add_task(city.add_cube, null, "all", "Adding cubes to " + city_name);
+        }
+        // Move this card into the discard pile in this code
+        this.discarded.push(city_name);
     }
 
     _discard_card_data(city) {
@@ -116,77 +144,47 @@ class InfectionDeck {
             dest_x: this.discard_location[0],
             dest_y: this.discard_location[1],
             dt: 1,
-            cardCanvas: true
+            animationCanvas: true
         }
     }
 
     draw(n_cards, epidemic_draw = false) {
-        var n_outbreaks = 0;
-        var client_infection_data = {
-            empty_deck_deal: null, // We do not find the end of the infection deck
-            // Otherwise the deck will be empty on this deal (0 based) and refilled on +1
-            cards: [],
-            infection_deck_image_data: this._infection_deck_image_data()
-        }
+
         for (var i = 0; i < n_cards; i++) {
             if (!this.deck.length) {
                 this.deck = this.discarded;
                 this.discarded = [];
                 utils.shuffle(this.deck);
-                client_infection_data.empty_deck_deal = i;
+                this._create_deck_image();
+                this._remove_discarded_image();
             }
+
             if (epidemic_draw)
                 var city_name = this.deck.shift(); // "pop" from the front
             else
                 var city_name = this.deck.pop();
-            var city = this.cities[city_name];
-            var colour = city.native_disease_colour;
+            console.log("INFECTING")
+            console.log(city_name);
+            var colour = this.cities[city_name].native_disease_colour;
+            var n_cubes = epidemic_draw ? 3 : 1;
+            var log_message = null;
 
-            if (this.diseases[city.native_disease_colour].eradicated) {
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: city_name + " was NOT infected as disease is eradicated",
-                        style: { color: colour }
-                    }
-                )
-                continue;
+            if (this.diseases[colour].eradicated) {
+                log_message = { message: city_name + " was NOT infected as disease is eradicated", style: { color: colour } };
+                n_cubes = 0;
             } else {
-                var ignore_cities = this._get_protected_cities(colour);
-                if (ignore_cities.includes(city_name)) {
-                    this.io.in(this.game_id).emit(
-                        "logMessage",
-                        {
-                            message: city_name + " was NOT infected as it is protected",
-                            style: { color: colour }
-                        }
-                    )
-                    continue;
-                } else {
-                    this.io.in(this.game_id).emit(
-                        "logMessage",
-                        {
-                            message: "🕱 " + city_name + " was infected" + (epidemic_draw ? " on the epidemic draw" : ""),
-                            style: { color: colour }
-                        }
-                    )
-                    var n_infections = epidemic_draw ? 3 : 1;
-                    for (var j = 0; j < n_infections; j++)
-                        n_outbreaks += city.add_cube(this.cities, colour, ignore_cities);
-                    this.discarded.push(city_name);
-
-                    client_infection_data.cards.push(
-                        this._discard_card_data(city)
-                    )
+                if (this._get_protected_cities(colour).includes(city_name)) {
+                    log_message = { message: city_name + " was NOT infected as it is protected", style: { color: colour } };
+                    n_cubes = 0;
                 }
             }
+
+            this._infect_city(city_name, n_cubes, log_message);
+            
+            if (!this.deck.length) {
+                this._remove_deck_image();
+            }
         }
-        var client_action = epidemic_draw ? "epidemicDraw" : "drawInfectionCards"
-        this.io.in(this.game_id).emit(
-            client_action,
-            client_infection_data
-        )
-        return n_outbreaks;
     }
 
     _get_protected_cities(colour) {

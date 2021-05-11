@@ -55,12 +55,12 @@ class PandemicGame {
 
         this.queue.add_task(this.add_research_station, this.starting_city, "all", "Adding initial research station");
         for (var p of this.players) {
-            this.queue.add_task(p.place_pawn, this.cities[this.starting_city], "all")
+            this.queue.add_task(p.place_pawn, this.cities[this.starting_city], "all", "Placing initial pawn for " + p.player_name)
         }
 
         this.infection_deck.initial_deal();
         this.player_deck.initial_deal(this.players, this.n_initial_player_cards())
-        this.queue.add_task(this.update_infection_count, null, "all");
+        this.update_infection_count();
     }
 
 
@@ -71,28 +71,34 @@ class PandemicGame {
     }
 
     update_infection_count() {
-        var infection_count = [];
-        for (const [city_name, city] of Object.entries(this.cities)) {
-            for (const [colour, num_colour] of Object.entries(city.disease_cubes)) {
-                if (num_colour) {
-                    infection_count.push({
-                        city_name: city_name,
-                        colour: colour,
-                        num: num_colour
-                    })
+        // Whole task needs to be in queued function to get count correct
+        this.queue.add_task(
+            () => {
+                var infection_count = [];
+                for (const [city_name, city] of Object.entries(this.cities)) {
+                    for (const [colour, num_colour] of Object.entries(city.disease_cubes)) {
+                        if (num_colour) {
+                            infection_count.push({
+                                city_name: city_name,
+                                colour: colour,
+                                num: num_colour
+                            })
+                        }
+                    }
                 }
-            }
-        }
-        infection_count.sort((a, b) => (a.num > b.num) ? -1 : ((b.num > a.num) ? 1 : 0));
-        var text = ""
-        for (const ic of infection_count) {
-            text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; color:'
-            text += ic.colour + ';">' + ic.city_name
-            text += '<span style="float:right;">' + ic.num + '</span></p>'
-        }
-        this.io.in(this.game_id).emit(
-            "clientAction",
-            {function: "updateInfectionCounter", args: text, return: true}
+                infection_count.sort((a, b) => (a.num > b.num) ? -1 : ((b.num > a.num) ? 1 : 0));
+                var text = ""
+                for (const ic of infection_count) {
+                    text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; color:'
+                    text += ic.colour + ';">' + ic.city_name
+                    text += '<span style="float:right;">' + ic.num + '</span></p>'
+                }   
+                this.io.in(this.game_id).emit(
+                    "clientAction",
+                    {function: "updateInfectionCounter", args: text, return: true}
+                )
+            },
+            null, "all", "Updating infection count"
         )
     }
 
@@ -144,15 +150,9 @@ class PandemicGame {
     }
 
     infect_cities() {
-        var n_outbreaks = this.infection_deck.draw(this.markers.infection_rate());
-        if (n_outbreaks) {
-            if (this.markers.increase_outbreaks(n_outbreaks)) {
-                this.gameOver();
-                return true;
-            }
-        }
-        this.queue.add_task(this.update_infection_count, null, "all");
-        return false;
+        this.infection_deck.draw(this.markers.infection_rate());
+        // outbreaks increase should be down via infection deck
+        this.update_infection_count();
     }
 
     resolve_epidemics(n_epidemics) {

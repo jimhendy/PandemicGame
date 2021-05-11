@@ -49,8 +49,6 @@ class Pandemic {
         this.player_treat_disease = this.player_treat_disease.bind(this);
         this.player_build_research_station = this.player_build_research_station.bind(this);
 
-        this.infect_cities = this.infect_cities.bind(this);
-
         this._curable_colours = this._curable_colours.bind(this);
         this._player_by_name = this._player_by_name.bind(this);
         this._treat_disease_for_free = this._treat_disease_for_free.bind(this);
@@ -168,7 +166,8 @@ class Pandemic {
         this.game.queue.add_task(
             () => this.io.to(player.socket_id).emit(
                 "clientAction", { function: "enableActions", args: actions, return: false }
-            )
+            ),
+            null, 0, "Enabling player options", false, true
         )
 
     }
@@ -189,7 +188,8 @@ class Pandemic {
                 }
             ),
             null,
-            "all"
+            "all",
+            "Updating current player & n_actions used"
         )
     }
 
@@ -450,12 +450,20 @@ class Pandemic {
 
     // ==================
 
-    action_response(data) {
+    action_response(data) {        
+        
+        // Add the next task to the queue to keep task order but don't expect any responses
         this.game.queue.add_task(
             this[data.response_function],
             data,
-            "all",
+            0,
             "Player action - " + data.response_function
+        )
+        this.game.queue.add_task(
+            this._check_end_of_user_turn,
+            null,
+            0,
+            "Checking end of user turn"
         )
         this.game.queue.start();
     }
@@ -468,7 +476,6 @@ class Pandemic {
             { message: player.player_name + " is too scared to do anything and passes" }
         )
         this.game.player_used_actions = player.actions_per_turn + 1;
-        this._check_end_of_user_turn();
     }
 
     player_move(data) {
@@ -482,12 +489,10 @@ class Pandemic {
         console.log(data)
         this._discard_cards(player, data)
         this._move_pawn(data.destination, player);
-        this._check_end_of_user_turn();
     }
 
     player_treat_disease(data) {
         this._treat_disease_for_free(data.disease_colour.toLowerCase());
-        this._check_end_of_user_turn();
     }
 
     player_build_research_station(data) {
@@ -495,7 +500,6 @@ class Pandemic {
         var city_name = data.destination;
         this.game.add_research_station(city_name);
         this._discard_cards(player, data)
-        this._check_end_of_user_turn();
     }
 
     player_cure(data) {
@@ -508,25 +512,22 @@ class Pandemic {
         )
         for (const c of data.answers.discard_card_name)
             player.discard_card(c);
-        this.game.player_deck.discard(data.answers.discard_card_name);
+        this.game.player_deck.discard(data.answers.discard_card_name, player);
         disease.cure();
-
-        this._check_end_of_user_turn();
     }
 
     player_play_event_card(data) {
+        var player = this._player_by_name(data.player_name);
+
         // Need to interupt other players and remove options
         if (data.discard_card_name == "Airlift") {
             this.event_card_airflit(data);
         }
+
+        if (player.too_many_cards())
+            this.reduce_player_hand_size(player);
     }
 
-    _after_event_card(data) {
-        var player = this._player_by_name(data.player_name)
-        if (player.too_many_cards())
-            return this.reduce_player_hand_size(player)
-        this._check_end_of_user_turn();
-    }
 
     // ======================================================== Event Cards
 
@@ -609,7 +610,12 @@ class Pandemic {
 
         var n_removes = (player.role_name == "Medic" || disease.cured) ? city.disease_cubes[colour] : 1
         for (var i = 0; i < n_removes; i++) {
-            city.remove_cube(colour);
+            this.game.queue.add_task(
+                city.remove_cube,
+                colour,
+                "all",
+                "Removing " + colour + " cube from " + city_name + " as " + player.player_name + " treats disease."
+            )
         }
         this.game.update_infection_count();
     }
@@ -617,28 +623,23 @@ class Pandemic {
     // =============================================== End of turn utils
 
     _check_end_of_user_turn() {
-        this.game.queue.start();
+
         this.game.player_used_actions++;
         var player = this.game.current_player;
 
         this.check_disease_status();
-        this.check_game_status() // if => return;
+        this.check_game_status()
 
         if (this.game.player_used_actions >= player.actions_per_turn) {
             this.game.round++;
-            var n_epidemics_drawn = this.game.player_deck.drawPlayerCards(2, player);
-            if (n_epidemics_drawn) {
-                if (this.game.resolve_epidemics(n_epidemics_drawn)) {
-                    return;
-                }
-                this.check_disease_status();
-            }
-            if (player.too_many_cards()) {
-                // current player's turn over but needs to discard player cards
-                return this.reduce_player_hand_size(player);
-            } else {
-                return this.end_player_turn();
-            }
+
+            this.game.player_deck.drawPlayerCards(2, player);
+            //this.game.queue.start(); // Ensure the new cards are dealt BEFORE testing for hand size reduction
+
+            //if (player.too_many_cards())
+            //    this.reduce_player_hand_size(player);
+
+            this.end_player_turn();
         } else {
             // current player has another action
             this.assess_player_options();
@@ -647,8 +648,7 @@ class Pandemic {
 
     end_player_turn() {
         // current player's turn over and no cards to discard so can go straight on to next player
-        if (this.infect_cities()) // Will return true if game over
-            return;
+        this.game.infect_cities();
         this.game.new_player_turn();
         this.assess_player_options();
         this.game.queue.start();
@@ -675,19 +675,9 @@ class Pandemic {
         this.game.gameOver();
     }
 
-
-    infect_cities() {
-        this.game.queue.add_task(
-            this.game.infect_cities,
-            null,
-            "all",
-            "Infecting cities"
-        )
-    }
-
     // =====================================  Reduce player hand size
 
-    reduce_player_hand_size(player, next_function = "end_player_turn") {
+    reduce_player_hand_size(player) {
         var actions = [];
         var n_discard = player.player_cards.length - player.max_hand_cards;
         var heading = "Select " + n_discard + (n_discard == 1 ? " card" : " cards") + " to discard"
@@ -699,7 +689,6 @@ class Pandemic {
             actions.push(
                 {
                     player_name: player.player_name,
-                    next_function: next_function,
                     discard_card_name: c.card_name,
                     discard_card_name__title: heading,
                     discard_card_name__n_choices: n_discard,
@@ -717,7 +706,6 @@ class Pandemic {
             actions.push(
                 {
                     player_name: player.player_name,
-                    next_function: next_function,
                     discard_card_name: ev.card_name,
                     action: "Use event card",
                     action__title: "Max hand size exceeded",
@@ -730,8 +718,9 @@ class Pandemic {
                 "clientAction", { function: "enableActions", args: actions }
             ),
             null,
-            "none", // Although we will not actually respond via IO.actionComplete but manually restart the queue in "pandemic.reduce_player_hand_size_response"
-            "Reducing player card hand size for " + player.player_name
+            1, // Although we will not actually respond via IO.actionComplete but manually restart the queue in "pandemic.reduce_player_hand_size_response"
+            "Reducing player card hand size for " + player.player_name,
+            true // Push into queue at the front for immediate action
         )
         this.game.queue.start();
     }
@@ -744,9 +733,9 @@ class Pandemic {
 
     _discard_cards(player, data) {
         var discards = [];
-        if (Object.keys(data.answers).includes("discard_card_name")){
+        if (Object.keys(data.answers).includes("discard_card_name")) {
             discards = data.answers.discard_card_name;
-        } else if (Object.keys(data).includes("discard_card_name")){
+        } else if (Object.keys(data).includes("discard_card_name")) {
             discards = data.discard_card_name;
         }
         if (!Array.isArray(discards))
@@ -756,7 +745,7 @@ class Pandemic {
 
     // ===================================================== Proposals & Responses
 
-    player_move_proposal(data, next_function = "assess_player_options") {
+    player_move_proposal(data) {
         var other_player = this._player_by_name(data.player_name)
         this.io.in(this.game_id).emit(
             "logMessage",
@@ -769,8 +758,7 @@ class Pandemic {
             response_function: "player_move_response",
             response__title: question,
             response__cancel_button: false,
-            move_proposal: data,
-            next_function: next_function
+            move_proposal: data
         }
 
         this.io.to(other_player.socket_id).emit(
@@ -803,7 +791,6 @@ class Pandemic {
                 "logMessage",
                 { message: data.move_proposal.player_name + " refused the move" }
             )
-            this[data.next_function](data);
         }
     }
 
@@ -852,7 +839,7 @@ class Pandemic {
             var give_player = data.share_proposal.share_direction != "Take" ? player : other_player;
 
             var card_data = give_player.discard_card(data.share_proposal.discard_card_name);
-            this.io.to(give_player.socket_id).emit("clientAction", {function:"refreshPlayerHand"})
+            this.io.to(give_player.socket_id).emit("clientAction", { function: "refreshPlayerHand" })
             take_player.receive_card_from_other_player(card_data);
 
             // Must ensure the receiever does not have > 7 cards
