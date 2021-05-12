@@ -68,6 +68,12 @@ class PandemicGame {
     new_player_turn() {
         this.current_player = this.players[this.round % this.players.length];
         this.current_player.used_special_action_this_turn = false;
+        this.queue.add_task(
+            () => this.io.to(this.game_id).emit(
+                "logMessage",
+                {message: "It's " + this.current_player.player_name + "'s turn"}
+            ), null, 0, "Logging new player turn"
+        )
         this.player_used_actions = 0;
     }
 

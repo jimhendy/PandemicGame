@@ -755,11 +755,9 @@ class Pandemic {
             await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize
         }
 
-        for (var i = 0; i<3; i++){ // Should only really need to do twice but just be safe
-            if (player.too_many_cards()){
-                this.reduce_player_hand_size(player);
-                await this.game.queue.run_until_empty(); // Ensure cards are removed before continuing
-            }
+        while (player.too_many_cards()){
+            this.reduce_player_hand_size(player);
+            await this.game.queue.run_until_empty(); // Ensure cards are removed before continuing
         }
             
         // Next step

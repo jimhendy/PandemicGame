@@ -490,7 +490,6 @@ jQuery(function ($) {
         },
         */
         enableActions: function (data) {
-            console.log(data)
             Client.action_data = data;
             Client.present_actions(Client.action_data)
         },
@@ -508,7 +507,6 @@ jQuery(function ($) {
 
             if (remaining_actions.length == 1 && !remaining_actions[0][question + "__stop_autochoice"]) {
                 // Single choice left, use it
-                console.log(remaining_actions)
                 var response_data = remaining_actions[0];
                 response_data.answers = answers;
                 IO.socket.emit("action_response", response_data)
