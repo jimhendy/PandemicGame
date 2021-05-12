@@ -97,7 +97,7 @@ class InfectionDeck {
         // Sort the message
         if (log_message == null) {
             log_message = {
-                message: "🕱 " + city.city_name + " was infected with " + cubes + " cube(s)",
+                message: "🕱 " + city.city_name + " was infected with " + cubes + (cubes == 1 ? " cube" : " cubes"),
                 style: { color: city.native_disease_colour }
             }
         }

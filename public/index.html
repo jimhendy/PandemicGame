@@ -1,4 +1,4 @@
-<html style="width: 100%; height: 100%; margin:0px;">
+<html>
 
 <head>
     <script src="/socket.io/socket.io.js"></script>
@@ -10,15 +10,15 @@
 
 
 
-<body style="width: 100%; height: 100%; margin:0px;">
-    <div id="gameArea" style="width: 100%; height: 100%; margin:0px;"></div>
+<body style="width: 100vw; margin:0px;">
+    <div id="gameArea" style="width: 100%; margin:0px;"></div>
 </body>
 
 <script id="landing-screen-template" type="text/template">
     <!-- LANDING SCREEN where user can enter details -->
-<div style="text-align:center; padding-top: 3%; width: 100%; height: 97%; margin: 0px">
+<div style="text-align:center; margin-top: 3vh; width: 100%; height: 97vh;">
     <img class="logo" alt="my_logo" src="http://localhost:3000/images/pandemic_landing_image.jpg"
-        style="width:80%; height:50%; margin-bottom: 3%;">
+        style="width:80%; height:50vh; margin-bottom: 3vh;">
     <form id="player_details_form">
         <input id="passcode_input" autocomplete="off" placeholder="Passcode" style="margin-bottom: 1%;">
         </br>
@@ -42,7 +42,7 @@
 
 <script id="role-choice-screen-template" type="text/template">
     <!-- User now logged in, choose a character role -->
-<div style="text-align:center; padding-top: 3%; margin:0px; width:100%; height: 97%;">
+<div style="text-align:center; margin-top: 3vh; margin:0px; width:100%; height: 97vh;">
     <h3>Please choose a role</h3>
     <div id="role-choice-cards-div" style="margin-bottom: 5%"></div>
     <button id="player-ready-button" disabled=true>Start Game</button>
@@ -52,7 +52,7 @@
 
 <script id="waiting-for-role-choices-template" type="text/template">
     <!-- Spinner to wait on other player's role choice-->
-<div style="text-align:center; padding-top: 3%; margin:0px; width:100%; height: 97%;">
+<div style="text-align:center; padding-top: 3vh; margin:0px; width:100%; height: 97vh;">
     <div class="loader" style="margin-left: auto; margin-right: auto; margin-bottom: 5%"></div>
     <div>Waiting for other players...</div>
 </div>
@@ -61,37 +61,37 @@
 
 <script id="game-board-template" type="text/template">
     <!-- Game Board -->
-<div style="margin:0px; width:100%; height:100%; display:flex;">
-    <div id="board_div" style="display:inline-block; width: 80%; height: 100%; position:relative;">
+<div style="margin:0px; width:100%; height:100vh; display:flex;">
+    <div id="board_div" style="display:inline-block; width: 80%; height: 100vh; position:relative;">
         <img src="images/game/Board_1.jpg"
-            style="width:100%; height:100%; position:absolute; z-index:-1; top:0; left:0; opacity:0.8;">
+            style="width:100%; height:100vh; position:absolute; z-index:-1; top:0; left:0; opacity:0.8;">
         <canvas id="boardCanvas" width=2056 height=2056
-            style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
         <canvas id="cubeCanvas" width=2056 height=2056
-            style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
         <canvas id="cardCanvas" width=2056 height=2056
-            style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
         <canvas id="animationCanvas" width=2056 height=2056
-            style="width:100%; height:100%; position:absolute; top:0;"></canvas>
+            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
         <div id="blockingDiv"
-            style="width:100%; height:100%; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;">
+            style="width:100%; height:100vh; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;">
         </div>
         <div id="gameOverDiv"
-            style="text-align:center; width:100%; height: 100%; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
+            style="text-align:center; width:100%; height: 100vh; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
             <h1 style="background-color: white;">Game Over</h1>
             <div id="game-over-message" style="background-color: white;"></div>
         </div>
     </div>
-    <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100%;">
-        <div style="height: 4%;">
-            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">
+    <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100vh;">
+        <div style="height: 4vh;">
+            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 0.2vh; height: 1.8vh;">
                 Your Location: <span id="player_location" style="font-weight: bold;">Atlanta</span></p>
-            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 1%; height: 49%;">Current
+            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 0.2vh; height: 1.8vh;">Current
                 Turn: <span id="current_player" style="font-weight: bold;"></span></p>
         </div>
-        <div id="player_card_store" style="overflow: hidden; position: relative; height: 46%;"></div>
-        <div id="player_selection_area" style="display: block; height: 0%; overflow-y: scroll; margin: 0px; transition: height 500ms linear;"></div>
-        <div id="game_log" class="log-box" style="height: calc(15% - 4px + 20%); transition: height 500ms linear;">
+        <div id="player_card_store" style="overflow: hidden; position: relative; height: 46vh;"></div>
+        <div id="player_selection_area" style="display: block; height: 0px; overflow-y: scroll; margin: 0px; transition: height 500ms linear;"></div>
+        <div id="game_log" class="log-box" style="height: calc(35vh - 4px); transition: height 500ms linear;">
             <p style="font-weight: bold;" class="log-message">Game Started</p>
         </div>
         <div id="infection_counter" class="log-box">Infection Counter</div>

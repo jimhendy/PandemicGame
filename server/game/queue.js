@@ -52,7 +52,7 @@ class Queue {
             resolve => {
             if (this.game_over){resolve();}
             this.running = true;
-            var id = setInterval(check_queue.bind(this), 500);
+            var id = setInterval(check_queue.bind(this), 50);
             function check_queue(){
                 if (this.size()){
                     this._check_next_task();

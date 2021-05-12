@@ -100,7 +100,7 @@ jQuery(function ($) {
             "Share Knowledge": "You can do this action in two ways:<br>give the City card that matches the city you are in to another player,<br>or take the City card that matches the city you are in from another player.<br>The other player must also be in the city with you.<br><br>Both of you need to agree to do this.<br><br>If the player who gets the card now has more than 7 cards,<br>that player must immediately discard a card or play an Event card.",
             "Discover a Cure": "At any research station, discard 5 City cards of the same color<br>from your hand to cure the disease of that color.<br><br>If no cubes of this color are on the board, this disease is now eradicated.",
             "Pass": "Consider the chilling parallels between this innocent little game and our current reality.<br><br>Spiral in dark thoughts until your turn is over.",
-            "Research Station to any city": "Special Operations Expert move"
+            "Research Station to any city": "Once per turn, move from a research station to any city by discarding any City card."
         },
 
         init: function () {
@@ -745,16 +745,16 @@ jQuery(function ($) {
 
         _show_selections: function () {
             //Client.$playerSelectionArea.style.display = "block";
-            Client.$playerSelectionArea.style.height = "20%";
-            Client.$gameLog.style.height = "calc(15% - 4px)";
+            Client.$playerSelectionArea.style.height = "20vh";
+            Client.$gameLog.style.height = "calc(15vh - 4px)";
             Client.$playerSelectionArea.scrollTop = 0;
         },
 
         _hide_selections: function () {
             Client.$playerSelectionArea.innerHTML = "";
-            Client.$playerSelectionArea.style.height = "0%";
+            Client.$playerSelectionArea.style.height = "0px";
             //Client.$playerSelectionArea.style.display = "none";
-            Client.$gameLog.style.height = "calc(35% - 4px)"
+            Client.$gameLog.style.height = "calc(35vh - 4px)"
         },
 
 
