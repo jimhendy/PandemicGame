@@ -120,16 +120,15 @@ class Queue {
 
     _next_task() {
         if (this.game_over){return;}
-        console.log("starting new task")
+        //console.log("starting new task")
         if (!this.size()) return;
-        console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        for (const i of this._queue){
-            console.log(i.description)
-        }
-        console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        console.log("")
+        //console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        //for (const i of this._queue){
+        //    console.log(i.description)
+        //}
+        //console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
         var instruction = this._queue.shift();
-        console.log(instruction)
+        //console.log(instruction)
         if (instruction.description)
             console.info(instruction.description)
         this.awaiting_responses = instruction.n_responses;

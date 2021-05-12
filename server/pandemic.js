@@ -39,6 +39,7 @@ class Pandemic {
         this._assess_operations_expert_actions = this._assess_operations_expert_actions.bind(this);
         
         this._assess_airlift_event_card = this._assess_airlift_event_card.bind(this);
+        this._assess_government_grant_event_card = this._assess_government_grant_event_card.bind(this);
 
         // player events
         this.player_pass = this.player_pass.bind(this);
@@ -161,6 +162,7 @@ class Pandemic {
         this._assess_discover_a_cure(actions, player, city);
 
         this._assess_airlift_event_card(actions, player);
+        this._assess_government_grant_event_card(actions, player);
 
         this._assess_pass(actions, player, city);
 
@@ -177,6 +179,7 @@ class Pandemic {
                 continue
             var p_actions = [];
             this._assess_airlift_event_card(p_actions, p);
+            this._assess_government_grant_event_card(p_actions, p);
             // Other event cards
             if (p_actions.length){
                 other_player_actions[p.socket_id] = p_actions;
@@ -436,6 +439,7 @@ class Pandemic {
                             action: "Airlift",
                             action__stop_autochoice: true,
                             destination: city_name,
+                            destination__colour: city.native_disease_colour,
                             player_name_being_moved: p.player_name,
                             player_name_causing_move: player.player_name,
                             player_name: p.player_name,
@@ -446,6 +450,26 @@ class Pandemic {
                         }
                     )
                 }
+            }
+        }
+    }
+
+    _assess_government_grant_event_card(actions, player){
+        if (array_from_objects_list(player.player_cards, "card_name").includes("Government Grant")){
+            for (const [city_name, city] of Object.entries(this.game.cities)){
+                if (city.has_research_station) continue
+                actions.push(
+                    {
+                        action: "Government Grant",
+                        action__stop_autochoice: true,
+                        destination: city_name,
+                        destination__colour: city.native_disease_colour,
+                        player_name: player.player_name,
+                        response_function: "player_build_research_station",
+                        discard_card_name: "Government Grant",
+                        costs_an_action: false
+                    }
+                )
             }
         }
     }
@@ -573,7 +597,7 @@ class Pandemic {
         var city_name = data.destination;
         this.game.add_research_station(city_name);
         this._discard_cards(player, data)
-        this._add_check_end_turn_to_queue();
+        this._add_check_end_turn_to_queue(data.costs_an_action !== false);
     }
 
     player_cure(data) {
