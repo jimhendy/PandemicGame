@@ -25,6 +25,8 @@ class PandemicGame {
         this.current_player = null;
         this.starting_city = "Atlanta"
 
+        this.skip_infection_step = false;
+
         this.queue = new Queue(this.io, this.game_id)
 
         // Bind functions
@@ -91,10 +93,10 @@ class PandemicGame {
                     text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; color:'
                     text += ic.colour + ';">' + ic.city_name
                     text += '<span style="float:right;">' + ic.num + '</span></p>'
-                }   
+                }
                 this.io.in(this.game_id).emit(
                     "clientAction",
-                    {function: "updateInfectionCounter", args: text, return: true}
+                    { function: "updateInfectionCounter", args: text, return: true }
                 )
             },
             null, "all", "Updating infection count"
@@ -103,7 +105,7 @@ class PandemicGame {
 
     add_research_station(city_name) {
         this.queue.add_task(
-            (cn) => { 
+            (cn) => {
                 this.n_research_stations++;
                 var city = this.cities[cn];
                 city.add_research_station();
@@ -153,7 +155,19 @@ class PandemicGame {
     }
 
     infect_cities() {
-        this.infection_deck.draw(this.markers.infection_rate());
+        if (this.skip_infection_step) {
+            this.queue.add_task(
+                () => {
+                    this.io.in(this.game_id).emit(
+                        "logMessage", { message: "Infection step skipped" }
+                    )
+                    this.skip_infection_step = false;
+                },
+                null, 0, "Logging infection step skipped"
+            )
+        } else {
+            this.infection_deck.draw(this.markers.infection_rate());
+        }
         this.update_infection_count();
     }
 

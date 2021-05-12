@@ -40,6 +40,7 @@ class Pandemic {
         
         this._assess_airlift_event_card = this._assess_airlift_event_card.bind(this);
         this._assess_government_grant_event_card = this._assess_government_grant_event_card.bind(this);
+        this._assess_one_quiet_night_event_card = this._assess_one_quiet_night_event_card.bind(this);
 
         // player events
         this.player_pass = this.player_pass.bind(this);
@@ -51,7 +52,7 @@ class Pandemic {
         this.player_cure = this.player_cure.bind(this);
         this.player_treat_disease = this.player_treat_disease.bind(this);
         this.player_build_research_station = this.player_build_research_station.bind(this);
-        this.player_play_event_card = this.player_play_event_card.bind(this);
+        this.player_skip_next_infection_step = this.player_skip_next_infection_step.bind(this);
 
         this._curable_colours = this._curable_colours.bind(this);
         this._player_by_name = this._player_by_name.bind(this);
@@ -163,6 +164,7 @@ class Pandemic {
 
         this._assess_airlift_event_card(actions, player);
         this._assess_government_grant_event_card(actions, player);
+        this._assess_one_quiet_night_event_card(actions, player);
 
         this._assess_pass(actions, player, city);
 
@@ -180,6 +182,7 @@ class Pandemic {
             var p_actions = [];
             this._assess_airlift_event_card(p_actions, p);
             this._assess_government_grant_event_card(p_actions, p);
+            this._assess_one_quiet_night_event_card(p_actions, p);
             // Other event cards
             if (p_actions.length){
                 other_player_actions[p.socket_id] = p_actions;
@@ -429,7 +432,7 @@ class Pandemic {
 
     // =============================================  Assess Event cards
 
-    _assess_airlift_event_card(actions, player){
+    _assess_airlift_event_card(actions, player, skip_check_next=false){
         if (array_from_objects_list(player.player_cards, "card_name").includes("Airlift")){
             for (const p of this.game.players) {
                 for (const [city_name, city] of Object.entries(this.game.cities)){
@@ -446,7 +449,8 @@ class Pandemic {
                             player_name__title: "Pick a player to move",
                             response_function: p == player ? "player_move" : "player_move_proposal",
                             discard_card_name: "Airlift",
-                            costs_an_action: false
+                            costs_an_action: false,
+                            skip_check_next: skip_check_next
                         }
                     )
                 }
@@ -454,7 +458,7 @@ class Pandemic {
         }
     }
 
-    _assess_government_grant_event_card(actions, player){
+    _assess_government_grant_event_card(actions, player, skip_check_next=false){
         if (array_from_objects_list(player.player_cards, "card_name").includes("Government Grant")){
             for (const [city_name, city] of Object.entries(this.game.cities)){
                 if (city.has_research_station) continue
@@ -467,10 +471,27 @@ class Pandemic {
                         player_name: player.player_name,
                         response_function: "player_build_research_station",
                         discard_card_name: "Government Grant",
-                        costs_an_action: false
+                        costs_an_action: false,
+                        skip_check_next: skip_check_next
                     }
                 )
             }
+        }
+    }
+
+    _assess_one_quiet_night_event_card(actions, player, skip_check_next=false){
+        if (array_from_objects_list(player.player_cards, "card_name").includes("One Quiet Night")){
+            actions.push(
+                {
+                    action: "One Quiet Night",
+                    action__stop_autochoice: true,
+                    player_name: player.player_name,
+                    response_function: "player_skip_next_infection_step",
+                    discard_card_name: "One Quiet Night",
+                    costs_an_action: false,
+                    skip_check_next: skip_check_next
+                }
+            )
         }
     }
 
@@ -584,7 +605,8 @@ class Pandemic {
 
         this._discard_cards(player, data)
         this._move_pawn(data.destination, player);
-        this._add_check_end_turn_to_queue(data.costs_an_action !== false);
+        if (!data.skip_check_next)
+            this._add_check_end_turn_to_queue(data.costs_an_action !== false);
     }
 
     player_treat_disease(data) {
@@ -597,7 +619,8 @@ class Pandemic {
         var city_name = data.destination;
         this.game.add_research_station(city_name);
         this._discard_cards(player, data)
-        this._add_check_end_turn_to_queue(data.costs_an_action !== false);
+        if (!data.skip_check_next)
+            this._add_check_end_turn_to_queue(data.costs_an_action !== false);
     }
 
     player_cure(data) {
@@ -615,25 +638,13 @@ class Pandemic {
         this._add_check_end_turn_to_queue();
     }
 
-    player_play_event_card(data) {
 
-        var player = this._player_by_name(data.player_name);
-        var actions = [{
-            player_name: data.player_name,
-            action: "Cancel"
-        }];    
-
-        if (data.event_type == "Airlift") {
-            this.event_card_airflit(data);
-        }
-
-        this.game.queue.add_task(
-            () => this.io.to(player.socket_id).emit(
-                "clientAction", { function: "enableActions", args: actions, return: false }
-            ),
-            null, 0, "Enabling player options", false, true
-        )
-
+    player_skip_next_infection_step(data){
+        this.game.skip_infection_step = true;
+        var player = this._player_by_name(data.player_name)
+        this._discard_cards(player, data)
+        if (!data.skip_check_next)
+            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
     }
 
 
@@ -728,7 +739,6 @@ class Pandemic {
     // =============================================== End of turn utils
 
     async _check_end_of_user_turn(costs_an_action=true) {
-        console.log("Checkin' dog")
         if (costs_an_action)
             this.game.player_used_actions++;
         var player = this.game.current_player;
@@ -736,23 +746,27 @@ class Pandemic {
         this.check_disease_status();
         this.check_game_status()
 
-        if (this.game.player_used_actions >= player.actions_per_turn) {
+        var all_actions_used = this.game.player_used_actions >= player.actions_per_turn
+
+        if (all_actions_used) {
             this.game.round++;
 
             this.game.player_deck.drawPlayerCards(2, player);
             await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize
+        }
 
+        for (var i = 0; i<3; i++){ // Should only really need to do twice but just be safe
             if (player.too_many_cards()){
                 this.reduce_player_hand_size(player);
                 await this.game.queue.run_until_empty(); // Ensure cards are removed before continuing
             }
-            
-            this.end_player_turn();
-        } else {
-            // current player has another action
-            console.log("Assessin' dog")
-            this.assess_player_options();
         }
+            
+        // Next step
+        if (all_actions_used) 
+            this.end_player_turn();
+        else
+            this.assess_player_options();
     }
 
     async end_player_turn() {
@@ -812,17 +826,9 @@ class Pandemic {
             )
         }
 
-        for (const ev of event_cards) {
-            actions.push(
-                {
-                    player_name: player.player_name,
-                    discard_card_name: ev.card_name,
-                    action: "Event Card",
-                    action__title: "Max hand size exceeded",
-                    response_function: "player_play_event_card",
-                }
-            )
-        }
+        this._assess_airlift_event_card(actions, player, true);
+        this._assess_government_grant_event_card(actions, player, true);
+        this._assess_one_quiet_night_event_card(actions, player, true);
         
         this.game.queue.add_task(
             () => this.io.to(player.socket_id).emit(
@@ -896,9 +902,9 @@ class Pandemic {
 
             this._discard_cards(causing_player, data.move_proposal)
             this._move_pawn(data.move_proposal.destination, moving_player);
-            console.log(this.game.queue._queue)
             await this.game.queue.run_until_empty();
-            console.log("Queue empty again")
+
+            if (!data.move_proposal.skip_check_next)
             this._check_end_of_user_turn(data.move_proposal.costs_an_action !== false);
         } else {
             this.io.in(this.game_id).emit(
