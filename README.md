@@ -22,8 +22,8 @@ TODO:
 * Client should ask for confirmation only for submission (?)
 
 veritcal scrollbar on role choice screen
-
-Initial deal should only be seen by player. All other draws should be shown to everyone. Other players cards should come/go to from different location.
+Can op exp build reasearch stations where one already exists?
+Infection counter should update with initial deal
 
 ## Installation
 

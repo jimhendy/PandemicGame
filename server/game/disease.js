@@ -16,7 +16,7 @@ class Disease {
         this.dy_frac = 0.04;
         this.vial_file = "images/game/vials/Vial " + utils.toTitleCase(this.colour) + ".png"
         this.vial_file_eradicated = this.vial_file.replace(".png", " Eradicated.png")
-        this.total_cubes = 240; // can lose the game if we run out
+        this.total_cubes = 24; // can lose the game if we run out
         this.cubes_on_board = 0;
         this.img_name = "vial_" + this.colour
 

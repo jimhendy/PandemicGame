@@ -1,4 +1,3 @@
-
 jQuery(function ($) {
     'use strict';
 
@@ -83,6 +82,26 @@ jQuery(function ($) {
         },
         images: {},
         question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response"],
+        default_titles: {
+            "action": "Pick an action",
+            "player_name": "Pick a player",
+            "destination": "Pick a destination",
+            "disease_colour": "Pick a disease",
+            "share_direction": "Pick a trade direction",
+            "discard_card_name": "Pick a card to discard"
+        },
+        action_tooltips: {
+            "Drive/Ferry": "Move to a city connected by a white line to the one you are in.",
+            "Direct Flight": "Discard a City card to move to the city named on the card.",
+            "Charter Flight": "Discard the City card that matches the city you are in to move to any city.",
+            "Shuttle Flight": "Move from a city with a research station to any other city that has a research station.",
+            "Build Research Station": "Discard the City card that matches the city you are in to place a research station there.<br><br>If all 6 research stations have been built, take a research station from anywhere on the board.",
+            "Treat Disease": "Remove 1 disease cube from the city you are in.<br>If this disease color has been cured, remove all cubes of that color from the city you are in.<br><br>If the last cube of a cured disease is removed from the board, this disease is eradicated.",
+            "Share Knowledge": "You can do this action in two ways:<br>give the City card that matches the city you are in to another player,<br>or take the City card that matches the city you are in from another player.<br>The other player must also be in the city with you.<br><br>Both of you need to agree to do this.<br><br>If the player who gets the card now has more than 7 cards,<br>that player must immediately discard a card or play an Event card.",
+            "Discover a Cure": "At any research station, discard 5 City cards of the same color<br>from your hand to cure the disease of that color.<br><br>If no cubes of this color are on the board, this disease is now eradicated.",
+            "Pass": "Consider the chilling parallels between this innocent little game and our current reality.<br><br>Spiral in dark thoughts until your turn is over.",
+            "Research Station to any city": "Special Operations Expert move"
+        },
 
         init: function () {
             Client.cacheElements();
@@ -99,8 +118,8 @@ jQuery(function ($) {
             // Expects a single function-args combo
             var ret_value = await Client[data.function](data.args)
             if (data.return) {
-                console.log("Returning from actionDirector");
-                console.log(data);
+                //console.log("Returning from actionDirector");
+                //console.log(data);
                 IO.actionComplete();
             }
             return ret_value;
@@ -116,8 +135,8 @@ jQuery(function ($) {
             return Promise.all(promises).then(
                 () => {
                     if (data.return) {
-                        console.log("parallel actions complete")
-                        console.log(data)
+                        //console.log("parallel actions complete")
+                        //console.log(data)
                         IO.actionComplete()
                     }
                 }
@@ -130,8 +149,8 @@ jQuery(function ($) {
                 await Client.actionDirector(a);
             }
             if (data.return) {
-                console.log("series action complete")
-                console.log(data)
+                //console.log("series action complete")
+                //console.log(data)
                 IO.actionComplete();
             }
         },
@@ -304,8 +323,8 @@ jQuery(function ($) {
 
         removeImage: function (img_name) {
             var img = Client.images[img_name];
-            if (img == null){
-                console.error("Asked to remove "+ img_name + ", but can't find image")
+            if (img == null) {
+                console.error("Asked to remove " + img_name + ", but can't find image")
                 for (const i of Object.keys(Client.images))
                     console.error(i);
             }
@@ -514,7 +533,7 @@ jQuery(function ($) {
                     remaining_actions[0][question + "__n_choices"] || 1,
                     array_from_objects_list(remaining_actions, question + "__colour") || null,
                     level > 0 && remaining_actions[0][question + "__cancel_button"],
-                    remaining_actions[0][question + "__title"] || null,
+                    remaining_actions[0][question + "__title"] || Client.default_titles[question] || null,
                     remaining_actions[0][question + "__checkboxes"] || false,
                 )
             } else {
@@ -602,6 +621,10 @@ jQuery(function ($) {
             for (var i = 0; i < options.length; i++) {
                 var o = options[i];
                 var colour = colours === null ? null : colours[i];
+                
+                var input_div = document.createElement("div");
+                input_div.style.display = "flex";
+
                 var input = document.createElement("input");
                 input.setAttribute("type", input_type);
                 input.setAttribute("value", o);
@@ -609,16 +632,33 @@ jQuery(function ($) {
                 input.className = "input_form_choice"
                 var id = "form_input_" + o;
                 input.setAttribute("id", id);
+                
+                var label_div = document.createElement("div");
+                label_div.setAttribute("class", "hover-container");
+
                 var label = document.createElement("label");
                 label.setAttribute("for", id);
                 label.style.color = colour;
                 if (colour && colour.toLowerCase() == "yellow")
                     label.style.backgroundColor = "#bfbfbd"
                 label.textContent = o;
-                var br = document.createElement("br");
-                form.appendChild(input);
-                form.appendChild(label);
-                form.appendChild(br);
+                label_div.appendChild(label);
+
+                if (Object.keys(Client.action_tooltips).includes(o)){
+                    var tooltip_div = document.createElement("div");
+                    tooltip_div.setAttribute("class", "hover-div")
+                    var tooltip = document.createElement("p");
+                    tooltip.setAttribute("class", "hover-content")
+                    tooltip.innerHTML = Client.action_tooltips[o]
+
+                    tooltip_div.appendChild(tooltip);
+                    label_div.appendChild(tooltip_div);
+                }
+
+                input_div.appendChild(input);
+                input_div.appendChild(label_div)
+
+                form.appendChild(input_div);
             }
 
             var button_div = document.createElement("div");

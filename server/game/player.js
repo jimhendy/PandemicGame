@@ -12,7 +12,7 @@ class Player{
         this.socket_id = socket_id;
         this.actions_per_turn = 4;
         this.n_cards_to_cure = this.role_name == "Scientist" ? 4 : 5;
-        this.max_hand_cards = 77777;
+        this.max_hand_cards = 7;
         this.city_name = null;
         this.player_cards = [];
 
@@ -27,6 +27,7 @@ class Player{
         this.place_pawn = this.place_pawn.bind(this);
         this.move_pawn = this.move_pawn.bind(this);
         this.too_many_cards = this.too_many_cards.bind(this);
+        this.receive_card_from_other_player = this.receive_card_from_other_player.bind(this);
     }
 
     add_player_card(card_data){
@@ -112,6 +113,17 @@ class Player{
 
     too_many_cards(){
         return this.player_cards.length > this.max_hand_cards;
+    }
+
+    receive_card_from_other_player(card_data, give_player){
+        this.add_player_card(card_data);
+        this.queue.add_task(
+            () => {
+                this.io.to(this.socket_id).emit(
+                    
+                )
+            }
+        )
     }
 
 }

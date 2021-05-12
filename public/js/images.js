@@ -18,7 +18,7 @@ function createImage(image_file, context, x_frac, y_frac, dx_frac, dy_frac, canv
             var id = setInterval(wait, 10)
             function wait(){
                 i++;
-                if (i>5){
+                if (i>2){
                     clearInterval(id);
                     resolve(img);
                 }
@@ -103,7 +103,7 @@ async function move(image, destination_x, destination_y, destination_dx, destina
     var canvas = image.data.canvas;
     image.moving = true;
 
-    //duration = 0.1
+    duration = 0.1
 
     var images_to_redraw = [];
     for (const [oi_name, oi] of Object.entries(other_images)){

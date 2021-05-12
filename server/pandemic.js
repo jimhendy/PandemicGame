@@ -660,8 +660,6 @@ class Pandemic {
         await this.game.queue.run_until_empty();
         this.game.new_player_turn();
         this.assess_player_options();
-        console.log("RESTARTING QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ")
-        console.log(this.game.queue.awaiting_responses)
         this.game.queue.start();
     }
 
@@ -801,6 +799,7 @@ class Pandemic {
                 "logMessage",
                 { message: data.move_proposal.player_name + " refused the move" }
             )
+            this.assess_player_options();
         }
     }
 
@@ -836,7 +835,7 @@ class Pandemic {
         )
     }
 
-    player_share_knowledge_response(data) {
+    async player_share_knowledge_response(data) {
         if (data.response == "Yes") {
             this.io.in(this.game_id).emit(
                 "logMessage",
@@ -849,8 +848,9 @@ class Pandemic {
             var give_player = data.share_proposal.share_direction != "Take" ? player : other_player;
 
             var card_data = give_player.discard_card(data.share_proposal.discard_card_name);
-            this.io.to(give_player.socket_id).emit("clientAction", { function: "refreshPlayerHand" })
-            take_player.receive_card_from_other_player(card_data);
+            //this.io.to(give_player.socket_id).emit("clientAction", { function: "refreshPlayerHand" })
+            take_player.receive_card_from_other_player(card_data, give_player);
+            await this.game.queue.run_until_empty();
 
             // Must ensure the receiever does not have > 7 cards
             if (take_player.too_many_cards()) {

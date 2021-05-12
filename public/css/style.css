@@ -102,3 +102,29 @@ html{
 .game-button{
     height: 10%
 }
+
+
+/* tooltips */
+.hover-container {
+    position: relative;
+    flex-grow: 100;
+}
+
+.hover-div {
+    position: absolute;
+    top: 25px;
+    right: 10px;
+    display: none;
+    z-index: 99;
+    background-color: #474747;
+    color: white;
+    border-radius: 5px;
+}
+
+.hover-content {
+    margin: 5px;
+}
+
+.hover-container:hover .hover-div {
+    display: block;
+}
