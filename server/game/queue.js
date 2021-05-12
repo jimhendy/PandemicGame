@@ -16,8 +16,8 @@ class Queue {
 
         this.n_players = 0;
         this._queue = [];
-        this.awaiting_responses = 0;
 
+        this.awaiting_responses = 0;
         this.running = false;
         this.game_over = false;
 
@@ -110,22 +110,26 @@ class Queue {
         //console.info("Current queue size: " + this._queue.length + ", awaiting responses: " + this.awaiting_responses)
         //if (this.size())
         //    console.log(this._queue[0])
-        if (this.awaiting_responses == 0 && this.size() && this.running) {
-            this._next_task();
+        if (this.awaiting_responses == 0 && this.running) {
+            if (this.size())
+                this._next_task();
+            else
+                this.running = false;
         }
     }
 
     _next_task() {
         if (this.game_over){return;}
-        //console.log("starting new task")
+        console.log("starting new task")
         if (!this.size()) return;
-        //console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        //for (const i of this._queue){
-        //    console.log(i.description)
-        //}
-        //console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        for (const i of this._queue){
+            console.log(i.description)
+        }
+        console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        console.log("")
         var instruction = this._queue.shift();
-        //console.log(instruction)
+        console.log(instruction)
         if (instruction.description)
             console.info(instruction.description)
         this.awaiting_responses = instruction.n_responses;
@@ -139,6 +143,8 @@ class Queue {
     size() {
         return this._queue.length;
     }
+
+
 }
 
 module.exports = Queue;

@@ -29,11 +29,12 @@ class PlayerDeck {
                 new PlayerCard(city)
             )
         }
-
-        for (const ev of this.event_card_names) {
-            this.deck.push(
-                new PlayerCard(null, false, null, ev)
-            )
+        for (var i=0; i<1; i++){
+            for (const ev of this.event_card_names) {
+                this.deck.push(
+                    new PlayerCard(null, false, null, ev)
+                )
+            }
         }
 
         utils.shuffle(this.deck);
@@ -220,7 +221,7 @@ class PlayerDeck {
                 (cn) => {
                     var card = this.cards_in_player_hands[cn];
 
-                    player.discard_card(cn);
+                    var x = player.discard_card(cn);
                     delete this.cards_in_player_hands[cn];
                     this.discard_pile.push(card);
 

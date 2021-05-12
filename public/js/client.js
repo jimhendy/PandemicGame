@@ -212,7 +212,7 @@ jQuery(function ($) {
                 roles_list += '</div>'
             }
             roles_list += "</div>";
-            $('#role-choice-cards-div').html(roles_list);
+            $('#role-choice-cards-div').html(roles_list);            
         },
 
         bindEvents: function () {
@@ -490,6 +490,7 @@ jQuery(function ($) {
         },
         */
         enableActions: function (data) {
+            console.log(data)
             Client.action_data = data;
             Client.present_actions(Client.action_data)
         },
@@ -502,16 +503,17 @@ jQuery(function ($) {
                 return
             }
 
-            if (remaining_actions.length == 1) {
+            answers = answers == null ? {} : answers;
+            var question = Client.question_order[level];
+
+            if (remaining_actions.length == 1 && !remaining_actions[0][question + "__stop_autochoice"]) {
                 // Single choice left, use it
+                console.log(remaining_actions)
                 var response_data = remaining_actions[0];
                 response_data.answers = answers;
                 IO.socket.emit("action_response", response_data)
                 return;
             }
-
-            answers = answers == null ? {} : answers;
-            var question = Client.question_order[level];
 
             if (Object.keys(remaining_actions[0]).includes(question)) {
                 Client._ask_question(
@@ -535,6 +537,7 @@ jQuery(function ($) {
                     level > 0 && remaining_actions[0][question + "__cancel_button"],
                     remaining_actions[0][question + "__title"] || Client.default_titles[question] || null,
                     remaining_actions[0][question + "__checkboxes"] || false,
+                    remaining_actions[0][question + "__stop_autochoice"] || false
                 )
             } else {
                 Client.present_actions(remaining_actions, level + 1, answers)
@@ -595,15 +598,18 @@ jQuery(function ($) {
             colours = null,
             cancel_button = true,
             title = null,
-            checkboxes = false
+            checkboxes = false,
+            stop_autochoice = false
         ) {
 
-            if (options.length == 1 && n_choices == 1) {
-                go_callback(options[0])
-                return;
-            } else if (options.length == n_choices) {
-                go_callback(options)
-                return;
+            if (!stop_autochoice){
+                if (options.length == 1 && n_choices == 1) {
+                    go_callback(options[0])
+                    return;
+                } else if (options.length == n_choices) {
+                    go_callback(options)
+                    return;
+                }
             }
 
             var form = document.createElement("form");

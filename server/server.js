@@ -41,6 +41,8 @@ function bindSocketEvents(socket){
     //socket.on("playerCardsReceived", (data)=>pandemic.clientNotesPlayerCardsReceived(data))
     socket.on("action_complete", ()=>pandemic.action_complete());
     socket.on("action_response", (data)=>pandemic.action_response(data));
+
+    socket.on("event_card_clicked", (data)=>pandemic.player_play_event_card(data));
 }
 
 // Events
