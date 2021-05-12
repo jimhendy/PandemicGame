@@ -96,7 +96,7 @@ class Queue {
     }
 
     add_response() {
-        //console.log("response received " + this.awaiting_responses)
+        console.log("response received " + this.awaiting_responses)
         this.awaiting_responses--;
         if (this.awaiting_responses < 0){
             console.error("Negative queue.awaiting_responses, should not happen")

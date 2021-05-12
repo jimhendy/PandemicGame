@@ -62,6 +62,7 @@ class PlayerDeck {
         this.emit_data = this.emit_data.bind(this);
         this.discard = this.discard.bind(this);
         this._give_player_card = this._give_player_card.bind(this);
+        this.transfer_card_between_players = this.transfer_card_between_players.bind(this);
     }
 
     initial_deal(players, n_initial_cards) {
@@ -298,6 +299,77 @@ class PlayerDeck {
                 card_name, "all", "Discarding " + card_name + " from " + player.player_name
             )
         }
+    }
+
+    transfer_card_between_players(card_name, take_player, give_player){
+        var card_data = give_player.discard_card(card_name);
+        take_player.add_player_card(card_data);
+
+        var card = this.cards_in_player_hands[card_name];
+        var card_data = this.emit_data(card);
+        Object.assign(card_data,
+            {
+                y: 0.2,
+                dx: 0.3,
+                dy: 0.6,
+                dt: 0.5,
+                animationCanvas: true
+            }
+        )
+
+        var card_data_dest_take = Object.assign(
+            { ...card_data }, 
+            { x: -card_data.dx - 0.01, dest_x : 1.01 }
+        );
+        var card_data_dest_give = Object.assign(
+            { ...card_data }, 
+            { dest_x: card_data_dest_take.x, x: card_data_dest_take.dest_x }
+        );
+
+        var message_text = give_player.player_name + " gives " + card_name + " to " + take_player.player_name;
+
+        this.queue.add_task(
+            () => {        
+                // Log to everyone
+                this.io.to(this.game_id).emit(
+                    "logMessage",
+                    {
+                        message: message_text,
+                        style: { color: card.is_city ? card.city.native_disease_colour : null }
+                    }
+                );
+                // Receiving player card
+                this.io.to(take_player.socket_id).emit(
+                    "series_actions",
+                    {
+                        series_actions_args: [
+                            { function: "createImage", args: card_data_dest_take },
+                            { function: "moveImage", args: card_data_dest_take },
+                            { function: "removeImage", args: card_data_dest_take.img_name },
+                            { function: "addPlayerCardToHand", args: card_data},
+                            { function: "refreshPlayerHand"},
+                        ],
+                        return: true
+                    }
+                );
+                // Player giving card
+                this.io.to(give_player.socket_id).emit(
+                    "series_actions",
+                    {
+                        series_actions_args: [
+                            { function: "remove_player_card_from_hand", args: card_name },
+                            { function: "refreshPlayerHand"},
+                            { function: "createImage", args: card_data_dest_give },
+                            { function: "moveImage", args: card_data_dest_give },
+                            { function: "removeImage", args: card_data_dest_give.img_name }
+                        ],
+                        return: true
+                    }
+                );
+            },
+            // Remaining args for add_task
+            null, 2, message_text
+        );
     }
 }
 

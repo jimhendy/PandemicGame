@@ -629,7 +629,7 @@ class Pandemic {
     // =============================================== End of turn utils
 
     async _check_end_of_user_turn() {
-
+        console.log("chekcing end of user turn")
         this.game.player_used_actions++;
         var player = this.game.current_player;
 
@@ -847,17 +847,18 @@ class Pandemic {
             var take_player = data.share_proposal.share_direction == "Take" ? player : other_player;
             var give_player = data.share_proposal.share_direction != "Take" ? player : other_player;
 
-            var card_data = give_player.discard_card(data.share_proposal.discard_card_name);
+            //var card_data = give_player.discard_card(data.share_proposal.discard_card_name);
             //this.io.to(give_player.socket_id).emit("clientAction", { function: "refreshPlayerHand" })
-            take_player.receive_card_from_other_player(card_data, give_player);
+            this.game.player_deck.transfer_card_between_players(
+                data.share_proposal.discard_card_name, take_player, give_player);
             await this.game.queue.run_until_empty();
-
-            // Must ensure the receiever does not have > 7 cards
-            if (take_player.too_many_cards()) {
+            console.log("Queue empty, continuing")
+            if (take_player.too_many_cards()){
                 this.reduce_player_hand_size(take_player);
-            } else {
-                this._check_end_of_user_turn();
+                await this.game.queue.run_until_empty(); // Ensure cards are removed before continuing
             }
+            this._check_end_of_user_turn();
+            this.game.queue.start();
         } else { // Trade refused
             this.io.in(this.game_id).emit(
                 "logMessage",
