@@ -54,10 +54,6 @@ class Queue {
             this.running = true;
             var id = setInterval(check_queue.bind(this), 50);
             function check_queue(){
-                console.log("RUE=====================================================")
-                console.log(this.awaiting_responses)
-                console.log(this.running)
-                console.log(this._queue)
                 if (this.size()){
                     this._check_next_task();
                 } else if (this.awaiting_responses==0){
