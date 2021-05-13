@@ -5,25 +5,25 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* log file
-* tooltops/titles on cards - some way to explain event cards
-* tooltip for chosen role abilities
-* landing page image does not show on phone
-* Font sizes should be in %/vh
+
 * Contingency planner special action
-* Tooltip for current role
-* Tooltips for role card selection
-* Restart game button in selection page / another page with current game/new game
-* Tooltips for event cards
-* Event cards between epidemic stages
-* Random state and log actions for replication
 * Cure disease if Medic cures on location with cubes
 * Run out of player cards
 * Can't win game by curing all !
-Picking the bottom infection deck card with resilient population makes the whole deck image disappear ??
 
-Random state and log?
+* Restart game button in selection page / another page with current game/new game
 
+* log file
+* Random state and log actions for replication
+
+* tooltops/titles on cards - some way to explain event cards
+* tooltip for chosen role abilities
+* Tooltip for current role
+* Tooltips for role card selection
+* Tooltips for event cards
+
+* landing page image does not show on phone
+* Font sizes should be in %/vh
 
 ## Installation
 

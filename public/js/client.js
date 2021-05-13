@@ -46,7 +46,7 @@ jQuery(function ($) {
             loaction: null
         },
         images: {},
-        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "infection_deck_card_name"],
+        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "infection_deck_card_name", "pick_up_card_name"],
         default_titles: {
             "action": "Pick an action",
             "player_name": "Pick a player",

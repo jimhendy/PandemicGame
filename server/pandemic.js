@@ -37,8 +37,10 @@ class Pandemic {
         this._assess_build_research_station = this._assess_build_research_station.bind(this);
         this._assess_share_knowledge = this._assess_share_knowledge.bind(this);
         this._assess_discover_a_cure = this._assess_discover_a_cure.bind(this);
+
         this._assess_dispatcher_actions = this._assess_dispatcher_actions.bind(this);
         this._assess_operations_expert_actions = this._assess_operations_expert_actions.bind(this);
+        this._assess_contingency_planner_actions = this._assess_contingency_planner_actions.bind(this);
 
         this._assess_all_event_cards = this._assess_all_event_cards.bind(this);
 
@@ -62,6 +64,7 @@ class Pandemic {
         this.player_resilient_population = this.player_resilient_population.bind(this);
         this.player_forecast = this.player_forecast.bind(this);
         this.player_response_cancel = this.player_response_cancel.bind(this);
+        this.player_pick_up_discarded_event_card = this.player_pick_up_discarded_event_card.bind(this);
 
         this._curable_colours = this._curable_colours.bind(this);
         this._player_by_name = this._player_by_name.bind(this);
@@ -425,15 +428,15 @@ class Pandemic {
 
     // =============================================  Assess Event cards
 
-    _assess_all_event_cards(actions, player, skip_check_next = false, acknowledgment = false) {
-        this._assess_airlift_event_card(actions, player, skip_check_next, acknowledgment)
-        this._assess_government_grant_event_card(actions, player, skip_check_next, acknowledgment)
-        this._assess_one_quiet_night_event_card(actions, player, skip_check_next, acknowledgment)
-        this._assess_forecast_event_card(actions, player, skip_check_next, acknowledgment)
-        this._assess_resilient_population_event_card(actions, player, skip_check_next, acknowledgment)
+    _assess_all_event_cards(actions, player, skip_check_next = false) {
+        this._assess_airlift_event_card(actions, player, skip_check_next)
+        this._assess_government_grant_event_card(actions, player, skip_check_next)
+        this._assess_one_quiet_night_event_card(actions, player, skip_check_next)
+        this._assess_forecast_event_card(actions, player, skip_check_next)
+        this._assess_resilient_population_event_card(actions, player, skip_check_next)
     }
 
-    _assess_airlift_event_card(actions, player, skip_check_next = false, acknowledgment = false) {
+    _assess_airlift_event_card(actions, player, skip_check_next = false) {
         if (array_from_objects_list(player.player_cards, "card_name").includes("Airlift")) {
             for (const p of this.game.players) {
                 for (const [city_name, city] of Object.entries(this.game.cities)) {
@@ -451,8 +454,7 @@ class Pandemic {
                             response_function: p == player ? "player_move" : "player_move_proposal",
                             discard_card_name: "Airlift",
                             costs_an_action: false,
-                            skip_check_next: skip_check_next,
-                            acknowledgment: acknowledgment
+                            skip_check_next: skip_check_next
                         }
                     )
                 }
@@ -460,7 +462,7 @@ class Pandemic {
         }
     }
 
-    _assess_government_grant_event_card(actions, player, skip_check_next = false, acknowledgment = false) {
+    _assess_government_grant_event_card(actions, player, skip_check_next = false) {
         if (array_from_objects_list(player.player_cards, "card_name").includes("Government Grant")) {
             for (const [city_name, city] of Object.entries(this.game.cities)) {
                 if (city.has_research_station) continue
@@ -474,15 +476,14 @@ class Pandemic {
                         response_function: "player_build_research_station",
                         discard_card_name: "Government Grant",
                         costs_an_action: false,
-                        skip_check_next: skip_check_next,
-                        acknowledgment: acknowledgment
+                        skip_check_next: skip_check_next
                     }
                 )
             }
         }
     }
 
-    _assess_one_quiet_night_event_card(actions, player, skip_check_next = false, acknowledgment = false) {
+    _assess_one_quiet_night_event_card(actions, player, skip_check_next = false) {
         if (array_from_objects_list(player.player_cards, "card_name").includes("One Quiet Night")) {
             actions.push(
                 {
@@ -492,14 +493,13 @@ class Pandemic {
                     response_function: "player_skip_next_infection_step",
                     discard_card_name: "One Quiet Night",
                     costs_an_action: false,
-                    skip_check_next: skip_check_next,
-                    acknowledgment: acknowledgment
+                    skip_check_next: skip_check_next
                 }
             )
         }
     }
 
-    _assess_forecast_event_card(actions, player, skip_check_next = false, acknowledgment = false) {
+    _assess_forecast_event_card(actions, player, skip_check_next = false) {
         if (array_from_objects_list(player.player_cards, "card_name").includes("Forecast")) {
             var num_cards = Math.min(6, this.game.infection_deck.deck.length);
             for (var i = 0; i < num_cards; i++) {
@@ -521,15 +521,14 @@ class Pandemic {
                         infection_deck_card_name__sortable: true,
                         infection_deck_card_name__n_choices: num_cards,
                         infection_deck_card_name__colour: city.native_disease_colour,
-                        infection_deck_card_name__cancel_button: false, // Can't peek at cards and then cancel
-                        acknowledgment: acknowledgment
+                        infection_deck_card_name__cancel_button: false // Can't peek at cards and then cancel
                     }
                 )
             }
         }
     }
 
-    _assess_resilient_population_event_card(actions, player, skip_check_next = false, acknowledgment = false) {
+    _assess_resilient_population_event_card(actions, player, skip_check_next = false) {
         if (array_from_objects_list(player.player_cards, "card_name").includes("Resilient Population")) {
             for (const card_name of this.game.infection_deck.discarded) {
                 actions.push(
@@ -542,8 +541,7 @@ class Pandemic {
                         costs_an_action: false,
                         skip_check_next: skip_check_next,
                         infection_deck_card_name: card_name,
-                        infection_deck_card_name__title: "Pick an Infection Card to remove",
-                        acknowledgment: acknowledgment
+                        infection_deck_card_name__title: "Pick an Infection Card to remove"
                     }
                 )
             }
@@ -604,6 +602,24 @@ class Pandemic {
                         )
                     }
                 }
+            }
+        }
+    }
+
+    _assess_contingency_planner_actions(actions, player, city){
+        if (player.contingency_planner_event_card !== null)
+            return
+        for (const c in this.game.player_deck.discard_pile){
+            if (c.is_event){
+                actions.push(
+                    {
+                        action: "Take discarded event card",
+                        player_name: player.player_name,
+                        pick_up_card_name: c.card_name,
+                        pick_up_card_name__title: "Pick discarded event card",
+                        response_function: "player_pick_up_discarded_event_card"
+                    }
+                )
             }
         }
     }
@@ -720,8 +736,14 @@ class Pandemic {
     }
 
     player_response_cancel(data) {
-        // Player responded "no"/"cancel" to a question, move on with 1 acknowledgment
+        // Player responded "no"/"cancel" to a question
         return;
+    }
+
+    player_pick_up_discarded_event_card(data){
+        var player = this._player_by_name(data.player_name);
+        //var card_data = this.game.player_deck.pick_up_discarded_event_card(data);
+        //player.pick_up_discarded_event_card(data, card_data);
     }
 
     // ======================================== Utils
