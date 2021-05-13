@@ -67,6 +67,15 @@ jQuery(function ($) {
             "Pass": "Consider the chilling parallels between this innocent little game and our current reality.<br><br>Spiral in dark thoughts until your turn is over.",
             "Research Station to any city": "Once per turn, move from a research station to any city by discarding any City card."
         },
+        role_tooltips: {
+            "Contingency Planner": "The Contingency Planner may, as an action, take an Event card from anywhere in the Player Discard Pile and place it on his Role card. Only 1 Event card can be on his role card at a time. It does not count against his hand limit.<br><br></br>When the Contingency Planner plays the Event card on his role card, remove this Event card from the game (instead of discarding it).",
+            "Dispatcher": "The Dispatcher may, as an action, either:<br><br>• move any pawn, if its owner agrees, to any city containing another pawn, or<br>• move another player’s pawn, if its owner agrees, as if it were his own.",
+            "Medic": "The Medic removes all cubes, not 1, of the same color when doing the Treat Disease action.<br>If a disease has been cured, he automatically removes all cubes of that color from a city, simply by entering it or being there. This does not take an action.",
+            "Operations Expert": "The Operations Expert may, as an action, either:<br><br>• build a research station in his current city without discarding (or using) a City card, or<br>• once per turn, move from a research station to any city by discarding any City card.",
+            "Quarantine Specialist": "The Quarantine Specialist prevents both outbreaks and the placement of disease cubes in the city she is in and all cities connected to that city. She does not affect cubes placed during setup.",
+            "Researcher": "When doing the Share Knowledge action, the Researcher may give any City card from her hand to another player in the same city as her, without this card having to match her city. The transfer must be from her hand to the other player’s hand, but it can occur on either player’s turn.",
+            "Scientist": "The Scientist needs only 4 (not 5) City cards of the same disease color to Discover a Cure for that disease."
+        },
 
         init: function () {
             Client.cacheElements();
@@ -156,6 +165,7 @@ jQuery(function ($) {
             }
 
             // Images
+            /*
             var roles_list = '<div id="roles_list" style="display: flex;">';
             for (const role of data.all_roles) {
                 var card_class = "role-card";
@@ -177,6 +187,52 @@ jQuery(function ($) {
                 roles_list += '</div>'
             }
             roles_list += "</div>";
+            $('#role-choice-cards-div').html(roles_list);
+            */
+
+            var roles_list = document.createElement("div");
+            roles_list.setAttribute("id", "roles_list")
+            roles_list.style.display = "flex"
+
+            for (const role of data.all_roles) {
+                var card_class = "role-card";
+                var role_name = "";
+                if (Object.values(data.assigned_roles).includes(role)) {
+                    if (Client.data.role == role) {
+                        card_class += " role-card-chosen";
+                    } else {
+                        card_class += " role-card-unavailable";
+                        role_name = key_from_value(data.assigned_roles, role);
+                    }
+                }
+
+                var role_div = document.createElement("div")
+                role_div.setAttribute("class", "role-card-container has-tooltip")
+
+                var role_img = document.createElement("img")
+                role_img.setAttribute("class", card_class)
+                role_img.setAttribute("data-role", role)
+                role_img.setAttribute("src", "/images/game/roles/Role - " + role + ".jpg")
+
+                var role_player_name_div = document.createElement("div")
+                role_player_name_div.setAttribute("class", "centered role-player-name")
+                role_player_name_div.textContent = role_name;
+
+                var wrapper_span = document.createElement("span")
+                wrapper_span.setAttribute("class", "tooltip-wrapper")
+                var tooltip_span = document.createElement("span")
+                tooltip_span.setAttribute("class", "tooltip")
+                tooltip_span.style.width = "calc(100vw / 7 - 1vw)"
+                tooltip_span.style.top = "calc(100vh / 3)"
+                tooltip_span.innerHTML = Client.role_tooltips[role]
+                wrapper_span.appendChild(tooltip_span)
+                role_div.appendChild(wrapper_span)
+
+                role_div.appendChild(role_img)
+                role_div.appendChild(role_player_name_div)
+
+                roles_list.appendChild(role_div)
+            }
             $('#role-choice-cards-div').html(roles_list);
         },
 
@@ -553,7 +609,7 @@ jQuery(function ($) {
                 } else if (sortable) {
                     selection = [];
                     var inputs = document.getElementsByClassName("sortable-choice");
-                    for (const i of inputs){
+                    for (const i of inputs) {
                         selection.push(i.getAttribute("data-city-name"))
                     }
                 } else {
@@ -589,7 +645,7 @@ jQuery(function ($) {
                         }
                         ok_btn.disabled = false;
                         Client._scroll_selection_to_bottom();
-                        
+
                     } else {
                         for (i = 0; i < inputs.length; i++) {
                             if (inputs[i].checked === false) {
@@ -599,7 +655,7 @@ jQuery(function ($) {
                         ok_btn.disabled = true;
                     }
                 }
-            } else if (sortable){
+            } else if (sortable) {
                 ok_btn.disabled = false;
             } else {
                 // radios
@@ -635,10 +691,10 @@ jQuery(function ($) {
             Client.$gameLog.style.height = "calc(35vh - 4px)"
         },
 
-        _scroll_selection_to_bottom: function() {
+        _scroll_selection_to_bottom: function () {
             $('#player_selection_area').animate(
-                {scrollTop: Client.$playerSelectionArea.scrollHeight - Client.$playerSelectionArea.clientHeight}, 
-                {duration: 2000, easing: "easeInOutCubic"}
+                { scrollTop: Client.$playerSelectionArea.scrollHeight - Client.$playerSelectionArea.clientHeight },
+                { duration: 2000, easing: "easeInOutCubic" }
             );
         },
 

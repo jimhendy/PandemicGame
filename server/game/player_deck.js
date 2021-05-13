@@ -96,6 +96,12 @@ class PlayerDeck {
     drawPlayerCards(n_cards, player) {
         for (var i = 0; i < n_cards; i++) {
             var card = this.deck.pop();
+            if (!this.deck.length) {
+                this.queue.add_task(
+                    () => this.io.in(this.game_id).emit(
+                        "clientAction", { function: "removeImage", args: "player_deck" }
+                    ))
+            }
             this.cards_in_player_hands[card.card_name] = card;
             this._give_player_card(player, card)
         }

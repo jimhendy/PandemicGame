@@ -414,10 +414,12 @@ class Pandemic {
                         {
                             player_name: player.player_name,
                             action: "Discover A Cure",
+                            destination: city.city_name,
                             disease_colour: colour,
                             discard_card_name: c,
                             discard_card_name__n_choices: player.n_cards_to_cure,
                             discard_card_name__checkboxes: true,
+                            discard_card_name__title: "Discard " + player.n_cards_to_cure + " cards to cure",
                             response_function: "player_cure"
                         }
                     )
@@ -706,6 +708,12 @@ class Pandemic {
             player.discard_card(c);
         this.game.player_deck.discard(data.answers.discard_card_name, player);
         disease.cure();
+        var city = this.game.cities[data.destination]
+        if (player.role_name == "Medic") {
+            if (city.disease_cubes[colour] > 0) {
+                this._treat_disease_for_free(colour);
+            }
+        }
         this._add_check_end_turn_to_queue();
     }
 
@@ -827,7 +835,17 @@ class Pandemic {
         if (all_actions_used) {
             this.game.round++;
 
-            this.game.player_deck.drawPlayerCards(2, player);
+            var num_cards_to_draw = 2;
+            if (this.game.player_deck.deck.length < num_cards_to_draw){
+                this.queue.add_task(
+                    ()=>this.io.in(this.game_id).emit(
+                        "gameOver",
+                        {message: "Run out of player cards, you lose."}
+                    ), null, "game_over", "Run out of player cards, game over"
+                )
+                this.game.gameOver();
+            }
+            this.game.player_deck.drawPlayerCards(num_cards_to_draw, player);
             await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize
         }
 
@@ -867,8 +885,15 @@ class Pandemic {
             if (!d.cured)
                 return
         }
-        this.io.in(this.game_id).emit(
-            "gameOver", { message: "All diseases have been cured, you win!" }
+        this.game.queue.add_task(
+            () => this.io.in(this.game_id).emit(
+                "clientAction",
+                {
+                    function: "gameOver", 
+                    args: { message: "All diseases have been cured, you win!" }
+                }
+            ),
+            null, "game_over", "Game won, all diseases cured!"
         )
         this.game.gameOver();
     }
