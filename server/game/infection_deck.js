@@ -80,10 +80,11 @@ class InfectionDeck {
         }
     }
 
-    initial_deal() {
+    initial_deal(update_infection_count_callback) {
         for (var cubes = 3; cubes >= 1; cubes--) {
             for (var c = 0; c < 3; c++) {
                 this._infect_city(this.deck.pop(), cubes);
+                update_infection_count_callback();
             }
         }
     }

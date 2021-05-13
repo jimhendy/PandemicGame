@@ -8,10 +8,12 @@ const Queue = require("./queue")
 
 class PandemicGame {
 
-    constructor(io, game_id) {
+    constructor(io, game_id, pandemic) {
 
         this.io = io;
         this.game_id = game_id;
+
+        this.pandemic = pandemic;
 
         this.players = [];
 
@@ -59,7 +61,7 @@ class PandemicGame {
             this.queue.add_task(p.place_pawn, this.cities[this.starting_city], "all", "Placing initial pawn for " + p.player_name)
         }
 
-        this.infection_deck.initial_deal();
+        this.infection_deck.initial_deal(this.update_infection_count);
         this.player_deck.initial_deal(this.players, this.n_initial_player_cards())
         this.update_infection_count();
     }
@@ -96,8 +98,9 @@ class PandemicGame {
                 infection_count.sort((a, b) => (a.num > b.num) ? -1 : ((b.num > a.num) ? 1 : 0));
                 var text = ""
                 for (const ic of infection_count) {
-                    text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; color:'
-                    text += ic.colour + ';">' + ic.city_name
+                    text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; '
+                    text += ' font-weight: ' + (ic.num == 3 ? 'bold': 'null') + "; ";
+                    text += ' color: ' + ic.colour + ';">' + ic.city_name
                     text += '<span style="float:right;">' + ic.num + '</span></p>'
                 }
                 this.io.in(this.game_id).emit(
@@ -177,13 +180,18 @@ class PandemicGame {
         this.update_infection_count();
     }
 
-    resolve_epidemic() {
+    async resolve_epidemic() {
         this.epidemics++;
         this.markers.increase_infection_rate();
         this.infection_deck.draw(1, true); // Infect stage
-        // TODO Allow players chance to play event cards
+        //await this.queue.run_until_empty();
+
+        this.pandemic.allow_players_to_use_event_cards();
+        await this.queue.run_until_empty();
+
         this.infection_deck.epidemic_intensify();
         this.update_infection_count();
+        this.queue.running = true;
     }
 
     gameOver() {

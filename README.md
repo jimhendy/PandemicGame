@@ -11,7 +11,6 @@ TODO:
 * landing page image does not show on phone
 * Font sizes should be in %/vh
 * Contingency planner special action
-* Infection counter should update with initial deal
 * Tooltip for current role
 * Tooltips for role card selection
 * Restart game button in selection page / another page with current game/new game
@@ -20,6 +19,7 @@ TODO:
 * Random state and log actions for replication
 * Cure disease if Medic cures on location with cubes
 * Run out of player cards
+* Can't win game by curing all !
 Picking the bottom infection deck card with resilient population makes the whole deck image disappear ??
 
 Random state and log?

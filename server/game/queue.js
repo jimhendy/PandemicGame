@@ -54,6 +54,10 @@ class Queue {
             this.running = true;
             var id = setInterval(check_queue.bind(this), 50);
             function check_queue(){
+                console.log("RUE=====================================================")
+                console.log(this.awaiting_responses)
+                console.log(this.running)
+                console.log(this._queue)
                 if (this.size()){
                     this._check_next_task();
                 } else if (this.awaiting_responses==0){
@@ -120,15 +124,18 @@ class Queue {
 
     _next_task() {
         if (this.game_over){return;}
-        //console.log("starting new task")
+        console.log("starting new task")
         if (!this.size()) return;
-        //console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-        //for (const i of this._queue){
-        //    console.log(i.description)
-        //}
-        //console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        for (const i of this._queue){
+            console.log(i.description)
+        }
+        console.log("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        console.log("");
+
         var instruction = this._queue.shift();
-        //console.log(instruction)
+        console.log(instruction)
+        console.log("")
         if (instruction.description)
             console.info(instruction.description)
         this.awaiting_responses = instruction.n_responses;

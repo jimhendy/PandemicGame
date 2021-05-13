@@ -637,15 +637,8 @@ jQuery(function ($) {
 
         _scroll_selection_to_bottom: function() {
             $('#player_selection_area').animate(
-                {scrollTop: Client.$playerSelectionArea.scrollHeight}, 
-                {duration: 200, easing: "easeInOutSine"}
-            );
-        },
-
-        _scroll_selection_to_bottom: function() {
-            $('#player_selection_area').animate(
-                {scrollTop: Client.$playerSelectionArea.scrollHeight}, 
-                {duration: 2000, easing: "easeOutCirc"}
+                {scrollTop: Client.$playerSelectionArea.scrollHeight - Client.$playerSelectionArea.clientHeight}, 
+                {duration: 2000, easing: "easeInOutCubic"}
             );
         },
 
