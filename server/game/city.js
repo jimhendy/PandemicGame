@@ -130,17 +130,17 @@ module.exports = {
     create_cities: function (io, game_id, queue, diseases, markers) {
         city_list = [
             new City(io, game_id, queue, diseases, markers, "Atlanta", "blue", [0.188, 0.373], ["Washington", "Chicago", "Miami"]), // Blue
-            new City(io, game_id, queue, diseases, markers, "Chicago", "blue", [0.162, 0.302], ["San Francisco", "Toronto", "Atlanta", "Los Angeles", "Mexico City"]),
+            new City(io, game_id, queue, diseases, markers, "Chicago", "blue", [0.162, 0.302], ["San Francisco", "Montreal", "Atlanta", "Los Angeles", "Mexico City"]),
             new City(io, game_id, queue, diseases, markers, "Essen", "blue", [0.481, 0.235], ["London", "Paris", "Milan", "St. Petersburg"]),
             new City(io, game_id, queue, diseases, markers, "London", "blue", [0.412, 0.251], ["New York", "Madrid", "Paris", "Essen"]),
             new City(io, game_id, queue, diseases, markers, "Madrid", "blue", [0.402, 0.347], ["New York", "London", "Paris", "Algiers", "Sao Paulo"]),
             new City(io, game_id, queue, diseases, markers, "Milan", "blue", [0.51, 0.282], ["Paris", "Essen", "Istanbul"]),
-            new City(io, game_id, queue, diseases, markers, "New York", "blue", [0.284, 0.31], ["Toronto", "Washington", "London", "Madrid"]),
+            new City(io, game_id, queue, diseases, markers, "Montreal", "blue", [0.231, 0.298], ["New York", "Washington", "Chicago"]),
+            new City(io, game_id, queue, diseases, markers, "New York", "blue", [0.284, 0.31], ["Montreal", "Washington", "London", "Madrid"]),
             new City(io, game_id, queue, diseases, markers, "Paris", "blue", [0.464, 0.3], ["London", "Madrid", "Milan", "Essen", "Algiers"]),
             new City(io, game_id, queue, diseases, markers, "San Francisco", "blue", [0.074, 0.336], ["Chicago", "Tokyo", "Manila", "Los Angeles"]),
             new City(io, game_id, queue, diseases, markers, "St. Petersburg", "blue", [0.558, 0.214], ["Essen", "Moscow", "Istanbul"]),
-            new City(io, game_id, queue, diseases, markers, "Toronto", "blue", [0.231, 0.298], ["New York", "Washington", "Chicago"]),
-            new City(io, game_id, queue, diseases, markers, "Washington", "blue", [0.261, 0.368], ["New York", "Toronto", "Miami", "Atlanta"]),
+            new City(io, game_id, queue, diseases, markers, "Washington", "blue", [0.261, 0.368], ["New York", "Montreal", "Miami", "Atlanta"]),
 
             new City(io, game_id, queue, diseases, markers, "Bogota", "yellow", [0.225, 0.552], ["Miami", "Mexico City", "Lima", "Sao Paulo", "Buenos Aires"]), // Yellow
             new City(io, game_id, queue, diseases, markers, "Buenos Aires", "yellow", [0.283, 0.746], ["Sao Paulo", "Bogota"]),
