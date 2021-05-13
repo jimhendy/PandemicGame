@@ -36,6 +36,7 @@ class InfectionDeck {
         this._get_protected_cities = this._get_protected_cities.bind(this);
         this._remove_discarded_image = this._remove_discarded_image.bind(this);
         this.remove_discarded_card = this.remove_discarded_card.bind(this);
+        this.reorder_deck = this.reorder_deck.bind(this);
 
     }
 
@@ -265,6 +266,7 @@ class InfectionDeck {
                 "series_actions",
                 {
                     series_actions_args: [
+                        { function: "logMessage", args: {message: card_name + " infection card is removed from the game."}},
                         { function: "createImage", args: cd },
                         { function: "moveImage", args: cd },
                         { function: "removeImage", args: cd.img_name }
@@ -273,6 +275,13 @@ class InfectionDeck {
                 }
             ), card_data, "all", "Removing " + card_name + " infection card from the game"
         )
+    }
+
+    reorder_deck(cards){
+        for (var i = 0; i<cards.length; i++)
+            this.deck.pop();
+        for (var i = cards.length - 1; i>=0; i--)
+            this.deck.push(cards[i])
     }
 
 }

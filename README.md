@@ -20,6 +20,11 @@ Restart game button in selection page / another page with current game/new game
 Tooltips for event cards
 Event cards between epidemic stages
 
+Picking the bottom infection deck card with resilient population makes the whole deck image disappear
+
+Random state and log?
+
+
 ## Installation
 
 $ sudo apt install node npm

@@ -12,42 +12,7 @@ jQuery(function ($) {
 
             IO.socket.on("connected", IO.onConnected);
             IO.socket.on("error", IO.error);
-            /*
-            // Game setup
-            IO.socket.on("clearUserScreen", Client.clearUserScreen);
-            IO.socket.on("reloadLandingScreen", Client.showLandingScreen);
-            IO.socket.on("userJoinRoom", Client.showRoleChoiceScreen);
-            IO.socket.on("reloadRolesSelection", Client.updateRoles);
 
-            // Game
-            IO.socket.on('startGame', Client.startGame)
-            IO.socket.on("createImage", Client.createImage);
-            IO.socket.on("moveImage", Client.moveImage);
-            IO.socket.on("alterImage", Client.alterImage);
-            IO.socket.on("removeImage", Client.removeImage);
-
-            
-            IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
-
-            IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
-            IO.socket.on("drawInfectionCards", Client.drawInfectionCards);
-            IO.socket.on("newPlayerCards", Client.receivePlayerCards);
-            IO.socket.on("newPlayersTurn", Client.newPlayerTurn);
-            IO.socket.on("discardPlayerCardFromHand", Client.remove_player_card_from_hand);
-            IO.socket.on("discardPlayerCards", Client.discardPlayerCards);
-
-            IO.socket.on("epidemicDraw", Client.epidemicDraw);
-
-            IO.socket.on("enableActions", Client.enableActions);
-
-            IO.socket.on("changeLocation", Client.changeLocation);
-            IO.socket.on("updatePlayerTurns", Client.updatePlayerTurns);
-
-            IO.socket.on("addPlayerCardToHand", Client.addPlayerCardToHand)
-            IO.socket.on("refreshPlayerHand", Client.refreshPlayerHand)
-
-            IO.socket.on("gameOver", Client.gameOver);
-            */
             IO.socket.on("clientAction", Client.actionDirector);
 
             IO.socket.on("parallel_actions", Client.parallel_actions);
@@ -81,7 +46,7 @@ jQuery(function ($) {
             loaction: null
         },
         images: {},
-        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "discard_infection_card_name"],
+        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "infection_deck_card_name"],
         default_titles: {
             "action": "Pick an action",
             "player_name": "Pick a player",
@@ -212,7 +177,7 @@ jQuery(function ($) {
                 roles_list += '</div>'
             }
             roles_list += "</div>";
-            $('#role-choice-cards-div').html(roles_list);            
+            $('#role-choice-cards-div').html(roles_list);
         },
 
         bindEvents: function () {
@@ -355,83 +320,6 @@ jQuery(function ($) {
             Client.$infectionCounterLog.html(text)
         },
 
-        /*
-        receivePlayerCards: async function (cards) {
-            for (let c of cards) {
-                await Client.receivePlayerCard(c);
-            }
-            //IO.socket.emit("playerCardsReceived");
-            IO.actionComplete();
-        },
-        /*
-        /*
-        receivePlayerCard: function (card_data) {
-            var data = {
-                img_type: "flying_card",
-                img_name: "flying_card_" + card_data.img_name,
-                image_file: card_data.image_file,
-                x: card_data.x,
-                y: card_data.y,
-                dx: card_data.dx,
-                dy: card_data.dy,
-                dest_x: 0.3,
-                dest_y: 0.2,
-                dest_dx: 0.3,
-                dest_dy: 0.6,
-                dt: 0.5,
-                animationCanvas: true
-            }
-            if (card_data.is_epidemic) {
-                return new Promise((resolve) => {
-                    Client.createImage(data);
-                    Client.moveImage(data).then(
-                        () => {
-                            data.dt = 1;
-                            Client.moveImage(data).then(
-                                () => {
-                                    Client.removeImage(data.img_name);
-                                    resolve();
-                                }
-                            )
-                        }
-                    )
-                })
-            } else {
-                return new Promise((resolve, reject) => {
-                    Client.createImage(data);
-                    Client.moveImage(data).then(
-                        () => {
-                            data.dest_x = 1.2;
-                            data.dt = 0.5;
-                            Client.moveImage(data).then(
-                                () => {
-                                    Client.removeImage(data.img_name);
-                                    Client.addPlayerCardToHand(card_data);
-                                    resolve();
-                                }
-                            );
-                        }
-                    );
-                });
-            }
-        },
-        */
-        /*
-        discardPlayerCards: async function (cards) {
-            for (let c of cards) {
-                await Client.discardPlayerCard(c);
-            }
-            //IO.socket.emit("playerCardDiscarded");
-            IO.actionComplete();
-        },
-
-        discardPlayerCard: function (card_data) {
-            return new Promise((resolve, reject) => {
-                Client.createImage(card_data);
-                Client.moveImage(card_data).then(() => { resolve(); });
-            })
-        },
-        */
         addPlayerCardToHand: function (data) {
 
             var n_previous = Object.keys(Client.data.player_cards).length;
@@ -471,24 +359,7 @@ jQuery(function ($) {
             }
             Client.$gameLog.prepend(new_message);
         },
-        /*
-        discardInfectionCard: function (data) {
-            if (Object.keys(Client.images).includes(data.img_name)) {
-                Client.removeImage(data.img_name)
-            }
-            Client.createImage(data).then(
-                () => IO.actionComplete()
-            )
-        },
-        */
-        /*
-        newPlayerTurn: function (player_name) {
-            Client.$currentPlayerDiv.textContent = player_name
-            if (player_name != Client.data.player_name)
-                return;
-            IO.socket.emit("enquireAvailableActions", Client.data);
-        },
-        */
+
         enableActions: function (data) {
             Client.action_data = data;
             Client.present_actions(Client.action_data)
@@ -535,6 +406,7 @@ jQuery(function ($) {
                     level > 0 && remaining_actions[0][question + "__cancel_button"],
                     remaining_actions[0][question + "__title"] || Client.default_titles[question] || null,
                     remaining_actions[0][question + "__checkboxes"] || false,
+                    remaining_actions[0][question + "__sortable"] || false,
                     remaining_actions[0][question + "__stop_autochoice"] || false
                 )
             } else {
@@ -555,40 +427,7 @@ jQuery(function ($) {
         updatePlayerTurns: function (data) {
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
         },
-        /*
-        drawInfectionCards: async function (data) {
-            for (var i = 0; i < data.cards.length; i++) {
-                if (i - 1 == data.empty_deck_deal) {
-                    Client.createImage(data.infection_deck_image_data)
-                }
-                await Client.drawSingleInfectionCard(data.cards[i])
-                if (i == data.empty_deck_deal) {
-                    Client.removeImage("infection_deck")
-                }
-            }
-        },
 
-        drawSingleInfectionCard(card_data) {
-            return new Promise((resolve, reject) => {
-                Client.createImage(card_data);
-                Client.moveImage(card_data).then(() => { resolve(); });
-            })
-        },
-        
-        infection_deck_draw: function (data) {
-
-        },
-
-        
-        epidemicDraw: async function (data) {
-            for (var i = 0; i < data.cards.length; i++) {
-                Client.createImage(data.cards[i]);
-                await Client.moveImage(data.cards[i]).then(() => {
-                    Client.removeImage("infection_discard")
-                });
-            }
-        },
-        */
         _ask_question: function (
             options,
             go_callback = null,
@@ -597,10 +436,11 @@ jQuery(function ($) {
             cancel_button = true,
             title = null,
             checkboxes = false,
+            sortable = false,
             stop_autochoice = false
         ) {
 
-            if (!stop_autochoice){
+            if (!stop_autochoice && !sortable) {
                 if (options.length == 1 && n_choices == 1) {
                     go_callback(options[0])
                     return;
@@ -612,7 +452,7 @@ jQuery(function ($) {
 
             var form = document.createElement("form");
             form.style.width = "100%"
-            var input_type = checkboxes ? "checkbox" : "radio";
+            var input_type = checkboxes ? "checkbox" : (sortable ? "sortable" : "radio");
 
             if (title) {
                 var heading = document.createElement("h3");
@@ -622,68 +462,63 @@ jQuery(function ($) {
                 form.appendChild(heading)
             }
 
-            for (var i = 0; i < options.length; i++) {
-                var o = options[i];
-                var colour = colours === null ? null : colours[i];
-                
-                //var input_div = document.createElement("div");
-                //input_div.style.display = "flex";
+            if (sortable) {
+                // Sortable list
+                var list = document.createElement("ul")
+                list.setAttribute("id", "sortable")
 
-                var input = document.createElement("input");
-                input.setAttribute("type", input_type);
-                input.setAttribute("value", o);
-                input.setAttribute("name", "choice");
-                input.className = "input_form_choice"
-                var id = "form_input_" + o;
-                input.setAttribute("id", id);
-                
-                //var label_div = document.createElement("div");
-                //label_div.setAttribute("class", "hover-container");
-                //label_div.setAttribute("class", "has-tooltip");
+                for (var i = 0; i < options.length; i++) {
+                    var o = options[i];
+                    var colour = colours === null ? null : colours[i];
 
-                var label = document.createElement("label");
-                label.setAttribute("for", id);
-                label.style.color = colour;
-                if (colour && colour.toLowerCase() == "yellow")
-                    label.style.backgroundColor = "#bfbfbd"
-                label.textContent = o;
-                label.setAttribute("class", "has-tooltip")
-                //label_div.appendChild(label);
+                    var list_entry = document.createElement("li");
+                    list_entry.setAttribute("class", "ui-state-default sortable-choice");
+                    list_entry.setAttribute("data-city-name", o);
 
-                if (Object.keys(Client.action_tooltips).includes(o)){
-                    /*
-                    var tooltip_div = document.createElement("div");
-                    tooltip_div.setAttribute("class", "hover-div")
-                    var tooltip = document.createElement("p");
-                    tooltip.setAttribute("class", "hover-content")
-                    tooltip.innerHTML = Client.action_tooltips[o]
+                    list_entry.textContent = "⬍   " + o;
+                    list_entry.style.color = colour;
 
-                    tooltip_div.appendChild(tooltip);
-                    label_div.appendChild(tooltip_div);
-                    */
-
-                    var wrapper_span = document.createElement("span")
-                    wrapper_span.setAttribute("class", "tooltip-wrapper")
-
-                    var tooltip_span = document.createElement("span")
-                    tooltip_span.setAttribute("class", "tooltip action-tooltip")
-
-                    tooltip_span.innerHTML = Client.action_tooltips[o]
-
-                    wrapper_span.appendChild(tooltip_span)
-
-                    label.appendChild(wrapper_span)
+                    list.appendChild(list_entry)
                 }
 
-                //input_div.appendChild(input);
-                //input_div.appendChild(label_div)
-                //input_div.appendChild(label)
+                form.appendChild(list);
 
-                //form.appendChild(input_div);
+            } else {
+                // Checkboxes / radios
 
-                form.appendChild(input);
-                form.appendChild(label);
-                form.appendChild(document.createElement("br"));
+                for (var i = 0; i < options.length; i++) {
+                    var o = options[i];
+                    var colour = colours === null ? null : colours[i];
+
+                    var input = document.createElement("input");
+                    input.setAttribute("type", input_type);
+                    input.setAttribute("value", o);
+                    input.setAttribute("name", "choice");
+                    input.className = "input_form_choice"
+                    var id = "form_input_" + o;
+                    input.setAttribute("id", id);
+
+                    var label = document.createElement("label");
+                    label.setAttribute("for", id);
+                    label.style.color = colour;
+                    if (colour && colour.toLowerCase() == "yellow")
+                        label.style.backgroundColor = "#bfbfbd"
+                    label.textContent = o;
+                    label.setAttribute("class", "has-tooltip")
+
+                    if (Object.keys(Client.action_tooltips).includes(o)) {
+                        var wrapper_span = document.createElement("span")
+                        wrapper_span.setAttribute("class", "tooltip-wrapper")
+                        var tooltip_span = document.createElement("span")
+                        tooltip_span.setAttribute("class", "tooltip action-tooltip")
+                        tooltip_span.innerHTML = Client.action_tooltips[o]
+                        wrapper_span.appendChild(tooltip_span)
+                        label.appendChild(wrapper_span)
+                    }
+                    form.appendChild(input);
+                    form.appendChild(label);
+                    form.appendChild(document.createElement("br"));
+                }
             }
 
             var button_div = document.createElement("div");
@@ -714,6 +549,14 @@ jQuery(function ($) {
                     for (const i of inputs)
                         if (i.checked)
                             selection.push(i.value)
+                } else if (sortable) {
+                    selection = [];
+                    var inputs = document.getElementsByClassName("sortable-choice");
+                    for (const i of inputs){
+                        console.log(i);
+                        console.log(i.getAttribute("data-city-name"))
+                        selection.push(i.getAttribute("data-city-name"))
+                    }
                 } else {
                     selection = document.querySelector('input[name="choice"]:checked').value;
                 }
@@ -746,6 +589,8 @@ jQuery(function ($) {
                             }
                         }
                         ok_btn.disabled = false;
+                        Client._scroll_selection_to_bottom();
+                        
                     } else {
                         for (i = 0; i < inputs.length; i++) {
                             if (inputs[i].checked === false) {
@@ -755,7 +600,10 @@ jQuery(function ($) {
                         ok_btn.disabled = true;
                     }
                 }
+            } else if (sortable){
+                ok_btn.disabled = false;
             } else {
+                // radios
                 ok_btn.disabled = true;
                 var inputs = document.getElementsByClassName("input_form_choice");
                 for (var i = 0; i < inputs.length; i++) {
@@ -763,6 +611,7 @@ jQuery(function ($) {
                 }
                 function checkFunc() {
                     ok_btn.disabled = false;
+                    Client._scroll_selection_to_bottom();
                 }
             }
 
@@ -773,6 +622,11 @@ jQuery(function ($) {
             Client.$playerSelectionArea.style.height = "20vh";
             Client.$gameLog.style.height = "calc(15vh - 4px)";
             Client.$playerSelectionArea.scrollTop = 0;
+
+            $(function () {
+                $("#sortable").sortable();
+                $("#sortable").disableSelection();
+            });
         },
 
         _hide_selections: function () {
@@ -782,6 +636,19 @@ jQuery(function ($) {
             Client.$gameLog.style.height = "calc(35vh - 4px)"
         },
 
+        _scroll_selection_to_bottom: function() {
+            $('#player_selection_area').animate(
+                {scrollTop: Client.$playerSelectionArea.scrollHeight}, 
+                {duration: 200, easing: "easeInOutSine"}
+            );
+        },
+
+        _scroll_selection_to_bottom: function() {
+            $('#player_selection_area').animate(
+                {scrollTop: Client.$playerSelectionArea.scrollHeight}, 
+                {duration: 250, easing: "easeInOutSine"}
+            );
+        },
 
         gameOver: function (data) {
             var blockingDiv = document.getElementById("blockingDiv")

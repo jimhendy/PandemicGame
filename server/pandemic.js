@@ -58,6 +58,7 @@ class Pandemic {
         this.player_build_research_station = this.player_build_research_station.bind(this);
         this.player_skip_next_infection_step = this.player_skip_next_infection_step.bind(this);
         this.player_resilient_population = this.player_resilient_population.bind(this);
+        this.player_forecast = this.player_forecast.bind(this);
 
         this._curable_colours = this._curable_colours.bind(this);
         this._player_by_name = this._player_by_name.bind(this);
@@ -493,7 +494,32 @@ class Pandemic {
     }
 
     _assess_forecast_event_card(actions, player, skip_check_next=false){
-        return;
+        if (array_from_objects_list(player.player_cards, "card_name").includes("Forecast")){
+            var num_cards = Math.min(6, this.game.infection_deck.deck.length);
+            for (var i = 0; i<num_cards; i++){
+                var card_name = this.game.infection_deck.deck[
+                    this.game.infection_deck.deck.length - 1 - i
+                ]
+                var city = this.game.cities[card_name];
+                actions.push(
+                    {
+                        action: "Forecast",
+                        action__stop_autochoice: true,
+                        player_name: player.player_name,
+                        response_function: "player_forecast",
+                        discard_card_name: "Forecast",
+                        costs_an_action: false,
+                        skip_check_next: skip_check_next,
+                        infection_deck_card_name: card_name,
+                        infection_deck_card_name__title: "Drag into order (top drawn first)",
+                        infection_deck_card_name__sortable: true,
+                        infection_deck_card_name__n_choices: num_cards,
+                        infection_deck_card_name__colour: city.native_disease_colour,
+                        infection_deck_card_name__cancel_button: false // Can't peek at cards and then cancel
+                    }
+                )
+            }   
+        }
     }
 
     _assess_resilient_population_event_card(actions, player, skip_check_next=false){
@@ -508,8 +534,8 @@ class Pandemic {
                         discard_card_name: "Resilient Population",
                         costs_an_action: false,
                         skip_check_next: skip_check_next,
-                        discard_infection_card_name: card_name,
-                        discard_infection_card_name__title: "Pick an Infection Card to remove"
+                        infection_deck_card_name: card_name,
+                        infection_deck_card_name__title: "Pick an Infection Card to remove"
                     }
                 )
             }
@@ -670,7 +696,15 @@ class Pandemic {
 
 
     player_resilient_population(data){
-        this.game.infection_deck.remove_discarded_card(data.discard_infection_card_name)
+        this.game.infection_deck.remove_discarded_card(data.infection_deck_card_name)
+        var player = this._player_by_name(data.player_name);
+        this._discard_cards(player, data)
+        if (!data.skip_check_next)
+            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
+    }
+
+    player_forecast(data){
+        this.game.infection_deck.reorder_deck(data.answers.infection_deck_card_name) // In requested order (first to be drawn is element 0)
         var player = this._player_by_name(data.player_name);
         this._discard_cards(player, data)
         if (!data.skip_check_next)
