@@ -5,23 +5,20 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* Special role actions (CP)
 * Event cards
 * log file
-* show other players the deal animations from different perspective
 * tooltops/titles on cards - some way to explain event cards
 * tooltip for chosen role abilities
 * landing page image does not show on phone
+* Font sizes should be in %/vh
 
-* Allow players to use event cards on other players turns and between infect and intesify of epidemics
-
-* Queue of function: args for pandmeic.js to allow event cards to skip in front
-* Could also allow animations to be sent to client and next one only sent when first is complete
-* pandemic.emit(action), pandemic=waiting, client.do_action, client.emit(action_complete), pandemic.unshift().action 
-
-* Client should ask for confirmation only for submission (?)
-
-Initial deal should only be seen by player. All other draws should be shown to everyone. Other players cards should come/go to from different location.
+Contingency planner special action
+Infection counter should update with initial deal
+Tooltip for current role
+Tooltips for role card selection
+Restart game button in selection page / another page with current game/new game
+Tooltips for event cards
+Event cards between epidemic stages
 
 ## Installation
 

@@ -1,9 +1,10 @@
-/*
+
 html{
-    font-variant: small-caps;
-    font-family: 'Helvetica', 'Arial', sans-serif;
+    /*font-variant: small-caps;*/
+    font-family: 'Arial', 'Helvetica', sans-serif;
+    font-size: 16;
 }
-*/
+
 
 /* Centered text */
 .centered {
@@ -69,7 +70,7 @@ html{
 
   .log-box {
     width: calc(100% - 4px); 
-    height: calc(15% - 4px); 
+    height: calc(15vh - 4px); 
     border-style: solid; 
     border-width: 2px;
     overflow-x: hidden;
@@ -99,6 +100,42 @@ html{
     font-size: 17px;
 }
 
-.game-button{
-    height: 10%
-}
+
+/* Tooltips */
+
+  .has-tooltip {
+    /*position: relative;*/
+    display: inline;
+  }
+  .tooltip-wrapper {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    width: 0px;
+    height: 0px;
+  }
+  .has-tooltip:hover .tooltip-wrapper {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 1.5s;
+    transition-duration: 1s;
+  }
+  
+  .tooltip {
+    display: block;
+    position: relative;
+    top: 2em;
+    right: 50%;
+    margin: 10px;
+    color: #FFFFFF;
+    background: #000000;
+    text-align: center;
+    border-radius: 5px;
+    box-shadow: 4px 3px 10px #800000;
+  }
+
+  .action-tooltip {
+      width: 23vw;
+      right: 15vw;
+      height: auto;
+  }

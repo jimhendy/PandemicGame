@@ -1,10 +1,10 @@
-const images = require('./images')
 
 class Markers {
-    constructor(io, game_id) {
+    constructor(io, game_id, queue) {
 
         this.io = io;
         this.game_id = game_id;
+        this.queue = queue;
 
         this.outbreak_locations = this.create_outbreak_marker_locations();
         this.infection_rate_locations = this.create_infection_rate_locations();
@@ -14,9 +14,20 @@ class Markers {
 
         this.create_outbreak_marker();
         this.create_infection_rate_marker();
+
+        // Bind Events
+        this.infection_rate = this.infection_rate.bind(this);
+        this.create_infection_rate_locations = this.create_infection_rate_locations.bind(this);
+        this.create_outbreak_marker = this.create_outbreak_marker.bind(this);
+        this.create_infection_rate_marker = this.create_infection_rate_marker.bind(this);
+        this.create_outbreak_marker_locations = this.create_outbreak_marker_locations.bind(this);
+        this._infection_rate_marker_data = this._infection_rate_marker_data.bind(this);
+        this._outbrak_marker_data = this._outbrak_marker_data.bind(this);
+        this.increase_infection_rate = this.increase_infection_rate.bind(this);
+        this.increase_outbreaks = this.increase_outbreaks.bind(this);
     };
 
-    infection_rate(){
+    infection_rate() {
         if (this.infection_rate_loc < 3)
             return 2;
         else if (this.infection_rate_loc < 5)
@@ -30,7 +41,7 @@ class Markers {
         data.x = this.outbreak_locations[0][0]
         data.y = this.outbreak_locations[0][1]
         this.io.in(this.game_id).emit(
-            "createImage", data
+            "clientAction", { function: "createImage", args: data }
         );
     };
 
@@ -39,11 +50,11 @@ class Markers {
         data.x = this.infection_rate_locations[0][0]
         data.y = this.infection_rate_locations[0][1]
         this.io.in(this.game_id).emit(
-            "createImage", data
+            "clientAction", { function: "createImage", args: data }
         );
     };
 
-    _infection_rate_marker_data(){
+    _infection_rate_marker_data() {
         return {
             img_type: "marker",
             img_name: "infection_rate_marker",
@@ -54,7 +65,7 @@ class Markers {
         }
     }
 
-    _outbrak_marker_data(){
+    _outbrak_marker_data() {
         return {
             img_type: "marker",
             img_name: "outbreak_marker",
@@ -91,40 +102,45 @@ class Markers {
         ];
     }
 
-    increase_infection_rate(){
+    increase_infection_rate() {
         var data = this._infection_rate_marker_data();
         data.x = this.infection_rate_locations[this.infection_rate_loc][0]
         data.y = this.infection_rate_locations[this.infection_rate_loc][1]
         this.infection_rate_loc++;
         data.dest_x = this.infection_rate_locations[this.infection_rate_loc][0]
         data.dest_y = this.infection_rate_locations[this.infection_rate_loc][1]
-        this.io.in(this.game_id).emit(
-            "moveImage", data
+        this.queue.add_task(
+            () => this.io.in(this.game_id).emit("clientAction", { function: "moveImage", args: data, return: true }),
+            null, "all", "Increasing infection rate marker"
         );
     }
 
-    increase_outbreaks(n_outbreaks=1){
-        
+    increase_outbreaks() {
         var data = this._outbrak_marker_data();
         data.x = this.outbreak_locations[this.outbreak_loc][0]
         data.y = this.outbreak_locations[this.outbreak_loc][1]
-        this.outbreak_loc += n_outbreaks;
-        var too_many_outbreaks = false;
-        if (this.outbreak_loc >= (this.outbreak_locations.length - 1)){
-            this.io.in(this.game_id).emit(
-                "gameOver", {message: "Too many outbreaks, you lose!"}
-            )
-            too_many_outbreaks = true;
-            data.dest_x = this.outbreak_locations[this.outbreak_locations.length-1][0]
-            data.dest_y = this.outbreak_locations[this.outbreak_locations.length-1][1]
+        this.outbreak_loc++;
+        var game_over = false;
+        if (this.outbreak_loc >= (this.outbreak_locations.length - 1)) {
+            data.dest_x = this.outbreak_locations[this.outbreak_locations.length - 1][0]
+            data.dest_y = this.outbreak_locations[this.outbreak_locations.length - 1][1]
+            game_over = true;
+            this.outbreak_loc = this.outbreak_locations.length - 1; // Stops error if outbreak cascade occurs on final round
         } else {
             data.dest_x = this.outbreak_locations[this.outbreak_loc][0]
             data.dest_y = this.outbreak_locations[this.outbreak_loc][1]
         }
-        this.io.in(this.game_id).emit(
-            "moveImage", data
-        );
-        return too_many_outbreaks;
+        if (game_over) {
+            this.queue.add_task(
+                () => this.io.in(this.game_id).emit("clientAction", { function: "gameOver", args: { message: "Too many outbreaks, you lose!" }, return: true }),
+                null, "game_over", "Game over due to too many outbreaks", true
+            )
+        }
+        this.queue.add_task(
+            () => this.io.in(this.game_id).emit("clientAction", { function: "moveImage", args: data, return: true }),
+            null, "all", "Increasing outbreaks marker", game_over
+        )
+        
     }
 
 }

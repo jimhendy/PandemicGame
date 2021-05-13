@@ -38,9 +38,11 @@ function bindSocketEvents(socket){
     socket.on('roleChosen', (data)=>pandemic.assign_role(data));
     socket.on("waiting_for_other_roles", ()=>pandemic.player_waiting(socket.id));
     socket.on("enquireAvailableActions", (data)=>pandemic.assess_player_options(data));
-    socket.on("playerCardsReceived", (data)=>pandemic.clientNotesPlayerCardsReceived(data))
-
+    //socket.on("playerCardsReceived", (data)=>pandemic.clientNotesPlayerCardsReceived(data))
+    socket.on("action_complete", ()=>pandemic.action_complete());
     socket.on("action_response", (data)=>pandemic.action_response(data));
+
+    socket.on("event_card_clicked", (data)=>pandemic.player_play_event_card(data));
 }
 
 // Events

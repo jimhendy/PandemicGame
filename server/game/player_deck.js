@@ -1,9 +1,15 @@
+const city = require("./city");
 const utils = require("./utils");
 
 class PlayerDeck {
-    constructor(io, game_id, cities, n_epidemics = 4) {
+    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 4) {
         this.io = io;
         this.game_id = game_id;
+        this.queue = queue;
+
+        this.game = game;
+
+        this.markers = markers;
         this.cities = cities;
         this.n_epidemics = n_epidemics;
 
@@ -23,29 +29,41 @@ class PlayerDeck {
                 new PlayerCard(city)
             )
         }
-        
-        for (const ev of this.event_card_names){
-            this.deck.push(
-                new PlayerCard(null, false, null, ev)
-            )
+        for (var i=0; i<5; i++){
+            for (const ev of this.event_card_names) {
+                this.deck.push(
+                    new PlayerCard(null, false, null, ev)
+                )
+            }
         }
-        
+
         utils.shuffle(this.deck);
 
         this.io.in(this.game_id).emit(
-            "createImage",
+            "clientAction",
             {
-                img_type: "card",
-                img_name: "player_deck",
-                image_file: "images/game/player_cards/Back Player Card.gif",
-                x: this.deck_location[0],
-                y: this.deck_location[1],
-                dx: this.card_width_frac,
-                dy: this.card_height_frac,
-                cardCanvas: true
+                function: "createImage",
+                args: {
+                    img_type: "card",
+                    img_name: "player_deck",
+                    image_file: "images/game/player_cards/Back Player Card.gif",
+                    x: this.deck_location[0],
+                    y: this.deck_location[1],
+                    dx: this.card_width_frac,
+                    dy: this.card_height_frac,
+                    cardCanvas: true
+                }
             }
         )
 
+        // Bind Events
+        this.initial_deal = this.initial_deal.bind(this);
+        this._add_epidemics = this._add_epidemics.bind(this);
+        this.drawPlayerCards = this.drawPlayerCards.bind(this);
+        this.emit_data = this.emit_data.bind(this);
+        this.discard = this.discard.bind(this);
+        this._give_player_card = this._give_player_card.bind(this);
+        this.transfer_card_between_players = this.transfer_card_between_players.bind(this);
     }
 
     initial_deal(players, n_initial_cards) {
@@ -75,80 +93,293 @@ class PlayerDeck {
 
 
     drawPlayerCards(n_cards, player) {
-        var player_cards = [];
-        var new_epidemics = 0;
         for (var i = 0; i < n_cards; i++) {
-            
             var card = this.deck.pop();
             this.cards_in_player_hands[card.card_name] = card;
-            player_cards.push(this.emit_data(card));
-
-            if (card.is_epidemic){
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: "An Epidemic card was drawn!",
-                        fontWeight: "bold"
-                    }
-                )
-                new_epidemics++;
-            } else {
-                this.io.in(this.game_id).emit(
-                    "logMessage",
-                    {
-                        message: "🃟 " + player.player_name + ' received player card "' + card.card_name + '"',
-                        style: {
-                            color: card.is_city ? card.city.native_disease_colour : null
-                        }
-                    }
-                )
-            }
+            this._give_player_card(player, card)
         }
-        player.add_player_cards(player_cards);
-        return new_epidemics;
+    }
+
+    _give_player_card(player, card) {
+        var card_data = this.emit_data(card);
+        Object.assign(card_data,
+            {
+                dest_x: 0.3,
+                dest_y: 0.2,
+                dest_dx: 0.3,
+                dest_dy: 0.6,
+                dt: 0.5,
+                animationCanvas: true
+            }
+        )
+
+        if (card.is_epidemic) {
+            // Do epidemic
+            var card_data_pause = Object.assign({ ...card_data }, { dt: 1 })
+            this.queue.add_task(
+                () => this.io.to(this.game_id).emit(
+                    "parallel_actions",
+                    {
+                        parallel_actions_args: [{
+                            function: "series_actions",
+                            args: {
+                                series_actions_args: [
+                                    { function: "createImage", args: card_data },
+                                    { function: "moveImage", args: card_data },
+                                    { function: "moveImage", args: card_data_pause },
+                                    { function: "removeImage", args: card_data.img_name }
+                                ]
+                            }
+                        },
+                        {
+                            function: "logMessage",
+                            args: {
+                                message: "An Epidemic card was drawn!",
+                                fontWeight: "bold"
+                            }
+                        }],
+                        return: true
+                    }
+                ),
+                null, "all", "Dealing epidemic card from player deck"
+            )
+            this.game.resolve_epidemic();
+        } else {
+            // Not an epidemic card
+            player.add_player_card(card_data);
+            var message = {
+                function: "logMessage",
+                args: {
+                    message: "🃟 " + player.player_name + ' received player card "' + card.card_name + '"',
+                    style: { color: card.is_city ? card.city.native_disease_colour : null }
+                }
+            }
+            var card_data_dest_player = Object.assign({ ...card_data }, { dest_x: 1.2 });
+            var card_data_dest_others = Object.assign({ ...card_data }, { dest_x: -0.4 });
+            this.queue.add_task(
+                () => {
+                    // Receiving player card
+                    this.io.to(player.socket_id).emit(
+                        "parallel_actions",
+                        {
+                            parallel_actions_args: [{
+                                function: "series_actions",
+                                args: {
+                                    series_actions_args: [
+                                        { function: "createImage", args: card_data },
+                                        { function: "moveImage", args: card_data },
+                                        { function: "moveImage", args: card_data_dest_player },
+                                        { function: "removeImage", args: card_data.img_name },
+                                        { function: "addPlayerCardToHand", args: card_data},
+                                        { function: "refreshPlayerHand"},
+                                    ]
+                                }
+                            },
+                                message],
+                            return: true
+                        }
+                    );
+                    // Other players
+                    this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                        "parallel_actions",
+                        {
+                            parallel_actions_args: [{
+                                    function: "series_actions",
+                                    args: {
+                                        series_actions_args: [
+                                            { function: "createImage", args: card_data },
+                                            { function: "moveImage", args: card_data },
+                                            { function: "moveImage", args: card_data_dest_others },
+                                            { function: "removeImage", args: card_data.img_name }
+                                        ]
+                                    }
+                                },
+                                message],
+                            return: true
+                        }
+                    );
+                },
+                // Remaining args for add_task
+                null, "all", "Dealing " + card.card_name + " to " + player.player_name
+            )
+        }
     }
 
     emit_data(card) {
         var data = card.emit_data()
-        data.x =this.deck_location[0]
+        data.x = this.deck_location[0]
         data.y = this.deck_location[1]
         data.dx = this.card_width_frac
         data.dy = this.card_height_frac
         return data
     };
 
-    discard(destinations) {
-        // destinations is an array of the card city_names (/event card names)
-        var player_cards = [];
-        for (const d of destinations) {
-            var card = this.cards_in_player_hands[d];
-            delete this.cards_in_player_hands[d];
-            this.discard_pile.push(card);
+    discard(card_names, player) {
+        // card_names is an array of the player card names
+        for (const card_name of card_names){
+            this.queue.add_task(
+                (cn) => {
+                    var card = this.cards_in_player_hands[cn];
 
-            var data = this.emit_data(card);
+                    var x = player.discard_card(cn);
+                    delete this.cards_in_player_hands[cn];
+                    this.discard_pile.push(card);
 
-            data.img_name = "player_card_discard"
-            data.x = 1
-            data.y = 0.5
-            data.dest_x = this.discard_location[0];
-            data.dest_y = this.discard_location[1];
-            data.cardCanvas = true;
-            data.dt = 1;
-
-            player_cards.push(data);
+                    var final_card_data = Object.assign(
+                        this.emit_data(card), {x: this.discard_location[0], y: this.discard_location[1]}
+                    )
+                    var initial_card_data = Object.assign({...final_card_data},
+                        {
+                            x: null, // different starting points for current and other players
+                            y: 0,
+                            dx: 0.3,
+                            dy: 0.6,
+                            dest_x: this.discard_location[0],
+                            dest_y: this.discard_location[1],
+                            dest_dx: this.card_width_frac,
+                            dest_dy: this.card_height_frac,
+                            dt: 0.5,
+                            animationCanvas: true,
+                            cardCanvas: false
+                        }
+                    )
+                    // Rename the animation image so we can remove it after drawing the image on the card canvas
+                    initial_card_data.img_name += "_temp";
+                    var message = {
+                        function: "logMessage",
+                        args: {
+                            message: player.player_name + ' discards player card "' + card.card_name + '"',
+                            style: { color: card.is_city ? card.city.native_disease_colour : null }
+                        }
+                    }
+                    var card_data_player = Object.assign({ ...initial_card_data }, { x: 1.01 });
+                    var card_data_others = Object.assign({ ...initial_card_data }, { x: -initial_card_data.dx - 0.01 });
+            
+                    // Receiving player card
+                    this.io.to(player.socket_id).emit(
+                        "parallel_actions",
+                        {
+                            parallel_actions_args: [{
+                                function: "series_actions",
+                                args: {
+                                    series_actions_args: [
+                                        { function: "remove_player_card_from_hand", args: cn },
+                                        { function: "refreshPlayerHand"},
+                                        { function: "createImage", args: card_data_player },
+                                        { function: "moveImage", args: card_data_player },
+                                        { function: "createImage", args: final_card_data},
+                                        { function: "removeImage", args: card_data_player.img_name }, // Remove from animation canvas
+                                    ]
+                                }
+                            },
+                                message],
+                            return: true
+                        }
+                    );
+                    // Other players
+                    this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                        "parallel_actions",
+                        {
+                            parallel_actions_args: [{
+                                    function: "series_actions",
+                                    args: {
+                                        series_actions_args: [
+                                            { function: "createImage", args: card_data_others },
+                                            { function: "moveImage", args: card_data_others },
+                                            { function: "createImage", args: final_card_data},
+                                            { function: "removeImage", args: card_data_others.img_name } // Remove from animation canvas
+                                        ]
+                                    }
+                                },
+                                message],
+                            return: true
+                        }
+                    );
+                },
+                // Remaining args for add_task
+                card_name, "all", "Discarding " + card_name + " from " + player.player_name
+            )
         }
-        this.io.in(this.game_id).emit(
-            "discardPlayerCards", player_cards
+    }
+
+    transfer_card_between_players(card_name, take_player, give_player){
+        var card_data = give_player.discard_card(card_name);
+        take_player.add_player_card(card_data);
+
+        var card = this.cards_in_player_hands[card_name];
+        var card_data = this.emit_data(card);
+        Object.assign(card_data,
+            {
+                y: 0.2,
+                dx: 0.3,
+                dy: 0.6,
+                dt: 0.5,
+                animationCanvas: true
+            }
         )
+
+        var card_data_dest_take = Object.assign(
+            { ...card_data }, 
+            { x: -card_data.dx - 0.01, dest_x : 1.01 }
+        );
+        var card_data_dest_give = Object.assign(
+            { ...card_data }, 
+            { dest_x: card_data_dest_take.x, x: card_data_dest_take.dest_x }
+        );
+
+        var message_text = give_player.player_name + " gives " + card_name + " to " + take_player.player_name;
+
+        this.queue.add_task(
+            () => {        
+                // Log to everyone
+                this.io.to(this.game_id).emit(
+                    "logMessage",
+                    {
+                        message: message_text,
+                        style: { color: card.is_city ? card.city.native_disease_colour : null }
+                    }
+                );
+                // Receiving player card
+                this.io.to(take_player.socket_id).emit(
+                    "series_actions",
+                    {
+                        series_actions_args: [
+                            { function: "createImage", args: card_data_dest_take },
+                            { function: "moveImage", args: card_data_dest_take },
+                            { function: "removeImage", args: card_data_dest_take.img_name },
+                            { function: "addPlayerCardToHand", args: card_data},
+                            { function: "refreshPlayerHand"},
+                        ],
+                        return: true
+                    }
+                );
+                // Player giving card
+                this.io.to(give_player.socket_id).emit(
+                    "series_actions",
+                    {
+                        series_actions_args: [
+                            { function: "remove_player_card_from_hand", args: card_name },
+                            { function: "refreshPlayerHand"},
+                            { function: "createImage", args: card_data_dest_give },
+                            { function: "moveImage", args: card_data_dest_give },
+                            { function: "removeImage", args: card_data_dest_give.img_name }
+                        ],
+                        return: true
+                    }
+                );
+            },
+            // Remaining args for add_task
+            null, 2, message_text
+        );
     }
 }
 
 class PlayerCard {
-    constructor(city = null, epidemic = false, epidemic_num = null, event_name=null) {
+    constructor(city = null, epidemic = false, epidemic_num = null, event_name = null) {
         this.city = city;
 
         this.is_city = city != null;
-        this.is_event = event_name != null ;
+        this.is_event = event_name != null;
         this.is_epidemic = epidemic;
 
         if (this.is_epidemic) {
@@ -164,6 +395,9 @@ class PlayerCard {
             this.image_file = "images/game/player_cards/Card " + utils.toTitleCase(this.city.native_disease_colour) + " " + utils.toTitleCase(this.city.city_name) + ".jpg"
             this.card_name = this.city.city_name;
         }
+
+        // Bind Events
+        this.emit_data = this.emit_data.bind(this);
     }
 
     emit_data() {
@@ -178,7 +412,7 @@ class PlayerCard {
 
             image_file: this.image_file,
 
-            
+            cardCanvas: true
         }
     }
 }

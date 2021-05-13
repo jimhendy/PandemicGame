@@ -1,4 +1,3 @@
-
 jQuery(function ($) {
     'use strict';
 
@@ -13,7 +12,7 @@ jQuery(function ($) {
 
             IO.socket.on("connected", IO.onConnected);
             IO.socket.on("error", IO.error);
-
+            /*
             // Game setup
             IO.socket.on("clearUserScreen", Client.clearUserScreen);
             IO.socket.on("reloadLandingScreen", Client.showLandingScreen);
@@ -27,7 +26,7 @@ jQuery(function ($) {
             IO.socket.on("alterImage", Client.alterImage);
             IO.socket.on("removeImage", Client.removeImage);
 
-            IO.socket.on("logMessage", Client.logMessage);
+            
             IO.socket.on("updateInfectionCounter", Client.updateInfectionCounter);
 
             IO.socket.on("discardInfectionCard", Client.discardInfectionCard);
@@ -48,6 +47,13 @@ jQuery(function ($) {
             IO.socket.on("refreshPlayerHand", Client.refreshPlayerHand)
 
             IO.socket.on("gameOver", Client.gameOver);
+            */
+            IO.socket.on("clientAction", Client.actionDirector);
+
+            IO.socket.on("parallel_actions", Client.parallel_actions);
+            IO.socket.on("series_actions", Client.series_actions);
+
+            IO.socket.on("logMessage", Client.logMessage);
         },
 
         onConnected: function () {
@@ -56,6 +62,10 @@ jQuery(function ($) {
 
         error: function (data) {
             alert(data.message);
+        },
+
+        actionComplete: function () {
+            IO.socket.emit("action_complete")
         }
 
     };
@@ -67,19 +77,85 @@ jQuery(function ($) {
             passcode: null,
             player_name: null,
             current_page: null,
-            city_cards: {},
-            event_cards: {},
             player_cards: {},
-            loaction: "Atlanta"
+            loaction: null
         },
         images: {},
-        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response"],
+        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "discard_infection_card_name"],
+        default_titles: {
+            "action": "Pick an action",
+            "player_name": "Pick a player",
+            "destination": "Pick a destination",
+            "disease_colour": "Pick a disease",
+            "share_direction": "Pick a trade direction",
+            "discard_card_name": "Pick a card to discard"
+        },
+        action_tooltips: {
+            "Drive/Ferry": "Move to a city connected by a white line to the one you are in.",
+            "Direct Flight": "Discard a City card to move to the city named on the card.",
+            "Charter Flight": "Discard the City card that matches the city you are in to move to any city.",
+            "Shuttle Flight": "Move from a city with a research station to any other city that has a research station.",
+            "Build Research Station": "Discard the City card that matches the city you are in to place a research station there.<br><br>If all 6 research stations have been built, take a research station from anywhere on the board.",
+            "Treat Disease": "Remove 1 disease cube from the city you are in.<br>If this disease color has been cured, remove all cubes of that color from the city you are in.<br><br>If the last cube of a cured disease is removed from the board, this disease is eradicated.",
+            "Share Knowledge": "You can do this action in two ways:<br>give the City card that matches the city you are in to another player,<br>or take the City card that matches the city you are in from another player.<br>The other player must also be in the city with you.<br><br>Both of you need to agree to do this.<br><br>If the player who gets the card now has more than 7 cards,<br>that player must immediately discard a card or play an Event card.",
+            "Discover a Cure": "At any research station, discard 5 City cards of the same color<br>from your hand to cure the disease of that color.<br><br>If no cubes of this color are on the board, this disease is now eradicated.",
+            "Pass": "Consider the chilling parallels between this innocent little game and our current reality.<br><br>Spiral in dark thoughts until your turn is over.",
+            "Research Station to any city": "Once per turn, move from a research station to any city by discarding any City card."
+        },
 
         init: function () {
             Client.cacheElements();
             Client.showLandingScreen();
             Client.bindEvents();
         },
+
+
+        // =================================================== Action Directors 
+        // ALL Client functions should accept an object (dictionary) 
+        // data = {function: "function_name", args: [{...}], return: false/true}
+
+        actionDirector: async function (data) {
+            // Expects a single function-args combo
+            var ret_value = await Client[data.function](data.args)
+            if (data.return) {
+                //console.log("Returning from actionDirector");
+                //console.log(data);
+                IO.actionComplete();
+            }
+            return ret_value;
+        },
+
+
+        parallel_actions: function (data) {
+            // data should be an array of function-args combos
+            var promises = [];
+            for (const a of data.parallel_actions_args) {
+                promises.push(Client.actionDirector(a))
+            }
+            return Promise.all(promises).then(
+                () => {
+                    if (data.return) {
+                        //console.log("parallel actions complete")
+                        //console.log(data)
+                        IO.actionComplete()
+                    }
+                }
+            );
+        },
+
+        series_actions: async function (data) {
+            // data should be an array of function-args combos
+            for (const a of data.series_actions_args) {
+                await Client.actionDirector(a);
+            }
+            if (data.return) {
+                //console.log("series action complete")
+                //console.log(data)
+                IO.actionComplete();
+            }
+        },
+
+        // ====================================================================
 
         cacheElements: function () {
             Client.$doc = $(document);
@@ -90,7 +166,6 @@ jQuery(function ($) {
             Client.$roleChoiceScreen = $('#role-choice-screen-template').html();
             Client.$waitingForRolesTemplate = $('#waiting-for-role-choices-template').html();
             Client.$gameBoardTemplate = $('#game-board-template').html()
-            Client.$gameOverTemplate = $('#game-over-template').html()
         },
 
         // ============================================ Landing screen
@@ -110,8 +185,8 @@ jQuery(function ($) {
 
         updateRoles: function (data) {
             if (Client.data.current_page != "role_choice") {
-                console.error("Client asked to update roles but not on correct page")
-                console.error(Client.data)
+                //console.error("Client asked to update roles but not on correct page")
+                //console.error(Client.data)
                 return;
             }
 
@@ -137,7 +212,7 @@ jQuery(function ($) {
                 roles_list += '</div>'
             }
             roles_list += "</div>";
-            $('#role-choice-cards-div').html(roles_list);
+            $('#role-choice-cards-div').html(roles_list);            
         },
 
         bindEvents: function () {
@@ -210,20 +285,21 @@ jQuery(function ($) {
 
         // =============================================   Image utils
 
-        createImage: function (data) {
+        createImage: async function (data) {
             Client._addCtxAndCanvas(data);
             //if (Object.keys(Client.images).includes(data.img_name))
             //    console.log("Image name already exists: " + data.img_name)
+            var img = await createImage(
+                data.image_file,
+                data.ctx,
+                data.x, data.y,
+                data.dx, data.dy,
+                data.canvas
+            )
             Client.images[data.img_name] = {
                 data: data,
-                img: createImage(
-                    data.image_file,
-                    data.ctx,
-                    data.x, data.y,
-                    data.dx, data.dy,
-                    data.canvas
-                )
-            };
+                img: img
+            }
         },
 
         moveImage: function (data) {
@@ -235,7 +311,7 @@ jQuery(function ($) {
                 data.dest_dy,
                 data.dt,
                 Client.images
-            )
+            );
         },
 
         alterImage: function (data) {
@@ -247,8 +323,14 @@ jQuery(function ($) {
 
         removeImage: function (img_name) {
             var img = Client.images[img_name];
-            clearImage(img)
-            delete Client.images[img_name];
+            if (img == null) {
+                console.error("Asked to remove " + img_name + ", but can't find image")
+                for (const i of Object.keys(Client.images))
+                    console.error(i);
+            }
+            return clearImage(img).then(
+                () => { delete Client.images[img_name] }
+            );
         },
 
         _addCtxAndCanvas: function (data) {
@@ -270,17 +352,19 @@ jQuery(function ($) {
         // =============================================
 
         updateInfectionCounter: function (text) {
-            Client.$infectionCounterLog.html(text);
+            Client.$infectionCounterLog.html(text)
         },
 
-
+        /*
         receivePlayerCards: async function (cards) {
             for (let c of cards) {
                 await Client.receivePlayerCard(c);
             }
-            IO.socket.emit("playerCardsReceived");
+            //IO.socket.emit("playerCardsReceived");
+            IO.actionComplete();
         },
-
+        /*
+        /*
         receivePlayerCard: function (card_data) {
             var data = {
                 img_type: "flying_card",
@@ -331,12 +415,14 @@ jQuery(function ($) {
                 });
             }
         },
-
+        */
+        /*
         discardPlayerCards: async function (cards) {
             for (let c of cards) {
                 await Client.discardPlayerCard(c);
             }
-            IO.socket.emit("playerCardDiscarded");
+            //IO.socket.emit("playerCardDiscarded");
+            IO.actionComplete();
         },
 
         discardPlayerCard: function (card_data) {
@@ -345,7 +431,7 @@ jQuery(function ($) {
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
         },
-
+        */
         addPlayerCardToHand: function (data) {
 
             var n_previous = Object.keys(Client.data.player_cards).length;
@@ -353,12 +439,6 @@ jQuery(function ($) {
             var x_offset = 5 * (n_previous + 1);
 
             Client.data.player_cards[data.card_name] = data;
-            if (data.is_city)
-                Client.data.city_cards[data.card_name] = data;
-            else if (data.is_event)
-                Client.data.event_cards[data.card_name] = data;
-            else
-                IO.error({ message: "Bad card found " + data })
 
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
@@ -391,21 +471,24 @@ jQuery(function ($) {
             }
             Client.$gameLog.prepend(new_message);
         },
-
+        /*
         discardInfectionCard: function (data) {
             if (Object.keys(Client.images).includes(data.img_name)) {
                 Client.removeImage(data.img_name)
             }
-            Client.createImage(data);
+            Client.createImage(data).then(
+                () => IO.actionComplete()
+            )
         },
-
+        */
+        /*
         newPlayerTurn: function (player_name) {
             Client.$currentPlayerDiv.textContent = player_name
             if (player_name != Client.data.player_name)
                 return;
             IO.socket.emit("enquireAvailableActions", Client.data);
         },
-
+        */
         enableActions: function (data) {
             Client.action_data = data;
             Client.present_actions(Client.action_data)
@@ -413,24 +496,22 @@ jQuery(function ($) {
 
         present_actions: function (remaining_actions, level = 0, answers = null) {
 
-            console.log(remaining_actions);
-
             if (level > 20) {
                 IO.error({ message: "Something has gone wrong" })
                 console.error(remaining_actions)
                 return
             }
 
-            if (remaining_actions.length == 1) {
+            answers = answers == null ? {} : answers;
+            var question = Client.question_order[level];
+
+            if (remaining_actions.length == 1 && !remaining_actions[0][question + "__stop_autochoice"]) {
                 // Single choice left, use it
                 var response_data = remaining_actions[0];
                 response_data.answers = answers;
                 IO.socket.emit("action_response", response_data)
                 return;
             }
-
-            answers = answers == null ? {} : answers;
-            var question = Client.question_order[level];
 
             if (Object.keys(remaining_actions[0]).includes(question)) {
                 Client._ask_question(
@@ -452,8 +533,9 @@ jQuery(function ($) {
                     remaining_actions[0][question + "__n_choices"] || 1,
                     array_from_objects_list(remaining_actions, question + "__colour") || null,
                     level > 0 && remaining_actions[0][question + "__cancel_button"],
-                    remaining_actions[0][question + "__title"] || null,
+                    remaining_actions[0][question + "__title"] || Client.default_titles[question] || null,
                     remaining_actions[0][question + "__checkboxes"] || false,
+                    remaining_actions[0][question + "__stop_autochoice"] || false
                 )
             } else {
                 Client.present_actions(remaining_actions, level + 1, answers)
@@ -462,10 +544,6 @@ jQuery(function ($) {
 
         remove_player_card_from_hand: function (card_name) {
             delete Client.data.player_cards[card_name];
-            if (Object.keys(Client.data.city_cards).includes(card_name))
-                delete Client.data.city_cards[card_name]
-            if (Object.keys(Client.data.event_cards).includes(card_name))
-                delete Client.data.event_cards[card_name]
             Client.refreshPlayerHand();
         },
 
@@ -477,7 +555,7 @@ jQuery(function ($) {
         updatePlayerTurns: function (data) {
             Client.$currentPlayerDiv.textContent = data.player + " (" + parseInt(data.used_actions + 1) + "/" + data.total_actions + ")"
         },
-
+        /*
         drawInfectionCards: async function (data) {
             for (var i = 0; i < data.cards.length; i++) {
                 if (i - 1 == data.empty_deck_deal) {
@@ -496,7 +574,12 @@ jQuery(function ($) {
                 Client.moveImage(card_data).then(() => { resolve(); });
             })
         },
+        
+        infection_deck_draw: function (data) {
 
+        },
+
+        
         epidemicDraw: async function (data) {
             for (var i = 0; i < data.cards.length; i++) {
                 Client.createImage(data.cards[i]);
@@ -505,7 +588,7 @@ jQuery(function ($) {
                 });
             }
         },
-
+        */
         _ask_question: function (
             options,
             go_callback = null,
@@ -513,15 +596,18 @@ jQuery(function ($) {
             colours = null,
             cancel_button = true,
             title = null,
-            checkboxes = false
+            checkboxes = false,
+            stop_autochoice = false
         ) {
 
-            if (options.length == 1 && n_choices == 1) {
-                go_callback(options[0])
-                return;
-            } else if (options.length == n_choices) {
-                go_callback(options)
-                return;
+            if (!stop_autochoice){
+                if (options.length == 1 && n_choices == 1) {
+                    go_callback(options[0])
+                    return;
+                } else if (options.length == n_choices) {
+                    go_callback(options)
+                    return;
+                }
             }
 
             var form = document.createElement("form");
@@ -539,6 +625,10 @@ jQuery(function ($) {
             for (var i = 0; i < options.length; i++) {
                 var o = options[i];
                 var colour = colours === null ? null : colours[i];
+                
+                //var input_div = document.createElement("div");
+                //input_div.style.display = "flex";
+
                 var input = document.createElement("input");
                 input.setAttribute("type", input_type);
                 input.setAttribute("value", o);
@@ -546,16 +636,54 @@ jQuery(function ($) {
                 input.className = "input_form_choice"
                 var id = "form_input_" + o;
                 input.setAttribute("id", id);
+                
+                //var label_div = document.createElement("div");
+                //label_div.setAttribute("class", "hover-container");
+                //label_div.setAttribute("class", "has-tooltip");
+
                 var label = document.createElement("label");
                 label.setAttribute("for", id);
                 label.style.color = colour;
                 if (colour && colour.toLowerCase() == "yellow")
                     label.style.backgroundColor = "#bfbfbd"
                 label.textContent = o;
-                var br = document.createElement("br");
+                label.setAttribute("class", "has-tooltip")
+                //label_div.appendChild(label);
+
+                if (Object.keys(Client.action_tooltips).includes(o)){
+                    /*
+                    var tooltip_div = document.createElement("div");
+                    tooltip_div.setAttribute("class", "hover-div")
+                    var tooltip = document.createElement("p");
+                    tooltip.setAttribute("class", "hover-content")
+                    tooltip.innerHTML = Client.action_tooltips[o]
+
+                    tooltip_div.appendChild(tooltip);
+                    label_div.appendChild(tooltip_div);
+                    */
+
+                    var wrapper_span = document.createElement("span")
+                    wrapper_span.setAttribute("class", "tooltip-wrapper")
+
+                    var tooltip_span = document.createElement("span")
+                    tooltip_span.setAttribute("class", "tooltip action-tooltip")
+
+                    tooltip_span.innerHTML = Client.action_tooltips[o]
+
+                    wrapper_span.appendChild(tooltip_span)
+
+                    label.appendChild(wrapper_span)
+                }
+
+                //input_div.appendChild(input);
+                //input_div.appendChild(label_div)
+                //input_div.appendChild(label)
+
+                //form.appendChild(input_div);
+
                 form.appendChild(input);
                 form.appendChild(label);
-                form.appendChild(br);
+                form.appendChild(document.createElement("br"));
             }
 
             var button_div = document.createElement("div");
@@ -569,7 +697,7 @@ jQuery(function ($) {
                 cancel_btn.innerHTML = "Cancel";
                 cancel_btn.onclick = function (event) {
                     event.preventDefault();
-                    Client.hide_selections();
+                    Client._hide_selections();
                     Client.present_actions(Client.action_data);
                 }
                 button_div.appendChild(cancel_btn);
@@ -589,14 +717,14 @@ jQuery(function ($) {
                 } else {
                     selection = document.querySelector('input[name="choice"]:checked').value;
                 }
-                Client.hide_selections();
+                Client._hide_selections();
                 if (go_callback)
                     go_callback(selection);
             }
             button_div.appendChild(ok_btn);
 
             Client.$playerSelectionArea.appendChild(form);
-            Client.show_selections();
+            Client._show_selections();
 
             if (checkboxes) {
                 ok_btn.disabled = true;
@@ -640,18 +768,18 @@ jQuery(function ($) {
 
         },
 
-        show_selections: function(){
+        _show_selections: function () {
             //Client.$playerSelectionArea.style.display = "block";
-            Client.$playerSelectionArea.style.height = "20%";
-            Client.$gameLog.style.height = "calc(15% - 4px)";
+            Client.$playerSelectionArea.style.height = "20vh";
+            Client.$gameLog.style.height = "calc(15vh - 4px)";
             Client.$playerSelectionArea.scrollTop = 0;
         },
 
-        hide_selections: function(){
+        _hide_selections: function () {
             Client.$playerSelectionArea.innerHTML = "";
-            Client.$playerSelectionArea.style.height = "0%";
+            Client.$playerSelectionArea.style.height = "0px";
             //Client.$playerSelectionArea.style.display = "none";
-            Client.$gameLog.style.height = "calc(35% - 4px)"
+            Client.$gameLog.style.height = "calc(35vh - 4px)"
         },
 
 
