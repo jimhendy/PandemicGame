@@ -1,9 +1,9 @@
-/*
+
 html{
-    font-variant: small-caps;
+    /*font-variant: small-caps;*/
     font-family: 'Helvetica', 'Arial', sans-serif;
 }
-*/
+
 
 /* Centered text */
 .centered {
@@ -99,37 +99,42 @@ html{
     font-size: 17px;
 }
 
-.game-button{
-    height: 10%
-}
 
+/* Tooltips */
 
-/* tooltips */
-.hover-container {
-    position: relative;
-    flex-grow: 100;
-}
-
-.hover-div {
+  .has-tooltip {
+    /*position: relative;*/
+    display: inline;
+  }
+  .tooltip-wrapper {
     position: absolute;
-    top: 25px;
-    right: 10px;
-    /*display: none;*/
-    z-index: -99;
-    background-color: #474747;
-    color: white;
-    border-radius: 5px;
+    visibility: hidden;
     opacity: 0;
-}
-
-.hover-content {
-    margin: 5px;
-}
-
-.hover-container:hover .hover-div {
-    /*display: block;*/
-    z-index: 99;
+    width: 0px;
+    height: 0px;
+  }
+  .has-tooltip:hover .tooltip-wrapper {
+    visibility: visible;
     opacity: 1;
-    transition: 0.5s;
-    transition-delay: 1s;
-}
+    transition-delay: 1.5s;
+    transition-duration: 1s;
+  }
+  
+  .tooltip {
+    display: block;
+    position: relative;
+    top: 2em;
+    right: 50%;
+    margin: 10px;
+    color: #FFFFFF;
+    background: #000000;
+    text-align: center;
+    border-radius: 5px;
+    box-shadow: 4px 3px 10px #800000;
+  }
+
+  .action-tooltip {
+      width: 23vw;
+      right: 15vw;
+      height: auto;
+  }

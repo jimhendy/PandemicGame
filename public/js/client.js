@@ -626,8 +626,8 @@ jQuery(function ($) {
                 var o = options[i];
                 var colour = colours === null ? null : colours[i];
                 
-                var input_div = document.createElement("div");
-                input_div.style.display = "flex";
+                //var input_div = document.createElement("div");
+                //input_div.style.display = "flex";
 
                 var input = document.createElement("input");
                 input.setAttribute("type", input_type);
@@ -637,8 +637,9 @@ jQuery(function ($) {
                 var id = "form_input_" + o;
                 input.setAttribute("id", id);
                 
-                var label_div = document.createElement("div");
-                label_div.setAttribute("class", "hover-container");
+                //var label_div = document.createElement("div");
+                //label_div.setAttribute("class", "hover-container");
+                //label_div.setAttribute("class", "has-tooltip");
 
                 var label = document.createElement("label");
                 label.setAttribute("for", id);
@@ -646,9 +647,11 @@ jQuery(function ($) {
                 if (colour && colour.toLowerCase() == "yellow")
                     label.style.backgroundColor = "#bfbfbd"
                 label.textContent = o;
-                label_div.appendChild(label);
+                label.setAttribute("class", "has-tooltip")
+                //label_div.appendChild(label);
 
                 if (Object.keys(Client.action_tooltips).includes(o)){
+                    /*
                     var tooltip_div = document.createElement("div");
                     tooltip_div.setAttribute("class", "hover-div")
                     var tooltip = document.createElement("p");
@@ -657,12 +660,30 @@ jQuery(function ($) {
 
                     tooltip_div.appendChild(tooltip);
                     label_div.appendChild(tooltip_div);
+                    */
+
+                    var wrapper_span = document.createElement("span")
+                    wrapper_span.setAttribute("class", "tooltip-wrapper")
+
+                    var tooltip_span = document.createElement("span")
+                    tooltip_span.setAttribute("class", "tooltip action-tooltip")
+
+                    tooltip_span.innerHTML = Client.action_tooltips[o]
+
+                    wrapper_span.appendChild(tooltip_span)
+
+                    label.appendChild(wrapper_span)
                 }
 
-                input_div.appendChild(input);
-                input_div.appendChild(label_div)
+                //input_div.appendChild(input);
+                //input_div.appendChild(label_div)
+                //input_div.appendChild(label)
 
-                form.appendChild(input_div);
+                //form.appendChild(input_div);
+
+                form.appendChild(input);
+                form.appendChild(label);
+                form.appendChild(document.createElement("br"));
             }
 
             var button_div = document.createElement("div");

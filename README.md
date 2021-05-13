@@ -10,15 +10,14 @@ TODO:
 * tooltops/titles on cards - some way to explain event cards
 * tooltip for chosen role abilities
 * landing page image does not show on phone
+* Font sizes should be in %/vh
 
-* Allow players to use event cards on other players turns and between infect and intesify of epidemics
-
-veritcal scrollbar on role choice screen
-Can op exp build reasearch stations where one already exists?
+Contingency planner special action
 Infection counter should update with initial deal
 Tooltip for current role
+Tooltips for role card selection
+Restart game button in selection page / another page with current game/new game
 Tooltips for event cards
-How to use event cards?
 Event cards between epidemic stages
 
 ## Installation
