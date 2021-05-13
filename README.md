@@ -18,6 +18,9 @@ TODO:
 * Tooltips for event cards
 * Event cards between epidemic stages
 * Random state and log actions for replication
+* Toronto -> Montreal
+* Cure disease if Medic cures on location with cubes
+* Run out of player cards
 Picking the bottom infection deck card with resilient population makes the whole deck image disappear ??
 
 Random state and log?

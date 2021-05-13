@@ -257,6 +257,7 @@ class InfectionDeck {
 
         var city = this.cities[card_name];
         var card_data = this._discard_card_data(city);
+        card_data.img_name += "_temp";
         card_data.x = card_data.dest_x;
         card_data.y = card_data.dest_y;
         card_data.dest_y = - card_data.dy - 0.01
