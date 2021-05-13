@@ -542,6 +542,7 @@ jQuery(function ($) {
             ok_btn.innerHTML = "Go";
             ok_btn.onclick = function (event) {
                 event.preventDefault();
+                $('#player_selection_area').stop()
                 var selection = null;
                 if (checkboxes) {
                     selection = [];
@@ -553,8 +554,6 @@ jQuery(function ($) {
                     selection = [];
                     var inputs = document.getElementsByClassName("sortable-choice");
                     for (const i of inputs){
-                        console.log(i);
-                        console.log(i.getAttribute("data-city-name"))
                         selection.push(i.getAttribute("data-city-name"))
                     }
                 } else {
@@ -646,7 +645,7 @@ jQuery(function ($) {
         _scroll_selection_to_bottom: function() {
             $('#player_selection_area').animate(
                 {scrollTop: Client.$playerSelectionArea.scrollHeight}, 
-                {duration: 250, easing: "easeInOutSine"}
+                {duration: 2000, easing: "easeOutCirc"}
             );
         },
 

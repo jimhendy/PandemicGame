@@ -5,22 +5,20 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-* Event cards
 * log file
 * tooltops/titles on cards - some way to explain event cards
 * tooltip for chosen role abilities
 * landing page image does not show on phone
 * Font sizes should be in %/vh
-
-Contingency planner special action
-Infection counter should update with initial deal
-Tooltip for current role
-Tooltips for role card selection
-Restart game button in selection page / another page with current game/new game
-Tooltips for event cards
-Event cards between epidemic stages
-
-Picking the bottom infection deck card with resilient population makes the whole deck image disappear
+* Contingency planner special action
+* Infection counter should update with initial deal
+* Tooltip for current role
+* Tooltips for role card selection
+* Restart game button in selection page / another page with current game/new game
+* Tooltips for event cards
+* Event cards between epidemic stages
+* Random state and log actions for replication
+Picking the bottom infection deck card with resilient population makes the whole deck image disappear ??
 
 Random state and log?
 
