@@ -7,6 +7,7 @@ classes = Capital camel case
 TODO:
 
 * Contingency planner special action
+* Infection & player cards unicodes icons don't show on firefox/mac
 
 * Restart game button in selection page / another page with current game/new game
 

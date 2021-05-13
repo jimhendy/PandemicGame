@@ -89,7 +89,7 @@ class InfectionDeck {
         }
     }
 
-    _infect_city(city_name, cubes, log_message = null) {
+    _infect_city(city_name, cubes, ignore_cities=null, log_message = null) {
         var city = this.cities[city_name];
         var card_data = this._discard_card_data(city);
         var final_card_data = Object.assign({ ...card_data }, { cardCanvas: true, animationCanvas: false })
@@ -132,7 +132,7 @@ class InfectionDeck {
         )
         // Add the cubes to the city
         for (var n = 0; n < cubes; n++) {
-            this.queue.add_task(city.add_cube, [this.cities], 0, "Adding cubes to " + city_name);
+            this.queue.add_task(city.add_cube, [this.cities, null, ignore_cities], 0, "Adding cubes to " + city_name);
         }
         // Move this card into the discard pile in this code
         this.discarded.push(city_name);
@@ -172,18 +172,17 @@ class InfectionDeck {
             var colour = this.cities[city_name].native_disease_colour;
             var n_cubes = epidemic_draw ? 3 : 1;
             var log_message = null;
+            var ignore_cities = this._get_protected_cities(colour);
 
             if (this.diseases[colour].eradicated) {
                 log_message = { message: city_name + " was NOT infected as disease is eradicated", style: { color: colour } };
                 n_cubes = 0;
-            } else {
-                if (this._get_protected_cities(colour).includes(city_name)) {
-                    log_message = { message: city_name + " was NOT infected as it is protected", style: { color: colour } };
-                    n_cubes = 0;
-                }
+            } else if (ignore_cities.includes(city_name)) {
+                log_message = { message: city_name + " was NOT infected as it is protected", style: { color: colour } };
+                n_cubes = 0;
             }
 
-            this._infect_city(city_name, n_cubes, log_message);
+            this._infect_city(city_name, n_cubes, ignore_cities, log_message);
 
             if (!this.deck.length) {
                 this._remove_deck_image();
