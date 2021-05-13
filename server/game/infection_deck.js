@@ -35,6 +35,7 @@ class InfectionDeck {
         this.epidemic_intensify = this.epidemic_intensify.bind(this);
         this._get_protected_cities = this._get_protected_cities.bind(this);
         this._remove_discarded_image = this._remove_discarded_image.bind(this);
+        this.remove_discarded_card = this.remove_discarded_card.bind(this);
 
     }
 
@@ -218,6 +219,60 @@ class InfectionDeck {
         }
         this._remove_discarded_image();
         this._create_deck_image();
+    }
+
+    remove_discarded_card(card_name) {
+        var discard_position = this.discarded.indexOf(card_name);
+        
+        // Remove the card_data
+        this.discarded = this.discarded.filter((c) => { return c != card_name });
+        
+        if (this.discarded.length == 0) {
+            this._remove_discarded_image();
+        } else if (discard_position == this.discarded.length) {
+            // Was previously the most recently discarded image, remove and replace with 2nd most recently discarded
+            var top_city_name = this.discarded[this.discarded.length - 1];
+            var top_city = this.cities[top_city_name];
+            var top_card_data = this._discard_card_data(top_city);
+            Object.assign(top_card_data, { cardCanvas: true, animationCanvas: false })
+            top_card_data.x = top_card_data.dest_x;
+            top_card_data.y = top_card_data.dest_y;
+            this.queue.add_task(
+                () => {
+                    this.io.to(this.game_id).emit(
+                        "series_actions",
+                        {
+                            series_actions_args: [
+                                { function: "removeImage", args: "infection_discard" },
+                                { function: "createImage", args: top_card_data }
+                            ],
+                            return: true
+                        },
+                    );
+                },
+                null, "all", "Moving " + top_city_name + " to the top of the infection discard deck"
+            )
+        }
+
+        var city = this.cities[card_name];
+        var card_data = this._discard_card_data(city);
+        card_data.x = card_data.dest_x;
+        card_data.y = card_data.dest_y;
+        card_data.dest_y = - card_data.dy - 0.01
+
+        this.queue.add_task(
+            (cd) => this.io.to(this.game_id).emit(
+                "series_actions",
+                {
+                    series_actions_args: [
+                        { function: "createImage", args: cd },
+                        { function: "moveImage", args: cd },
+                        { function: "removeImage", args: cd.img_name }
+                    ],
+                    return: true
+                }
+            ), card_data, "all", "Removing " + card_name + " infection card from the game"
+        )
     }
 
 }

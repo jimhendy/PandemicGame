@@ -38,9 +38,13 @@ class Pandemic {
         this._assess_dispatcher_actions = this._assess_dispatcher_actions.bind(this);
         this._assess_operations_expert_actions = this._assess_operations_expert_actions.bind(this);
         
+        this._assess_all_event_cards = this._assess_all_event_cards.bind(this);
+
         this._assess_airlift_event_card = this._assess_airlift_event_card.bind(this);
         this._assess_government_grant_event_card = this._assess_government_grant_event_card.bind(this);
         this._assess_one_quiet_night_event_card = this._assess_one_quiet_night_event_card.bind(this);
+        this._assess_forecast_event_card = this._assess_forecast_event_card.bind(this);
+        this._assess_resilient_population_event_card = this._assess_resilient_population_event_card.bind(this);
 
         // player events
         this.player_pass = this.player_pass.bind(this);
@@ -53,6 +57,7 @@ class Pandemic {
         this.player_treat_disease = this.player_treat_disease.bind(this);
         this.player_build_research_station = this.player_build_research_station.bind(this);
         this.player_skip_next_infection_step = this.player_skip_next_infection_step.bind(this);
+        this.player_resilient_population = this.player_resilient_population.bind(this);
 
         this._curable_colours = this._curable_colours.bind(this);
         this._player_by_name = this._player_by_name.bind(this);
@@ -131,17 +136,6 @@ class Pandemic {
         )
         this.game.queue.start();
     }
-    /*
-    clientNotesPlayerCardsReceived() {
-        if (!this.initial_deal_complete) {
-            this.initial_clients_deals++;
-            if (this.initial_clients_deals != this.game.players.length) {
-                return;
-            }
-        }
-        this.game.new_player_turn();
-    }
-    */
 
     async assess_player_options() {
         var player = this.game.current_player;
@@ -162,10 +156,8 @@ class Pandemic {
         this._assess_share_knowledge(actions, player, city);
         this._assess_discover_a_cure(actions, player, city);
 
-        this._assess_airlift_event_card(actions, player);
-        this._assess_government_grant_event_card(actions, player);
-        this._assess_one_quiet_night_event_card(actions, player);
-
+        this._assess_all_event_cards(actions, player, false);
+        
         this._assess_pass(actions, player, city);
 
         if (player.role_name == "Operations Expert")
@@ -180,10 +172,7 @@ class Pandemic {
             if (p == player)
                 continue
             var p_actions = [];
-            this._assess_airlift_event_card(p_actions, p);
-            this._assess_government_grant_event_card(p_actions, p);
-            this._assess_one_quiet_night_event_card(p_actions, p);
-            // Other event cards
+            this._assess_all_event_cards(p_actions, p, false);
             if (p_actions.length){
                 other_player_actions[p.socket_id] = p_actions;
             }
@@ -432,6 +421,14 @@ class Pandemic {
 
     // =============================================  Assess Event cards
 
+    _assess_all_event_cards(actions, player, skip_check_next=false){
+        this._assess_airlift_event_card(actions, player, skip_check_next)
+        this._assess_government_grant_event_card(actions, player, skip_check_next)
+        this._assess_one_quiet_night_event_card(actions, player, skip_check_next)
+        this._assess_forecast_event_card(actions, player, skip_check_next)
+        this._assess_resilient_population_event_card(actions, player, skip_check_next)
+    }
+
     _assess_airlift_event_card(actions, player, skip_check_next=false){
         if (array_from_objects_list(player.player_cards, "card_name").includes("Airlift")){
             for (const p of this.game.players) {
@@ -492,6 +489,30 @@ class Pandemic {
                     skip_check_next: skip_check_next
                 }
             )
+        }
+    }
+
+    _assess_forecast_event_card(actions, player, skip_check_next=false){
+        return;
+    }
+
+    _assess_resilient_population_event_card(actions, player, skip_check_next=false){
+        if (array_from_objects_list(player.player_cards, "card_name").includes("Resilient Population")){
+            for (const card_name of this.game.infection_deck.discarded){
+                actions.push(
+                    {
+                        action: "Resilient Population",
+                        action__stop_autochoice: true,
+                        player_name: player.player_name,
+                        response_function: "player_resilient_population",
+                        discard_card_name: "Resilient Population",
+                        costs_an_action: false,
+                        skip_check_next: skip_check_next,
+                        discard_infection_card_name: card_name,
+                        discard_infection_card_name__title: "Pick an Infection Card to remove"
+                    }
+                )
+            }
         }
     }
 
@@ -647,6 +668,14 @@ class Pandemic {
             this._add_check_end_turn_to_queue(data.costs_an_action !== false)
     }
 
+
+    player_resilient_population(data){
+        this.game.infection_deck.remove_discarded_card(data.discard_infection_card_name)
+        var player = this._player_by_name(data.player_name);
+        this._discard_cards(player, data)
+        if (!data.skip_check_next)
+            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
+    }
 
     // ======================================================== Event Cards
     /*
@@ -824,10 +853,8 @@ class Pandemic {
             )
         }
 
-        this._assess_airlift_event_card(actions, player, true);
-        this._assess_government_grant_event_card(actions, player, true);
-        this._assess_one_quiet_night_event_card(actions, player, true);
-        
+        this._assess_all_event_cards(actions, player, true);
+
         this.game.queue.add_task(
             () => this.io.to(player.socket_id).emit(
                 "clientAction", { function: "enableActions", args: actions }
