@@ -171,6 +171,8 @@ class Pandemic {
             this._assess_operations_expert_actions(actions, player, city);
         else if (player.role_name == "Dispatcher")
             this._assess_dispatcher_actions(actions, player, city);
+        else if (player.role_name == "Contingency Planner")
+            this._assess_contingency_planner_actions(actions, player, city);
 
 
         // Consider event cards from other players
@@ -439,13 +441,14 @@ class Pandemic {
     }
 
     _assess_airlift_event_card(actions, player, skip_check_next = false) {
-        if (array_from_objects_list(player.player_cards, "card_name").includes("Airlift")) {
+        var event_card_name = "Airlift"
+        if (player.has_event_card(event_card_name)) {
             for (const p of this.game.players) {
                 for (const [city_name, city] of Object.entries(this.game.cities)) {
                     if (p.city_name == city_name) continue // Don't move to current location
                     actions.push(
                         {
-                            action: "Airlift",
+                            action: event_card_name,
                             action__stop_autochoice: true,
                             destination: city_name,
                             destination__colour: city.native_disease_colour,
@@ -454,9 +457,10 @@ class Pandemic {
                             player_name: p.player_name,
                             player_name__title: "Pick a player to move",
                             response_function: p == player ? "player_move" : "player_move_proposal",
-                            discard_card_name: "Airlift",
+                            discard_card_name: event_card_name,
                             costs_an_action: false,
-                            skip_check_next: skip_check_next
+                            skip_check_next: skip_check_next,
+                            is_contingency_planner_extra_card: player.is_contingency_planner_extra_card(event_card_name)
                         }
                     )
                 }
@@ -465,20 +469,22 @@ class Pandemic {
     }
 
     _assess_government_grant_event_card(actions, player, skip_check_next = false) {
-        if (array_from_objects_list(player.player_cards, "card_name").includes("Government Grant")) {
+        var event_card_name = "Government Grant";
+        if (player.has_event_card(event_card_name)) {
             for (const [city_name, city] of Object.entries(this.game.cities)) {
                 if (city.has_research_station) continue
                 actions.push(
                     {
-                        action: "Government Grant",
+                        action: event_card_name,
                         action__stop_autochoice: true,
                         destination: city_name,
                         destination__colour: city.native_disease_colour,
                         player_name: player.player_name,
                         response_function: "player_build_research_station",
-                        discard_card_name: "Government Grant",
+                        discard_card_name: event_card_name,
                         costs_an_action: false,
-                        skip_check_next: skip_check_next
+                        skip_check_next: skip_check_next,
+                        is_contingency_planner_extra_card: player.is_contingency_planner_extra_card(event_card_name)
                     }
                 )
             }
@@ -486,23 +492,26 @@ class Pandemic {
     }
 
     _assess_one_quiet_night_event_card(actions, player, skip_check_next = false) {
-        if (array_from_objects_list(player.player_cards, "card_name").includes("One Quiet Night")) {
+        var event_card_name = "One Quiet Night"
+        if (player.has_event_card(event_card_name)) {
             actions.push(
                 {
-                    action: "One Quiet Night",
+                    action: event_card_name,
                     action__stop_autochoice: true,
                     player_name: player.player_name,
                     response_function: "player_skip_next_infection_step",
-                    discard_card_name: "One Quiet Night",
+                    discard_card_name: event_card_name,
                     costs_an_action: false,
-                    skip_check_next: skip_check_next
+                    skip_check_next: skip_check_next,
+                    is_contingency_planner_extra_card: player.is_contingency_planner_extra_card(event_card_name)
                 }
             )
         }
     }
 
     _assess_forecast_event_card(actions, player, skip_check_next = false) {
-        if (array_from_objects_list(player.player_cards, "card_name").includes("Forecast")) {
+        var event_card_name = "Forecast"
+        if (player.has_event_card(event_card_name)) {
             var num_cards = Math.min(6, this.game.infection_deck.deck.length);
             for (var i = 0; i < num_cards; i++) {
                 var card_name = this.game.infection_deck.deck[
@@ -511,11 +520,11 @@ class Pandemic {
                 var city = this.game.cities[card_name];
                 actions.push(
                     {
-                        action: "Forecast",
+                        action: event_card_name,
                         action__stop_autochoice: true,
                         player_name: player.player_name,
                         response_function: "player_forecast",
-                        discard_card_name: "Forecast",
+                        discard_card_name: event_card_name,
                         costs_an_action: false,
                         skip_check_next: skip_check_next,
                         infection_deck_card_name: card_name,
@@ -523,7 +532,8 @@ class Pandemic {
                         infection_deck_card_name__sortable: true,
                         infection_deck_card_name__n_choices: num_cards,
                         infection_deck_card_name__colour: city.native_disease_colour,
-                        infection_deck_card_name__cancel_button: false // Can't peek at cards and then cancel
+                        infection_deck_card_name__cancel_button: false, // Can't peek at cards and then cancel
+                        is_contingency_planner_extra_card: player.is_contingency_planner_extra_card(event_card_name)
                     }
                 )
             }
@@ -531,19 +541,22 @@ class Pandemic {
     }
 
     _assess_resilient_population_event_card(actions, player, skip_check_next = false) {
-        if (array_from_objects_list(player.player_cards, "card_name").includes("Resilient Population")) {
+        var event_card_name = "Resilient Population";
+        if (player.has_event_card(event_card_name)) {
             for (const card_name of this.game.infection_deck.discarded) {
                 actions.push(
                     {
-                        action: "Resilient Population",
+                        action: event_card_name,
                         action__stop_autochoice: true,
                         player_name: player.player_name,
                         response_function: "player_resilient_population",
-                        discard_card_name: "Resilient Population",
+                        discard_card_name: event_card_name,
                         costs_an_action: false,
                         skip_check_next: skip_check_next,
                         infection_deck_card_name: card_name,
-                        infection_deck_card_name__title: "Pick an Infection Card to remove"
+                        infection_deck_card_name__title: "Pick an Infection Card to remove",
+                        is_contingency_planner_extra_card: player.is_contingency_planner_extra_card(event_card_name),
+                        card_name: event_card_name
                     }
                 )
             }
@@ -609,9 +622,9 @@ class Pandemic {
     }
 
     _assess_contingency_planner_actions(actions, player, city){
-        if (player.contingency_planner_event_card !== null)
+        if (player.contingency_planner_event_card_name !== null)
             return
-        for (const c in this.game.player_deck.discard_pile){
+        for (const c of this.game.player_deck.discard_pile){
             if (c.is_event){
                 actions.push(
                     {
@@ -750,8 +763,10 @@ class Pandemic {
 
     player_pick_up_discarded_event_card(data){
         var player = this._player_by_name(data.player_name);
-        //var card_data = this.game.player_deck.pick_up_discarded_event_card(data);
-        //player.pick_up_discarded_event_card(data, card_data);
+        var card_data = this.game.player_deck.pick_up_discarded_event_card(data, player);
+        player.pick_up_discarded_event_card(data, card_data);
+        if (!data.skip_check_next)
+            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
     }
 
     // ======================================== Utils
@@ -952,7 +967,7 @@ class Pandemic {
         }
         if (!Array.isArray(discards))
             discards = [discards];
-        this.game.player_deck.discard(discards, player)
+        this.game.player_deck.discard(discards, player, data.is_contingency_planner_extra_card)
     }
 
     // ===================================================== Proposals & Responses

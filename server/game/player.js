@@ -1,3 +1,4 @@
+const { array_from_objects_list } = require("./utils");
 
 class Player{
 
@@ -19,7 +20,7 @@ class Player{
         this.player_num = player_num;
 
         this.used_special_action_this_turn = false;
-        this.contingency_planner_event_card = null;
+        this.contingency_planner_event_card_name = null;
 
         // Override the silly javascript concept of "this" changing meaning depending on the caller
         this.add_player_card = this.add_player_card.bind(this);
@@ -27,7 +28,10 @@ class Player{
         this.place_pawn = this.place_pawn.bind(this);
         this.move_pawn = this.move_pawn.bind(this);
         this.too_many_cards = this.too_many_cards.bind(this);
-        //this.pick_up_discarded_event_card = this.pick_up_discarded_event_card.bind(this);
+        this.pick_up_discarded_event_card = this.pick_up_discarded_event_card.bind(this);
+        this.has_event_card = this.has_event_card.bind(this);
+        this.is_contingency_planner_extra_card = this.is_contingency_planner_extra_card.bind(this);
+        this.discard_contingency_planner_extra_card = this.discard_contingency_planner_extra_card.bind(this);
     }
 
     add_player_card(card_data){
@@ -44,15 +48,6 @@ class Player{
         }
         this.player_cards = this.player_cards.filter(
             function(c) { return c.card_name != card_name});
-        /*
-        this.io.to(this.socket_id).emit(
-            "clientAction",
-            {
-                function: "discardPlayerCardFromHand",
-                args: card_name
-            }
-        );
-        */
         return card_data;
     };
 
@@ -115,7 +110,32 @@ class Player{
         return this.player_cards.length > this.max_hand_cards;
     }
 
+    pick_up_discarded_event_card(card_data){
+        this.contingency_planner_event_card_name = card_data.pick_up_card_name;
+    }
     
+    has_event_card(card_name){
+        console.log(this.contingency_planner_event_card_name)
+        console.log(card_name)
+        console.log("")
+        return (
+            array_from_objects_list(this.player_cards, "card_name").includes(card_name)
+            ||
+            this.contingency_planner_event_card_name == card_name
+        )
+    }
+
+    is_contingency_planner_extra_card(card_name){
+        if (this.contingency_planner_event_card_name == null)
+            return false
+        return this.contingency_planner_event_card_name == card_name
+    }
+
+    discard_contingency_planner_extra_card(card_name){
+        if (this.contingency_planner_event_card_name != card_name)
+            console.error("Asked to discard CP extra role card but not know to player")
+        this.contingency_planner_event_card_name = null;
+    }
 
 }
 

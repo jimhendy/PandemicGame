@@ -159,36 +159,8 @@ jQuery(function ($) {
 
         updateRoles: function (data) {
             if (Client.data.current_page != "role_choice") {
-                //console.error("Client asked to update roles but not on correct page")
-                //console.error(Client.data)
                 return;
             }
-
-            // Images
-            /*
-            var roles_list = '<div id="roles_list" style="display: flex;">';
-            for (const role of data.all_roles) {
-                var card_class = "role-card";
-                var role_name = "";
-                if (Object.values(data.assigned_roles).includes(role)) {
-                    if (Client.data.role == role) {
-                        card_class += " role-card-chosen";
-                    } else {
-                        card_class += " role-card-unavailable";
-                        role_name = key_from_value(data.assigned_roles, role);
-                    }
-                }
-                roles_list += '<div class="role-card-container">'
-                roles_list += '<img class="' + card_class + '" '
-                roles_list += 'data-role="' + role + '" '
-                roles_list += 'src="/images/game/roles/Role - ' + role + '.jpg">'
-                roles_list += '<div class="centered role-player-name">'
-                roles_list += role_name + '</div>'
-                roles_list += '</div>'
-            }
-            roles_list += "</div>";
-            $('#role-choice-cards-div').html(roles_list);
-            */
 
             var roles_list = document.createElement("div");
             roles_list.setAttribute("id", "roles_list")
@@ -223,11 +195,11 @@ jQuery(function ($) {
                 var tooltip_span = document.createElement("span")
                 tooltip_span.setAttribute("class", "tooltip")
                 tooltip_span.style.width = "calc(100vw / 7 - 1vw)"
-                tooltip_span.style.top = "calc(100vh / 3)"
+                tooltip_span.style.top = "35vh"
                 tooltip_span.innerHTML = Client.role_tooltips[role]
                 wrapper_span.appendChild(tooltip_span)
-                role_div.appendChild(wrapper_span)
 
+                role_div.appendChild(wrapper_span)
                 role_div.appendChild(role_img)
                 role_div.appendChild(role_player_name_div)
 
@@ -302,6 +274,26 @@ jQuery(function ($) {
             Client.$gameLog = document.getElementById("game_log");
             Client.$playerSelectionArea = document.getElementById("player_selection_area");
             Client.$playerLocation = document.getElementById("player_location")
+            
+            Client.configure_player_role_reminder();
+        },
+
+        configure_player_role_reminder: function(){
+            var role_reminder_div = document.getElementById('player-role-reminder');
+
+            var wrapper_span = document.createElement("span")
+            wrapper_span.setAttribute("class", "tooltip-wrapper")
+
+            var tooltip_span = document.createElement("span")
+            tooltip_span.setAttribute("class", "tooltip")
+            tooltip_span.style.width = "30vw"
+            tooltip_span.style.top = "5vh"
+            tooltip_span.style.right = "30vw"
+            tooltip_span.innerHTML = Client.role_tooltips[Client.data.role]
+            wrapper_span.appendChild(tooltip_span)
+
+            role_reminder_div.appendChild(wrapper_span)
+            role_reminder_div.appendChild(document.createTextNode(Client.data.role));
         },
 
         // =============================================   Image utils
@@ -387,7 +379,7 @@ jQuery(function ($) {
             var new_img = document.createElement("img");
             new_img.setAttribute("class", "player-hand-card");
             new_img.setAttribute("src", data.image_file);
-            new_img.setAttribute("z-order", n_previous);
+            new_img.setAttribute("z-index", n_previous);
             new_img.setAttribute("data-cardname", data.card_name);
             new_img.style.top = y_offset + "%";
             new_img.style.left = x_offset + "%";
@@ -407,7 +399,7 @@ jQuery(function ($) {
         logMessage: function (data) {
             var new_message = document.createElement("p");
             new_message.setAttribute("class", "log-message");
-            new_message.textContent = data.message;
+            new_message.innerHTML = data.message;
             if (Object.keys(data).includes("style")) {
                 for (const [key, value] of Object.entries(data.style)) {
                     new_message.style[key] = value;

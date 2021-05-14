@@ -96,7 +96,7 @@ function _redraw_image(image, context){
     
 }
 
-async function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 25) {
+async function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 10) {
     
     var img_object = image.img;
     var context = image.data.ctx;
@@ -116,6 +116,10 @@ async function move(image, destination_x, destination_y, destination_dx, destina
     var current_y = img_object.canvas_y;
     var current_dx = img_object.width;
     var current_dy = img_object.height;
+
+    if (duration == null){
+        console.error("moveImage Duration is null for " + image +", we will loop forever!")
+    }
 
     var n_steps = duration * 1000 / updateInterval;
 

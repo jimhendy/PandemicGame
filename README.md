@@ -6,8 +6,8 @@ classes = Capital camel case
 
 TODO:
 
-* Contingency planner special action
-* Infection & player cards unicodes icons don't show on firefox/mac
+* > 6 Research stations should be build by moving one
+(fixed?) * Infection & player cards unicodes icons don't show on firefox/mac 
 
 * Restart game button in selection page / another page with current game/new game
 
@@ -15,7 +15,6 @@ TODO:
 * Random state and log actions for replication
 
 * tooltops/titles on cards - some way to explain event cards
-* Tooltip for current role
 * Tooltips for event card actions
 
 * Capitalise disease colours when asking question
