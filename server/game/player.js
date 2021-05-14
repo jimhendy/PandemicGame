@@ -115,9 +115,6 @@ class Player{
     }
     
     has_event_card(card_name){
-        console.log(this.contingency_planner_event_card_name)
-        console.log(card_name)
-        console.log("")
         return (
             array_from_objects_list(this.player_cards, "card_name").includes(card_name)
             ||
