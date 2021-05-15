@@ -30,7 +30,7 @@ class PlayerDeck {
                 new PlayerCard(city)
             )
         }
-        for (var i = 0; i < 5; i++) {
+        for (var i = 0; i < 1; i++) {
             for (const ev of this.event_card_names) {
                 this.deck.push(
                     new PlayerCard(null, false, null, ev)
