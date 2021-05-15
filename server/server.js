@@ -49,7 +49,7 @@ function bindSocketEvents(socket){
 function playerJoinAttempt(data) {
     var calling_socket = this;
 
-    if (true || data.passcode == pandemic.game_id) {
+    if (data.passcode == pandemic.game_id) {
         calling_socket.join(pandemic.game_id);
         pandemic.add_user(data, calling_socket);
     } else {  
