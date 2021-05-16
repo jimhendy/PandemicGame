@@ -1,8 +1,25 @@
+/*
+@import url(//db.onlinewebfonts.com/c/bbadabe39d5a02f8287c3ad092f49e76?family=IsraThin-Regular);
+@font-face {font-family: "IsraThin-Regular"; src: url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.eot"); src: url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.woff") format("woff"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.svg#IsraThin-Regular") format("svg"); }
+*/
+/*
+@import url(//db.onlinewebfonts.com/c/ed09b50712bb1277477b1536e8747d9d?family=Isra-Regular);
+@font-face {font-family: "Isra-Regular"; src: url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.eot"); src: url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.woff") format("woff"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.svg#Isra-Regular") format("svg"); }
+*/
+/*
+@import url(//db.onlinewebfonts.com/c/63137a821976b7fdfcf941ab1528cb19?family=AG_Helvetica);
+@font-face {font-family: "AG_Helvetica"; src: url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.eot"); src: url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.woff") format("woff"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.svg#AG_Helvetica") format("svg"); }
+*/
+
+/*@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap');*/
 
 html{
     /*font-variant: small-caps;*/
-    font-family: 'Arial', 'Helvetica', sans-serif;
-    font-size: 16;
+    /*font-family: "AG_Helvetica", 'Arial', 'Helvetica', sans-serif;*/
+    /*font-family: 'Roboto', sans-serif;*/
+    font-family: 'Arial', 'sans-serif';
+    /*font-size: 1.2vw; */ /*Isra*/
+    font-size: 0.9vw; /* Arial */
 }
 
 
@@ -48,7 +65,7 @@ html{
 .role-player-name{
     color:#0317fc;
     font-weight: bold;
-    font-size: 30px;
+    font-size: 2vw;
 }
 
 /* Loading spinner */
@@ -69,15 +86,15 @@ html{
   /* Log boxes */
 
   .log-box {
-    width: calc(100% - 4px); 
-    height: calc(15vh - 4px); 
+    width: calc(100% - 2px); 
+    height: calc(15vh - 2px); 
     border-style: solid; 
-    border-width: 2px;
+    border-width: 1px;
     overflow-x: hidden;
     overflow-y: scroll;
-    background-color: #bfbfbd;
+    background-color: #b4b4b4;/* #bfbfbd;*/
     line-height: normal;
-    color: #6e706f
+    color: #6e706f;
   }
 
 
@@ -97,14 +114,12 @@ html{
     margin-top: 0px;
     margin-bottom: 0px;
     margin-left: 3px;
-    font-size: 17px;
 }
 
 
 /* Tooltips */
 
   .has-tooltip {
-    /*position: relative;*/
     display: inline;
   }
   .tooltip-wrapper {
@@ -131,7 +146,7 @@ html{
     background: #000000;
     text-align: center;
     border-radius: 5px;
-    box-shadow: 4px 3px 10px #800000;
+    box-shadow: 4px 3px 10px #666666;
     z-index: 100;
   }
 

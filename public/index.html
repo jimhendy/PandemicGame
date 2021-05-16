@@ -4,6 +4,15 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <!--<link href="//db.onlinewebfonts.com/c/bbadabe39d5a02f8287c3ad092f49e76?family=IsraThin-Regular" rel="stylesheet" type="text/css"/>-->
+    <!--<link href="//db.onlinewebfonts.com/c/ed09b50712bb1277477b1536e8747d9d?family=Isra-Regular" rel="stylesheet" type="text/css"/>-->
+    <!--<link href="//db.onlinewebfonts.com/c/63137a821976b7fdfcf941ab1528cb19?family=AG_Helvetica" rel="stylesheet" type="text/css"/>-->
+
+
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+
+
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link href="/css/style.css" rel="stylesheet" type="text/css">
@@ -12,8 +21,18 @@
 
     <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <style>
-    #sortable { list-style-type: none; margin: 0; padding: 0; width: 100%; text-align: center;}
-    #sortable li { margin: 0 3px 3px 3px; background-color: #bfbfbd;}
+        #sortable {
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            text-align: center;
+        }
+
+        #sortable li {
+            margin: 0 3px 3px 3px;
+            background-color: #bfbfbd;
+        }
     </style>
     <!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script>-->
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
@@ -28,8 +47,7 @@
 <script id="landing-screen-template" type="text/template">
     <!-- LANDING SCREEN where user can enter details -->
 <div style="text-align:center; margin-top: 3vh; width: 100%; height: 97vh;">
-    <img class="logo" src="/images/pandemic_landing_image.jpg"
-        style="width:80%; height:50vh; margin-bottom: 3vh;">
+    <img class="logo" src="/images/pandemic_landing_image.jpg" style="width:80%; height:50vh; margin-bottom: 3vh;">
     <form id="player_details_form">
         <input id="passcode_input" autocomplete="off" placeholder="Passcode" style="margin-bottom: 1%;">
         </br>
@@ -95,17 +113,22 @@
     </div>
     <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100vh;">
         <div style="height: 4vh;">
-            <div style="display: flex; margin-top: 0px; margin-left: 2%; margin-right: 2%; margin-bottom: 0.2vh; height: 1.8vh;">
+            <div
+                style="display: flex; margin-top: 0px; margin-left: 2%; margin-right: 2%; margin-bottom: 0.2vh; height: 1.8vh;">
                 <p style="text-align: left; margin: 0px; width: 50%;">
                     City: <span id="player_location" style="font-weight: bold;">Atlanta</span></p>
-                <p style="color: #0645AD; text-decoration:underline; text-decoration-style: dotted; text-align: right; width: 50%; margin: 0px;" id="player-role-reminder" class="has-tooltip"></p>
+                <p style="color: #0645AD; text-decoration:underline; text-decoration-style: dotted; text-align: right; width: 50%; margin: 0px;"
+                    id="player-role-reminder" class="has-tooltip"></p>
             </div>
             <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 0.2vh; height: 1.8vh;">Current
                 Turn: <span id="current_player" style="font-weight: bold;"></span></p>
         </div>
         <div id="player_card_store" style="overflow: hidden; position: relative; height: 46vh;"></div>
-        <div id="player_selection_area" style="display: block; height: 0px; overflow-y: scroll; margin: 0px; transition: height 500ms linear;"></div>
-        <div id="game_log" class="log-box" style="height: calc(35vh - 4px); transition: height 500ms linear;">
+        <div id="player_selection_area"
+            style="display: block; height: 0px; overflow-y: scroll; margin: 0px; transition: height 500ms linear; border-style: solid; border-width: 1px;">
+        </div>
+        <div id="game_log" class="log-box"
+            style="height: calc(35vh - 2px); transition: height 500ms linear;">
             <p style="font-weight: bold;" class="log-message">Game Started</p>
         </div>
         <div id="infection_counter" class="log-box">Infection Counter</div>

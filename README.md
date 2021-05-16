@@ -8,6 +8,8 @@ TODO:
 
 * > 6 Research stations should be build by moving one
 (fixed?) * Infection & player cards unicodes icons don't show on firefox/mac 
+* Forecast should be playable after epidemic but before draw
+* Match font to game font on board (irsa thin)
 
 * Restart game button in selection page / another page with current game/new game
 

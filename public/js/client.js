@@ -63,7 +63,7 @@ jQuery(function ($) {
             "Build Research Station": "Discard the City card that matches the city you are in to place a research station there.<br><br>If all 6 research stations have been built, take a research station from anywhere on the board.",
             "Treat Disease": "Remove 1 disease cube from the city you are in.<br>If this disease color has been cured, remove all cubes of that color from the city you are in.<br><br>If the last cube of a cured disease is removed from the board, this disease is eradicated.",
             "Share Knowledge": "You can do this action in two ways:<br>give the City card that matches the city you are in to another player,<br>or take the City card that matches the city you are in from another player.<br>The other player must also be in the city with you.<br><br>Both of you need to agree to do this.<br><br>If the player who gets the card now has more than 7 cards,<br>that player must immediately discard a card or play an Event card.",
-            "Discover a Cure": "At any research station, discard 5 City cards of the same color<br>from your hand to cure the disease of that color.<br><br>If no cubes of this color are on the board, this disease is now eradicated.",
+            "Discover A Cure": "At any research station, discard 5 City cards of the same color<br>from your hand to cure the disease of that color.<br><br>If no cubes of this color are on the board, this disease is now eradicated.",
             "Pass": "Consider the chilling parallels between this innocent little game and our current reality.<br><br>Spiral in dark thoughts until your turn is over.",
             "Research Station to any city": "Once per turn, move from a research station to any city by discarding any City card."
         },
@@ -75,6 +75,19 @@ jQuery(function ($) {
             "Quarantine Specialist": "The Quarantine Specialist prevents both outbreaks and the placement of disease cubes in the city she is in and all cities connected to that city. She does not affect cubes placed during setup.",
             "Researcher": "When doing the Share Knowledge action, the Researcher may give any City card from her hand to another player in the same city as her, without this card having to match her city. The transfer must be from her hand to the other player’s hand, but it can occur on either player’s turn.",
             "Scientist": "The Scientist needs only 4 (not 5) City cards of the same disease color to Discover a Cure for that disease."
+        },
+        event_card_tooltips: {
+            "Airlift": "Move any 1 pawn to any city.<br>Get permission before moving another player's pawn.",
+            "Forecast": "Draw, look at, and rearrange the top 6 cards of the infetion deck.<br>Put them back on top.",
+            "Government Grant": "Add 1 research station to any city (no discard needed).",
+            "One Quiet Night": "Skip the next infect cities step (do not flip over any infection cards).",
+            "Resilient Population": "Remove any 1 card in the infection discard pile from the game.<br>You may play this between the infect and intensify stages of an epidemic."
+        },
+        text_colours: {
+            "yellow": "yellow",
+            "blue": "blue",
+            "red": "red",
+            "black": "black"
         },
 
         init: function () {
@@ -364,8 +377,16 @@ jQuery(function ($) {
 
         // =============================================
 
-        updateInfectionCounter: function (text) {
+        updateInfectionCounter: function (data) {
+            var text = ""
+            for (const ic of data) {
+                text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; '
+                text += ' font-weight: ' + (ic.num == 3 ? 'bold': 'null') + "; ";
+                text += ' color: ' + Client.text_colours[ic.colour] + '; ">' + ic.city_name
+                text += '<span style="float:right;">' + ic.num + '</span></p>'
+            }
             Client.$infectionCounterLog.html(text)
+
         },
 
         addPlayerCardToHand: function (data) {
@@ -402,7 +423,11 @@ jQuery(function ($) {
             new_message.innerHTML = data.message;
             if (Object.keys(data).includes("style")) {
                 for (const [key, value] of Object.entries(data.style)) {
-                    new_message.style[key] = value;
+                    if (key == "color"){
+                        new_message.style[key] = Client.text_colours[value]
+                    } else {    
+                        new_message.style[key] = value;
+                    }
                 }
             }
             Client.$gameLog.prepend(new_message);
@@ -524,7 +549,7 @@ jQuery(function ($) {
                     list_entry.setAttribute("data-city-name", o);
 
                     list_entry.textContent = "⬍   " + o;
-                    list_entry.style.color = colour;
+                    list_entry.style.color = Client.text_colours[colour];
 
                     list.appendChild(list_entry)
                 }
@@ -548,18 +573,26 @@ jQuery(function ($) {
 
                     var label = document.createElement("label");
                     label.setAttribute("for", id);
-                    label.style.color = colour;
+                    label.style.color = Client.text_colours[colour];
+                    
                     if (colour && colour.toLowerCase() == "yellow")
                         label.style.backgroundColor = "#bfbfbd"
+                    
                     label.textContent = o;
                     label.setAttribute("class", "has-tooltip")
 
+                    var tooltip = null;
                     if (Object.keys(Client.action_tooltips).includes(o)) {
+                        tooltip = Client.action_tooltips[o];
+                    } else if (Object.keys(Client.event_card_tooltips).includes(o)){
+                        tooltip = Client.event_card_tooltips[o];
+                    }
+                    if (tooltip != null){
                         var wrapper_span = document.createElement("span")
                         wrapper_span.setAttribute("class", "tooltip-wrapper")
                         var tooltip_span = document.createElement("span")
                         tooltip_span.setAttribute("class", "tooltip action-tooltip")
-                        tooltip_span.innerHTML = Client.action_tooltips[o]
+                        tooltip_span.innerHTML = tooltip;
                         wrapper_span.appendChild(tooltip_span)
                         label.appendChild(wrapper_span)
                     }
@@ -666,8 +699,8 @@ jQuery(function ($) {
 
         _show_selections: function () {
             //Client.$playerSelectionArea.style.display = "block";
-            Client.$playerSelectionArea.style.height = "20vh";
-            Client.$gameLog.style.height = "calc(15vh - 4px)";
+            Client.$playerSelectionArea.style.height = "calc(20vh - 2px)";
+            Client.$gameLog.style.height = "calc(15vh - 2px)";
             Client.$playerSelectionArea.scrollTop = 0;
 
             $(function () {
@@ -680,7 +713,7 @@ jQuery(function ($) {
             Client.$playerSelectionArea.innerHTML = "";
             Client.$playerSelectionArea.style.height = "0px";
             //Client.$playerSelectionArea.style.display = "none";
-            Client.$gameLog.style.height = "calc(35vh - 4px)"
+            Client.$gameLog.style.height = "calc(35vh - 2px)"
         },
 
         _scroll_selection_to_bottom: function () {

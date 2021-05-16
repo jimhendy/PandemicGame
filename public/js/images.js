@@ -96,7 +96,7 @@ function _redraw_image(image, context){
     
 }
 
-async function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 10) {
+async function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 25) {
     
     var img_object = image.img;
     var context = image.data.ctx;

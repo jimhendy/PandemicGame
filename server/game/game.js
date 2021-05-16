@@ -5,6 +5,7 @@ const InfectionDeck = require("./infection_deck")
 const Player = require("./player")
 const PlayerDeck = require("./player_deck")
 const Queue = require("./queue")
+const { array_from_objects_list } = require("./utils")
 
 class PandemicGame {
 
@@ -96,16 +97,9 @@ class PandemicGame {
                     }
                 }
                 infection_count.sort((a, b) => (a.num > b.num) ? -1 : ((b.num > a.num) ? 1 : 0));
-                var text = ""
-                for (const ic of infection_count) {
-                    text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; '
-                    text += ' font-weight: ' + (ic.num == 3 ? 'bold': 'null') + "; ";
-                    text += ' color: ' + ic.colour + ';">' + ic.city_name
-                    text += '<span style="float:right;">' + ic.num + '</span></p>'
-                }
                 this.io.in(this.game_id).emit(
                     "clientAction",
-                    { function: "updateInfectionCounter", args: text, return: true }
+                    { function: "updateInfectionCounter", args: infection_count, return: true }
                 )
             },
             null, "all", "Updating infection count"
