@@ -74,7 +74,7 @@ class PandemicGame {
         this.queue.add_task(
             () => this.io.to(this.game_id).emit(
                 "logMessage",
-                {message: "It's " + this.current_player.player_name + "'s turn"}
+                { message: "It's " + this.current_player.player_name + "'s turn" }
             ), null, 0, "Logging new player turn"
         )
         this.player_used_actions = 0;
@@ -180,11 +180,12 @@ class PandemicGame {
         this.infection_deck.draw(1, true); // Infect stage
         //await this.queue.run_until_empty();
 
-        this.pandemic.allow_players_to_use_event_cards();
+        this.pandemic.allow_players_to_use_event_cards("Resilient Population");
         await this.queue.run_until_empty();
 
         this.infection_deck.epidemic_intensify();
         this.update_infection_count();
+        this.pandemic.allow_players_to_use_event_cards(); // Allow other cards
         this.queue.running = true;
     }
 

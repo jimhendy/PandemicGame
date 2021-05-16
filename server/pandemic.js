@@ -578,6 +578,7 @@ class Pandemic {
                         action: "Move pawn to city with another pawn",
                         destination: p2.city_name,
                         player_name: p1.player_name,
+                        player_name__title: "Pick a player to move",
                         response_function: p1 == player ? "player_move" : response_function, // don't need permission from yourself
                         player_name_being_moved: p1.player_name,
                         player_name_causing_move: player.player_name,
@@ -621,11 +622,11 @@ class Pandemic {
         }
     }
 
-    _assess_contingency_planner_actions(actions, player, city){
+    _assess_contingency_planner_actions(actions, player, city) {
         if (player.contingency_planner_event_card_name !== null)
             return
-        for (const c of this.game.player_deck.discard_pile){
-            if (c.is_event){
+        for (const c of this.game.player_deck.discard_pile) {
+            if (c.is_event) {
                 actions.push(
                     {
                         action: "Take discarded event card",
@@ -761,7 +762,7 @@ class Pandemic {
         return;
     }
 
-    player_pick_up_discarded_event_card(data){
+    player_pick_up_discarded_event_card(data) {
         var player = this._player_by_name(data.player_name);
         var card_data = this.game.player_deck.pick_up_discarded_event_card(data, player);
         player.pick_up_discarded_event_card(data, card_data);
@@ -851,11 +852,11 @@ class Pandemic {
             this.game.round++;
 
             var num_cards_to_draw = 2;
-            if (this.game.player_deck.deck.length < num_cards_to_draw){
+            if (this.game.player_deck.deck.length < num_cards_to_draw) {
                 this.queue.add_task(
-                    ()=>this.io.in(this.game_id).emit(
+                    () => this.io.in(this.game_id).emit(
                         "gameOver",
-                        {message: "Run out of player cards, you lose."}
+                        { message: "Run out of player cards, you lose." }
                     ), null, "game_over", "Run out of player cards, game over"
                 )
                 this.game.gameOver();
@@ -904,7 +905,7 @@ class Pandemic {
             () => this.io.in(this.game_id).emit(
                 "clientAction",
                 {
-                    function: "gameOver", 
+                    function: "gameOver",
                     args: { message: "All diseases have been cured, you win!" }
                 }
             ),
@@ -1094,10 +1095,15 @@ class Pandemic {
 
     // Special option to use any event cards between infect and intensify epidemic stages
 
-    allow_players_to_use_event_cards() {
+    allow_players_to_use_event_cards(event_name = null) {
         for (const p of this.game.players) {
             var actions = [];
-            this._assess_all_event_cards(actions, p, true, false)
+            if (event_name == "Resilient Population")
+                this._assess_resilient_population_event_card(actions, p, true, false)
+            else if (event_name == null)
+                this._assess_all_event_cards(actions, p, true, false)
+            else
+                console.error("Other event types not implemented. " + event_name)
             if (actions.length) {
                 // Possible to play an event card
                 // Add a special action to not use any cards
@@ -1113,7 +1119,7 @@ class Pandemic {
                     () => {
                         this.io.to(this.game_id).emit(
                             "logMessage",
-                            {message: p.player_name + " has a chance to use an event card..."}
+                            { message: p.player_name + " has a chance to use an event card..." }
                         )
                         this.io.to(p.socket_id).emit(
                             "clientAction",
