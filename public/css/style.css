@@ -2,10 +2,10 @@
 @import url(//db.onlinewebfonts.com/c/bbadabe39d5a02f8287c3ad092f49e76?family=IsraThin-Regular);
 @font-face {font-family: "IsraThin-Regular"; src: url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.eot"); src: url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.woff") format("woff"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.svg#IsraThin-Regular") format("svg"); }
 */
-/*
+
 @import url(//db.onlinewebfonts.com/c/ed09b50712bb1277477b1536e8747d9d?family=Isra-Regular);
 @font-face {font-family: "Isra-Regular"; src: url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.eot"); src: url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.woff") format("woff"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.svg#Isra-Regular") format("svg"); }
-*/
+
 /*
 @import url(//db.onlinewebfonts.com/c/63137a821976b7fdfcf941ab1528cb19?family=AG_Helvetica);
 @font-face {font-family: "AG_Helvetica"; src: url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.eot"); src: url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.woff") format("woff"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.svg#AG_Helvetica") format("svg"); }
@@ -17,9 +17,10 @@ html{
     /*font-variant: small-caps;*/
     /*font-family: "AG_Helvetica", 'Arial', 'Helvetica', sans-serif;*/
     /*font-family: 'Roboto', sans-serif;*/
-    font-family: 'Arial', 'sans-serif';
-    /*font-size: 1.2vw; */ /*Isra*/
-    font-size: 0.9vw; /* Arial */
+    /*font-family: 'Arial', 'sans-serif';*/
+    font-family: 'Isra-Regular';
+    font-size: 1.1vw;  /*Isra*/
+    /*font-size: 0.9vw; *//* Arial */
 }
 
 
