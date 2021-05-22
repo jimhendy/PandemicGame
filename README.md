@@ -8,6 +8,7 @@ TODO:
 * Download font to provide from static directory
 (fixed?) * Infection & player cards unicodes icons don't show on firefox/mac 
 * Match font to game font on board (irsa thin)
+* Remaining player cards counter only updates for the current player
 
 * Restart game button in selection page / another page with current game/new game
 

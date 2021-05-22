@@ -213,6 +213,7 @@ class PlayerDeck {
                                 function: "series_actions",
                                 args: {
                                     series_actions_args: [
+                                        { function: "updatePlayerCardCount", args: remainig_deck_message},
                                         { function: "createImage", args: card_data },
                                         { function: "moveImage", args: card_data },
                                         { function: "moveImage", args: card_data_dest_others },
