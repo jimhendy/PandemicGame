@@ -85,7 +85,7 @@ jQuery(function ($) {
         },
         text_colours: {
             "yellow": "yellow",
-            "blue": "blue",
+            "blue": "#5257ff", //"blue",
             "red": "red",
             "black": "black"
         },
@@ -377,16 +377,24 @@ jQuery(function ($) {
 
         // =============================================
 
+        updatePlayerCardCount: function(data){
+            document.getElementById("player_cards_remaining").innerHTML = data;
+        },
+
         updateInfectionCounter: function (data) {
             var text = ""
+            var totals = {'yellow': 0, 'red':0, 'blue': 0, 'black': 0}
             for (const ic of data) {
                 text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; '
                 text += ' font-weight: ' + (ic.num == 3 ? 'bold': 'null') + "; ";
                 text += ' color: ' + Client.text_colours[ic.colour] + '; ">' + ic.city_name
                 text += '<span style="float:right;">' + ic.num + '</span></p>'
+                totals[ic.colour] += ic.num;
             }
             Client.$infectionCounterLog.html(text)
-
+            for (const [k,v] of Object.entries(totals)){
+                document.getElementById(k + '_cubes_counter').innerHTML = v+'/24'
+            }
         },
 
         addPlayerCardToHand: function (data) {
@@ -439,7 +447,6 @@ jQuery(function ($) {
         },
 
         present_actions: function (remaining_actions, level = 0, answers = null) {
-
             if (level > 20) {
                 IO.error({ message: "Something has gone wrong" })
                 console.error(remaining_actions)

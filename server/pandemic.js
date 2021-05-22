@@ -1116,7 +1116,7 @@ class Pandemic {
                     }
                 )
                 this.game.queue.add_task(
-                    () => {
+                    (player_actions) => {
                         this.io.to(this.game_id).emit(
                             "logMessage",
                             { message: p.player_name + " has a chance to use an event card..." }
@@ -1125,11 +1125,11 @@ class Pandemic {
                             "clientAction",
                             {
                                 function: "enableActions",
-                                args: actions
+                                args: player_actions
                             }
                         )
                     },
-                    null, 1, "Asking " + p.player_name + " if they want to use their event card during this special time", false, true
+                    [actions], 1, "Asking " + p.player_name + " if they want to use their event card during this special time", false, true
                 )
             }
         }

@@ -5,10 +5,13 @@ variables = underscores, small case
 classes = Capital camel case
 
 TODO:
-
+* role card in top right corner rather than just role name
+* role log messages and top tight hover could be in role colours
+* share knowledge Pick a card to discard (probably discard_card_name default)
 * > 6 Research stations should be build by moving one
 (fixed?) * Infection & player cards unicodes icons don't show on firefox/mac 
 * Match font to game font on board (irsa thin)
+* Remaining cards counter
 
 * Restart game button in selection page / another page with current game/new game
 

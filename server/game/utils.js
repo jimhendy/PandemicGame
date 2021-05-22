@@ -47,6 +47,15 @@ module.exports = {
             // let t = array[i]; array[i] = array[j]; array[j] = t
             [array[i], array[j]] = [array[j], array[i]];
         }
+    },
+    
+    bring_card_to_front: function(deck, card_name){
+        var index;
+        for (index = deck.length-1; index >= 0; index--){
+            if (deck[index].card_name == card_name)
+                break
+        }
+        deck.push(deck.splice(index,1)[0]);
     }
 
 }

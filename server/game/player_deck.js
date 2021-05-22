@@ -22,6 +22,7 @@ class PlayerDeck {
 
         this.event_card_names = ["Airlift", "Forecast", "Government Grant", "One Quiet Night", "Resilient Population"];
 
+        this.epidemic_cards_in_deck = false;
         this.discard_pile = [];
         this.cards_in_player_hands = {};
         this.deck = [];
@@ -39,6 +40,18 @@ class PlayerDeck {
         }
 
         utils.shuffle(this.deck);
+
+        /*
+        utils.bring_card_to_front(this.deck, "Forecast")
+        utils.bring_card_to_front(this.deck, "London")
+        utils.bring_card_to_front(this.deck, "Paris")
+        utils.bring_card_to_front(this.deck, "Madrid")
+
+        utils.bring_card_to_front(this.deck, "Government Grant")
+        utils.bring_card_to_front(this.deck, "Washington")
+        utils.bring_card_to_front(this.deck, "New York")
+        utils.bring_card_to_front(this.deck, "Chicago")
+        */
 
         this.io.in(this.game_id).emit(
             "clientAction",
@@ -91,6 +104,8 @@ class PlayerDeck {
                 this.deck.push(c)
             }
         }
+        this.epidemic_cards_in_deck = true;
+        //utils.bring_card_to_front(this.deck, "Epidemic")
     }
 
 
@@ -120,6 +135,7 @@ class PlayerDeck {
                 animationCanvas: true
             }
         )
+        var remainig_deck_message = this.deck.length + (this.epidemic_cards_in_deck ? 0: this.n_epidemics) + " remaining"
 
         if (card.is_epidemic) {
             // Do epidemic
@@ -132,6 +148,7 @@ class PlayerDeck {
                             function: "series_actions",
                             args: {
                                 series_actions_args: [
+                                    { function: "updatePlayerCardCount", args: remainig_deck_message },
                                     { function: "createImage", args: card_data },
                                     { function: "moveImage", args: card_data },
                                     { function: "moveImage", args: card_data_pause },
@@ -174,6 +191,7 @@ class PlayerDeck {
                                 function: "series_actions",
                                 args: {
                                     series_actions_args: [
+                                        { function: "updatePlayerCardCount", args: remainig_deck_message},
                                         { function: "createImage", args: card_data },
                                         { function: "moveImage", args: card_data },
                                         { function: "moveImage", args: card_data_dest_player },
@@ -230,7 +248,7 @@ class PlayerDeck {
                     var card = this.cards_in_player_hands[cn];
                     if (is_contingency_planner_extra_card)
                         player.discard_contingency_planner_extra_card(cn);
-                    else{
+                    else {
                         player.discard_card(cn);
                         this.discard_pile.push(card);
                     }
@@ -254,8 +272,8 @@ class PlayerDeck {
                             cardCanvas: false
                         }
                     )
-                    if (is_contingency_planner_extra_card){
-                        initial_card_data.dest_x = 0.5 - initial_card_data.dx/2
+                    if (is_contingency_planner_extra_card) {
+                        initial_card_data.dest_x = 0.5 - initial_card_data.dx / 2
                         initial_card_data.dest_y = - initial_card_data.dy - 0.01
                     }
                     // Rename the animation image so we can remove it after drawing the image on the card canvas
@@ -273,7 +291,7 @@ class PlayerDeck {
                     var discard_image_tasks = [
                         { function: "removeImage", args: card_data_player.img_name }, // Remove from animation canvas
                     ];
-                    if (!is_contingency_planner_extra_card){
+                    if (!is_contingency_planner_extra_card) {
                         discard_image_tasks.unshift(
                             { function: "createImage", args: final_card_data },
                         )

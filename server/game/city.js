@@ -36,10 +36,22 @@ class City {
         this.add_research_station = this.add_research_station.bind(this);
     };
 
-    add_cube(cities, colour = null, ignore_cities = null) {
+    add_cube(cities, colour = null, ignore_cities = null, send_log_message=false) {
         // Might be ignoring this city as it has already outbroken
-        if (ignore_cities && ignore_cities.includes(this.city_name))
+        if (ignore_cities && ignore_cities.includes(this.city_name)){
+            if (send_log_message){
+                this.queue.add_task(
+                    () => this.io.in(this.game_id).emit(
+                        "logMessage",
+                        {
+                            message: this.city_name + " was NOT infected",
+                            style: { color: colour}
+                        }, 
+                    ), null, 0, "Logging infection of " + this.city_name
+                )
+            }
             return;
+        }
 
         var colour = colour || this.native_disease_colour;
         var currrent_cubes = this.disease_cubes[colour];
@@ -48,6 +60,17 @@ class City {
             this.total_cubes++;
             this.diseases[colour].add_cube();
             this._add_cube_image(this.disease_cubes[colour], colour)
+            if (send_log_message){
+                this.queue.add_task(
+                    () => this.io.in(this.game_id).emit(
+                        "logMessage",
+                        {
+                            message: "&#9760; " + this.city_name + " was infected with 1 cube",
+                            style: { color: colour}
+                        }, 
+                    ), null, 0, "Logging infection of " + this.city_name
+                )
+            }
         }
         else {
             // Outbreak
@@ -71,7 +94,7 @@ class City {
             var adj_city;
             for (adj_city_name of this.adjacent_city_names) {
                 adj_city = cities[adj_city_name];
-                adj_city.add_cube(cities, colour, ignore_cities);
+                adj_city.add_cube(cities, colour, ignore_cities, true);
             }
         }
     };
