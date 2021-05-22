@@ -377,6 +377,7 @@ class Pandemic {
                             player_name__title: "Chose player to trade with",
                             current_player_name: player.player_name,
                             discard_card_name: pc.card_name,
+                            discard_card_name__title: "Pick a card to give",
                             share_direction: "Give",
                             share_direction__title: "Chose trade direction",
                             response_function: "player_share_knowledge_proposal"
@@ -396,6 +397,7 @@ class Pandemic {
                             player_name__title: "Chose player to trade with",
                             current_player_name: player.player_name,
                             discard_card_name: pc.card_name,
+                            discard_card_name__title: "Pick a card to take",
                             share_direction: "Take",
                             share_direction__title: "Chose trade direction",
                             response_function: "player_share_knowledge_proposal"
