@@ -278,8 +278,11 @@ jQuery(function ($) {
             setInterval(blink_canvas, 50);
             function blink_canvas() {
                 var i_mod = blink_canvas_i % 131;
-                if (i_mod > 100)
-                    Client.$canvasBlink.style.opacity = Math.abs(i_mod - 115) / 15;
+                if (i_mod > 100){
+                    //Client.$canvasBlink.style.opacity = Math.abs(i_mod - 115) / 15;
+                    var brightness = 100 * ( 1 + (Math.abs(Math.abs(i_mod-115)-15)/15));
+                    Client.$canvasBlink.style.filter = "brightness(" + brightness + "%)";
+                }
                 blink_canvas_i++;
             }
 
@@ -302,7 +305,18 @@ jQuery(function ($) {
             tooltip_span.style.width = "30vw"
             tooltip_span.style.top = "5vh"
             tooltip_span.style.right = "30vw"
-            tooltip_span.innerHTML = Client.role_tooltips[Client.data.role]
+
+            var img_div = document.createElement("div")
+            var role_img = document.createElement("img")
+            role_img.setAttribute("src", "/images/game/roles/Role - " + Client.data.role + ".jpg")
+            img_div.appendChild(role_img)
+            tooltip_span.appendChild(img_div)
+            tooltip_span.appendChild(document.createElement("br"))
+            var text_div = document.createElement("div")
+            text_div.innerHTML = Client.role_tooltips[Client.data.role]
+            //tooltip_span.appendChild(document.createTextNode(Client.role_tooltips[Client.data.role]))
+            //tooltip_span.innerHTML = Client.role_tooltips[Client.data.role]
+            tooltip_span.appendChild(text_div)
             wrapper_span.appendChild(tooltip_span)
 
             role_reminder_div.appendChild(wrapper_span)

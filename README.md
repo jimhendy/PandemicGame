@@ -1,8 +1,7 @@
 # PandemicGame
 
 TODO:
-* role card in top right corner rather than just role name
-* role log messages and top tight hover could be in role colours
+* Flash player pawn when hovering over role reminder?
 * > 6 Research stations should be build by moving one
 * Download font to provide from static directory
 * Match font to game font on board (irsa thin)
