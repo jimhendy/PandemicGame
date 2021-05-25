@@ -189,7 +189,7 @@ class PlayerDeck {
                         ),
                         null, "all", "Dealing epidemic card from player deck"
                     )
-                    this.game.resolve_epidemic();
+                    await this.game.resolve_epidemic();
                 } else {
                     // Not an epidemic card
                     player.add_player_card(card_data);
