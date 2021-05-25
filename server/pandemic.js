@@ -855,7 +855,7 @@ class Pandemic {
         if (all_actions_used) {
             this.game.round++;
 
-            var num_cards_to_draw = 20;
+            var num_cards_to_draw = 2;
             for (var i=0; i<num_cards_to_draw; i++){
                 await this.game.player_deck.drawPlayerCard(player);
                 await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize

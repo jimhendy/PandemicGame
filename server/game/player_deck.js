@@ -3,7 +3,7 @@ const { array_from_objects_list } = require("./utils");
 const utils = require("./utils");
 
 class PlayerDeck {
-    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 0) {
+    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 5) {
         this.io = io;
         this.game_id = game_id;
         this.queue = queue;
@@ -79,10 +79,10 @@ class PlayerDeck {
         this.pick_up_discarded_event_card = this.pick_up_discarded_event_card.bind(this);
     }
 
-    initial_deal(players, n_initial_cards) {
+    async initial_deal(players, n_initial_cards) {
         for (const p of players) {
             for (var i = 0; i < n_initial_cards; i++)
-                this.drawPlayerCard(p);
+                await this.drawPlayerCard(p);
         }
         this._add_epidemics();
     };

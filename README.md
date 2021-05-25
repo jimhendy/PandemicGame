@@ -7,8 +7,6 @@ TODO:
 * Download font to provide from static directory
 * Match font to game font on board (irsa thin)
 
-* Remaining cards counter not quite correct. Not working on initial deal and stopped at 1 when deck empty
-
 * Restart game button in selection page / another page with current game/new game
 
 * log file
