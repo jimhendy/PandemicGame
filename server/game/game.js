@@ -157,7 +157,7 @@ class PandemicGame {
             return 2;
     }
 
-    infect_cities() {
+    async infect_cities() {
         if (this.skip_infection_step) {
             this.queue.add_task(
                 () => {
@@ -169,7 +169,10 @@ class PandemicGame {
                 null, 0, "Logging infection step skipped"
             )
         } else {
-            this.infection_deck.draw(this.markers.infection_rate());
+            for (var i=0; i<this.markers.infection_rate(); i++){
+                await this.infection_deck.draw();
+                await this.queue.run_until_empty();
+            }
         }
         this.update_infection_count();
     }
@@ -177,7 +180,7 @@ class PandemicGame {
     async resolve_epidemic() {
         this.epidemics++;
         this.markers.increase_infection_rate();
-        this.infection_deck.draw(1, true); // Infect stage
+        await this.infection_deck.draw(true); // Infect stage
         //await this.queue.run_until_empty();
 
         this.pandemic.allow_players_to_use_event_cards("Resilient Population");

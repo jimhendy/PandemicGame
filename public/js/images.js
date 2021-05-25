@@ -103,7 +103,7 @@ async function move(image, destination_x, destination_y, destination_dx, destina
     var canvas = image.data.canvas;
     image.moving = true;
 
-    //duration = 0.1
+    duration = 0.1
 
     var images_to_redraw = [];
     for (const [oi_name, oi] of Object.entries(other_images)){

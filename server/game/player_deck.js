@@ -3,7 +3,7 @@ const { array_from_objects_list } = require("./utils");
 const utils = require("./utils");
 
 class PlayerDeck {
-    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 4) {
+    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 0) {
         this.io = io;
         this.game_id = game_id;
         this.queue = queue;
@@ -31,12 +31,10 @@ class PlayerDeck {
                 new PlayerCard(city)
             )
         }
-        for (var i = 0; i < 1; i++) {
-            for (const ev of this.event_card_names) {
-                this.deck.push(
-                    new PlayerCard(null, false, null, ev)
-                )
-            }
+        for (const ev of this.event_card_names) {
+            this.deck.push(
+                new PlayerCard(null, false, null, ev)
+            )
         }
 
         utils.shuffle(this.deck);
@@ -45,8 +43,8 @@ class PlayerDeck {
         utils.bring_card_to_front(this.deck, "Forecast")
         utils.bring_card_to_front(this.deck, "London")
         utils.bring_card_to_front(this.deck, "Paris")
-        utils.bring_card_to_front(this.deck, "Madrid")
-
+        utils.bring_card_to_front(this.deck, "Resilient Population")
+        
         utils.bring_card_to_front(this.deck, "Government Grant")
         utils.bring_card_to_front(this.deck, "Washington")
         utils.bring_card_to_front(this.deck, "New York")
@@ -73,7 +71,7 @@ class PlayerDeck {
         // Bind Events
         this.initial_deal = this.initial_deal.bind(this);
         this._add_epidemics = this._add_epidemics.bind(this);
-        this.drawPlayerCards = this.drawPlayerCards.bind(this);
+        this.drawPlayerCard = this.drawPlayerCard.bind(this);
         this.emit_data = this.emit_data.bind(this);
         this.discard = this.discard.bind(this);
         this._give_player_card = this._give_player_card.bind(this);
@@ -83,153 +81,179 @@ class PlayerDeck {
 
     initial_deal(players, n_initial_cards) {
         for (const p of players) {
-            this.drawPlayerCards(n_initial_cards, p);
+            for (var i = 0; i < n_initial_cards; i++)
+                this.drawPlayerCard(p);
         }
         this._add_epidemics();
     };
 
     _add_epidemics() {
-        var sub_decks = [];
-        for (var i = 0; i < this.n_epidemics; i++) {
-            var new_epidemic = new PlayerCard(null, true, i)
-            sub_decks.push([new_epidemic])
-        }
-        for (var i = 0; i < this.deck.length; i++) {
-            sub_decks[i % this.n_epidemics].push(this.deck[i]);
-        }
-        this.deck = [];
-        for (var i = 0; i < this.n_epidemics; i++) {
-            utils.shuffle(sub_decks[i]);
-            for (const c of sub_decks[i]) {
-                this.deck.push(c)
+        if (this.n_epidemics){
+            var sub_decks = [];
+            for (var i = 0; i < this.n_epidemics; i++) {
+                var new_epidemic = new PlayerCard(null, true, i)
+                sub_decks.push([new_epidemic])
+            }
+            for (var i = 0; i < this.deck.length; i++) {
+                sub_decks[i % this.n_epidemics].push(this.deck[i]);
+            }
+            this.deck = [];
+            for (var i = 0; i < this.n_epidemics; i++) {
+                utils.shuffle(sub_decks[i]);
+                for (const c of sub_decks[i]) {
+                    this.deck.push(c)
+                }
             }
         }
         this.epidemic_cards_in_deck = true;
         //utils.bring_card_to_front(this.deck, "Epidemic")
+        //utils.bring_card_to_front(this.deck, "Epidemic")
+
     }
 
 
-    drawPlayerCards(n_cards, player) {
-        for (var i = 0; i < n_cards; i++) {
-            var card = this.deck.pop();
-            if (!this.deck.length) {
-                this.queue.add_task(
-                    () => this.io.in(this.game_id).emit(
-                        "clientAction", { function: "removeImage", args: "player_deck" }
-                    ))
-            }
-            this.cards_in_player_hands[card.card_name] = card;
-            this._give_player_card(player, card)
+    async drawPlayerCard(player) {
+        if (this.deck.length) {
+            return new Promise(
+                resolve => {
+                    var card = this.deck.pop();
+                    if (!this.deck.length) {
+                        this.queue.add_task(
+                            () => this.io.in(this.game_id).emit(
+                                "clientAction", { function: "removeImage", args: "player_deck" }
+                            ),
+                            null, 0, "Removing player deck image as all out of player cards"
+                        )
+                    }
+                    this.cards_in_player_hands[card.card_name] = card;
+                    resolve(card);
+                }
+            ).then(card => this._give_player_card(player, card));
+        } else {
+            return new Promise(
+                resolve => {
+                    this.queue.add_task(
+                        () => this.io.in(this.game_id).emit("clientAction", { function: "gameOver", args: { message: "Ran out of player cards, you lose!" }, return: true }),
+                        null, "game_over", "Game over due to running out of player cards", true
+                    )
+                    resolve();
+                }
+            )
         }
     }
 
-    _give_player_card(player, card) {
-        var card_data = this.emit_data(card);
-        Object.assign(card_data,
-            {
-                dest_x: 0.3,
-                dest_y: 0.2,
-                dest_dx: 0.3,
-                dest_dy: 0.6,
-                dt: 0.5,
-                animationCanvas: true
+    async _give_player_card(player, card) {
+        return new Promise(
+            resolve => {
+                var card_data = this.emit_data(card);
+                Object.assign(card_data,
+                    {
+                        dest_x: 0.3,
+                        dest_y: 0.2,
+                        dest_dx: 0.3,
+                        dest_dy: 0.6,
+                        dt: 0.5,
+                        animationCanvas: true
+                    }
+                )
+                var remainig_deck_message = this.deck.length + (this.epidemic_cards_in_deck ? 0 : this.n_epidemics) + " remaining"
+
+                if (card.is_epidemic) {
+                    // Do epidemic
+                    var card_data_pause = Object.assign({ ...card_data }, { dt: 1 })
+                    this.queue.add_task(
+                        () => this.io.to(this.game_id).emit(
+                            "parallel_actions",
+                            {
+                                parallel_actions_args: [{
+                                    function: "series_actions",
+                                    args: {
+                                        series_actions_args: [
+                                            { function: "updatePlayerCardCount", args: remainig_deck_message },
+                                            { function: "createImage", args: card_data },
+                                            { function: "moveImage", args: card_data },
+                                            { function: "moveImage", args: card_data_pause },
+                                            { function: "removeImage", args: card_data.img_name }
+                                        ]
+                                    }
+                                },
+                                {
+                                    function: "logMessage",
+                                    args: {
+                                        message: "An Epidemic card was drawn!",
+                                        fontWeight: "bold"
+                                    }
+                                }],
+                                return: true
+                            }
+                        ),
+                        null, "all", "Dealing epidemic card from player deck"
+                    )
+                    this.game.resolve_epidemic();
+                } else {
+                    // Not an epidemic card
+                    player.add_player_card(card_data);
+                    var message = {
+                        function: "logMessage",
+                        args: {
+                            message: "&#9877; " + player.player_name + ' received player card "' + card.card_name + '"',
+                            style: { color: card.is_city ? card.city.native_disease_colour : null }
+                        }
+                    }
+                    var card_data_dest_player = Object.assign({ ...card_data }, { dest_x: 1.2 });
+                    var card_data_dest_others = Object.assign({ ...card_data }, { dest_x: -0.4 });
+                    this.queue.add_task(
+                        () => {
+                            // Receiving player card
+                            this.io.to(player.socket_id).emit(
+                                "parallel_actions",
+                                {
+                                    parallel_actions_args: [{
+                                        function: "series_actions",
+                                        args: {
+                                            series_actions_args: [
+                                                { function: "updatePlayerCardCount", args: remainig_deck_message },
+                                                { function: "createImage", args: card_data },
+                                                { function: "moveImage", args: card_data },
+                                                { function: "moveImage", args: card_data_dest_player },
+                                                { function: "removeImage", args: card_data.img_name },
+                                                { function: "addPlayerCardToHand", args: card_data },
+                                                { function: "refreshPlayerHand" },
+                                            ]
+                                        }
+                                    },
+                                        message],
+                                    return: true
+                                }
+                            );
+                            // Other players
+                            this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                                "parallel_actions",
+                                {
+                                    parallel_actions_args: [{
+                                        function: "series_actions",
+                                        args: {
+                                            series_actions_args: [
+                                                { function: "updatePlayerCardCount", args: remainig_deck_message },
+                                                { function: "createImage", args: card_data },
+                                                { function: "moveImage", args: card_data },
+                                                { function: "moveImage", args: card_data_dest_others },
+                                                { function: "removeImage", args: card_data.img_name }
+                                            ]
+                                        }
+                                    },
+                                        message],
+                                    return: true
+                                }
+                            );
+                        },
+                        // Remaining args for add_task
+                        null, "all", "Dealing " + card.card_name + " to " + player.player_name
+                    )
+                }
+                resolve();
             }
         )
-        var remainig_deck_message = this.deck.length + (this.epidemic_cards_in_deck ? 0: this.n_epidemics) + " remaining"
-
-        if (card.is_epidemic) {
-            // Do epidemic
-            var card_data_pause = Object.assign({ ...card_data }, { dt: 1 })
-            this.queue.add_task(
-                () => this.io.to(this.game_id).emit(
-                    "parallel_actions",
-                    {
-                        parallel_actions_args: [{
-                            function: "series_actions",
-                            args: {
-                                series_actions_args: [
-                                    { function: "updatePlayerCardCount", args: remainig_deck_message },
-                                    { function: "createImage", args: card_data },
-                                    { function: "moveImage", args: card_data },
-                                    { function: "moveImage", args: card_data_pause },
-                                    { function: "removeImage", args: card_data.img_name }
-                                ]
-                            }
-                        },
-                        {
-                            function: "logMessage",
-                            args: {
-                                message: "An Epidemic card was drawn!",
-                                fontWeight: "bold"
-                            }
-                        }],
-                        return: true
-                    }
-                ),
-                null, "all", "Dealing epidemic card from player deck"
-            )
-            this.game.resolve_epidemic();
-        } else {
-            // Not an epidemic card
-            player.add_player_card(card_data);
-            var message = {
-                function: "logMessage",
-                args: {
-                    message: "&#9877; " + player.player_name + ' received player card "' + card.card_name + '"',
-                    style: { color: card.is_city ? card.city.native_disease_colour : null }
-                }
-            }
-            var card_data_dest_player = Object.assign({ ...card_data }, { dest_x: 1.2 });
-            var card_data_dest_others = Object.assign({ ...card_data }, { dest_x: -0.4 });
-            this.queue.add_task(
-                () => {
-                    // Receiving player card
-                    this.io.to(player.socket_id).emit(
-                        "parallel_actions",
-                        {
-                            parallel_actions_args: [{
-                                function: "series_actions",
-                                args: {
-                                    series_actions_args: [
-                                        { function: "updatePlayerCardCount", args: remainig_deck_message},
-                                        { function: "createImage", args: card_data },
-                                        { function: "moveImage", args: card_data },
-                                        { function: "moveImage", args: card_data_dest_player },
-                                        { function: "removeImage", args: card_data.img_name },
-                                        { function: "addPlayerCardToHand", args: card_data },
-                                        { function: "refreshPlayerHand" },
-                                    ]
-                                }
-                            },
-                                message],
-                            return: true
-                        }
-                    );
-                    // Other players
-                    this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
-                        "parallel_actions",
-                        {
-                            parallel_actions_args: [{
-                                function: "series_actions",
-                                args: {
-                                    series_actions_args: [
-                                        { function: "updatePlayerCardCount", args: remainig_deck_message},
-                                        { function: "createImage", args: card_data },
-                                        { function: "moveImage", args: card_data },
-                                        { function: "moveImage", args: card_data_dest_others },
-                                        { function: "removeImage", args: card_data.img_name }
-                                    ]
-                                }
-                            },
-                                message],
-                            return: true
-                        }
-                    );
-                },
-                // Remaining args for add_task
-                null, "all", "Dealing " + card.card_name + " to " + player.player_name
-            )
-        }
     }
 
     emit_data(card) {

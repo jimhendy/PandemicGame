@@ -3,12 +3,11 @@
 TODO:
 * role card in top right corner rather than just role name
 * role log messages and top tight hover could be in role colours
-* share knowledge Pick a card to discard (probably discard_card_name default)
 * > 6 Research stations should be build by moving one
 * Download font to provide from static directory
-(fixed?) * Infection & player cards unicodes icons don't show on firefox/mac 
 * Match font to game font on board (irsa thin)
-* Remaining player cards counter only updates for the current player
+
+* Remaining cards counter not quite correct. Not working on initial deal and stopped at 1 when deck empty
 
 * Restart game button in selection page / another page with current game/new game
 

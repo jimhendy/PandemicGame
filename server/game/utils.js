@@ -51,11 +51,12 @@ module.exports = {
     
     bring_card_to_front: function(deck, card_name){
         var index;
-        for (index = deck.length-1; index >= 0; index--){
+        for (index = 0; index < deck.length; index++){
             if (deck[index].card_name == card_name)
                 break
         }
-        deck.push(deck.splice(index,1)[0]);
+        if (index != null)
+            deck.push(deck.splice(index,1)[0]);
     }
 
 }

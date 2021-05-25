@@ -724,10 +724,12 @@ class Pandemic {
             player.discard_card(c);
         this.game.player_deck.discard(data.answers.discard_card_name, player);
         disease.cure();
-        var city = this.game.cities[data.destination]
-        if (player.role_name == "Medic") {
-            if (city.disease_cubes[colour] > 0) {
-                this._treat_disease_for_free(colour);
+
+        for (const p of this.game.players){
+            if (p.role_name == "Medic") {
+                if (this.game.cities[p.city_name].disease_cubes[colour] > 0) {
+                    this._treat_disease_for_free(colour, p);
+                }
             }
         }
         this._add_check_end_turn_to_queue();
@@ -815,14 +817,14 @@ class Pandemic {
         if (player.role_name == "Medic") {
             for (const [colour, d] of Object.entries(this.game.diseases)) {
                 if (d.cured && city.disease_cubes[colour] > 0) {
-                    this._treat_disease_for_free(colour);
+                    this._treat_disease_for_free(colour, player);
                 }
             }
         }
     }
 
-    _treat_disease_for_free(colour) {
-        var player = this.game.current_player;
+    _treat_disease_for_free(colour, player=null) {
+        var player = player == null ? this.game.current_player : player;
         var city_name = player.city_name;
 
         this.io.in(this.game_id).emit("logMessage",
@@ -853,18 +855,11 @@ class Pandemic {
         if (all_actions_used) {
             this.game.round++;
 
-            var num_cards_to_draw = 2;
-            if (this.game.player_deck.deck.length < num_cards_to_draw) {
-                this.queue.add_task(
-                    () => this.io.in(this.game_id).emit(
-                        "gameOver",
-                        { message: "Run out of player cards, you lose." }
-                    ), null, "game_over", "Run out of player cards, game over"
-                )
-                this.game.gameOver();
+            var num_cards_to_draw = 20;
+            for (var i=0; i<num_cards_to_draw; i++){
+                await this.game.player_deck.drawPlayerCard(player);
+                await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize
             }
-            this.game.player_deck.drawPlayerCards(num_cards_to_draw, player);
-            await this.game.queue.run_until_empty(); // Ensure cards are dealt before maybe running reduceHandSize
         }
 
         while (player.too_many_cards()) {

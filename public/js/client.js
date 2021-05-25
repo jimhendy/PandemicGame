@@ -78,7 +78,7 @@ jQuery(function ($) {
         },
         event_card_tooltips: {
             "Airlift": "Move any 1 pawn to any city.<br>Get permission before moving another player's pawn.",
-            "Forecast": "Draw, look at, and rearrange the top 6 cards of the infetion deck.<br>Put them back on top.",
+            "Forecast": "Draw, look at, and rearrange the top 6 cards of the infection deck.<br>Put them back on top.",
             "Government Grant": "Add 1 research station to any city (no discard needed).",
             "One Quiet Night": "Skip the next infect cities step (do not flip over any infection cards).",
             "Resilient Population": "Remove any 1 card in the infection discard pile from the game.<br>You may play this between the infect and intensify stages of an epidemic."
