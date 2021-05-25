@@ -181,13 +181,15 @@ class PandemicGame {
         this.epidemics++;
         this.markers.increase_infection_rate();
         await this.infection_deck.draw(true); // Infect stage
-        //await this.queue.run_until_empty();
+        await this.queue.run_until_empty();
 
         this.pandemic.allow_players_to_use_event_cards("Resilient Population");
         await this.queue.run_until_empty();
 
         this.infection_deck.epidemic_intensify();
         this.update_infection_count();
+        await this.queue.run_until_empty();
+        
         this.pandemic.allow_players_to_use_event_cards(); // Allow other cards
         this.queue.running = true;
     }

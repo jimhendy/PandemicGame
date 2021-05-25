@@ -208,7 +208,7 @@ jQuery(function ($) {
                 var tooltip_span = document.createElement("span")
                 tooltip_span.setAttribute("class", "tooltip")
                 tooltip_span.style.width = "calc(100vw / 7 - 1vw)"
-                tooltip_span.style.top = "35vh"
+                tooltip_span.style.top = "16vw"
                 tooltip_span.innerHTML = Client.role_tooltips[role]
                 wrapper_span.appendChild(tooltip_span)
 
@@ -744,15 +744,19 @@ jQuery(function ($) {
             );
         },
 
-        gameOver: function (data) {
-            var blockingDiv = document.getElementById("blockingDiv")
-            blockingDiv.style.opacity = 0.7;
+        gameLose: function (data) {
+            document.getElementById("blockingDiv").style.opacity = 0.7;
+            document.getElementById("gameOverDiv").style.display = "block";
+            document.getElementById("game-over-message").textContent = data.message;
+            document.getElementById("game-over-img").src = "./images/gifs/lose.gif"
+        },
 
-            var gameOverDiv = document.getElementById("gameOverDiv");
-            gameOverDiv.style.display = "block";
 
-            var gameOverMessage = document.getElementById("game-over-message");
-            gameOverMessage.textContent = data.message;
+        gameWin: function (data) {
+            document.getElementById("blockingDiv").style.opacity = 0.7;
+            document.getElementById("gameOverDiv").style.display = "block";
+            document.getElementById("game-over-message").textContent = data.message;
+            document.getElementById("game-over-img").src = "./images/gifs/win.gif"
         }
 
 

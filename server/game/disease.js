@@ -47,7 +47,7 @@ class Disease {
         this.cubes_on_board++;
         if (this.cubes_on_board > this.total_cubes){
             this.queue.add_task(
-                () => this.io.in(this.game_id).emit("clientAction", { function: "gameOver", args: { message: utils.toTitleCase(this.colour) + " disease attempted to add more cubes than are provided in the game. Game Lost" } }),
+                () => this.io.in(this.game_id).emit("clientAction", { function: "gameLose", args: { message: utils.toTitleCase(this.colour) + " disease attempted to add more cubes than are provided in the game. Game Lost" } }),
                 null, "game_over", "Game over as we have run out of " + this.colour + " cubes."
             )
         }

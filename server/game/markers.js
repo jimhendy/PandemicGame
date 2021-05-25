@@ -132,7 +132,7 @@ class Markers {
         }
         if (game_over) {
             this.queue.add_task(
-                () => this.io.in(this.game_id).emit("clientAction", { function: "gameOver", args: { message: "Too many outbreaks, you lose!" }, return: true }),
+                () => this.io.in(this.game_id).emit("clientAction", { function: "gameLose", args: { message: "Too many outbreaks, you lose!" }, return: true }),
                 null, "game_over", "Game over due to too many outbreaks", true
             )
         }

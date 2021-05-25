@@ -133,7 +133,7 @@ class PlayerDeck {
             return new Promise(
                 resolve => {
                     this.queue.add_task(
-                        () => this.io.in(this.game_id).emit("clientAction", { function: "gameOver", args: { message: "Ran out of player cards, you lose!" }, return: true }),
+                        () => this.io.in(this.game_id).emit("clientAction", { function: "gameLose", args: { message: "Ran out of player cards, you lose!" }, return: true }),
                         null, "game_over", "Game over due to running out of player cards", true
                     )
                     resolve();

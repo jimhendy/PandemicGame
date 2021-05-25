@@ -876,8 +876,10 @@ class Pandemic {
 
     async end_player_turn() {
         // current player's turn over, move on the next player
-        this.game.infect_cities();
+        await this.game.infect_cities();
         await this.game.queue.run_until_empty();
+        console.log("deal complete")
+
         this.game.new_player_turn();
         this.assess_player_options();
         this.game.queue.start();
@@ -902,7 +904,7 @@ class Pandemic {
             () => this.io.in(this.game_id).emit(
                 "clientAction",
                 {
-                    function: "gameOver",
+                    function: "gameWin",
                     args: { message: "All diseases have been cured, you win!" }
                 }
             ),
