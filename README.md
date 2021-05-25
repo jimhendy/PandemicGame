@@ -26,4 +26,3 @@ $ npm install
 Find external IP (google it)
 Enable port forwarding from 80 to 3000 via router advanced settings
 $ node server/server.js
- 
