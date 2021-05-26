@@ -158,6 +158,15 @@ async function move(image, destination_x, destination_y, destination_dx, destina
                     img_object.canvas_y = final_y;
                     img_object.width = final_dx;
                     img_object.height = final_dy;
+
+                    
+                    // Store updated data back into data object
+                    // These guys are in fractional coords rather than pixels as above
+                    image.data.x = destination_x || image.data.x;
+                    image.data.y = destination_y || image.data.y;
+                    image.data.dx = destination_dx || image.data.dx;
+                    image.data.dy = destination_dy || image.data.dy;
+
                     image.moving = false;
                     clearInterval(id);
                     for (const oi_1 of images_to_redraw) {

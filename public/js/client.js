@@ -20,7 +20,7 @@ jQuery(function ($) {
 
             IO.socket.on("logMessage", Client.logMessage);
 
-            IO.socket.on("reloadPage", () => {location=location;});
+            IO.socket.on("reloadPage", () => { location = location; });
         },
 
         onConnected: function () {
@@ -232,13 +232,13 @@ jQuery(function ($) {
             Client.$doc.on("change", '#select_n_epidemic_cards', Client.change_n_epidemic_cards)
         },
 
-        change_n_epidemic_cards: function(event) {
+        change_n_epidemic_cards: function (event) {
             event.preventDefault();
             var number = $('input[name="n_epidemics_choice"]:checked').val();
             IO.socket.emit("change_n_epidemic_cards", number)
         },
 
-        incoming_change_n_epidemic_cards: function(number){
+        incoming_change_n_epidemic_cards: function (number) {
             if (Client.data.current_page == "role_choice")
                 document.getElementById("n_epidemics_radio_" + number).checked = true;
         },
@@ -294,9 +294,9 @@ jQuery(function ($) {
             setInterval(blink_canvas, 50);
             function blink_canvas() {
                 var i_mod = blink_canvas_i % 131;
-                if (i_mod > 100){
+                if (i_mod > 100) {
                     //Client.$canvasBlink.style.opacity = Math.abs(i_mod - 115) / 15;
-                    var brightness = 100 * ( 1 + (Math.abs(Math.abs(i_mod-115)-15)/15));
+                    var brightness = 100 * (1 + (Math.abs(Math.abs(i_mod - 115) - 15) / 15));
                     Client.$canvasBlink.style.filter = "brightness(" + brightness + "%)";
                 }
                 blink_canvas_i++;
@@ -306,11 +306,11 @@ jQuery(function ($) {
             Client.$gameLog = document.getElementById("game_log");
             Client.$playerSelectionArea = document.getElementById("player_selection_area");
             Client.$playerLocation = document.getElementById("player_location")
-            
+
             Client.configure_player_role_reminder();
         },
 
-        configure_player_role_reminder: function(){
+        configure_player_role_reminder: function () {
             var role_reminder_div = document.getElementById('player-role-reminder');
 
             var wrapper_span = document.createElement("span")
@@ -389,34 +389,35 @@ jQuery(function ($) {
             );
         },
 
-        flashPawn: async function(img_name){
+        flashPawn: async function (img_name) {
             var pawn = Client.images[img_name].data;
             var increase_factor = 5;
-
-            var sparkle_data = {...pawn}
+            
+            var sparkle_data = { ...pawn }
             delete sparkle_data['canvas']
             delete sparkle_data['ctx']
             sparkle_data['animationCanvas'] = true
             sparkle_data['img_name'] += "_sparkle"
             sparkle_data.dt = 0.5
-            var return_data = {...sparkle_data}
 
-            sparkle_data.dest_dx = pawn.dx * increase_factor;
-            sparkle_data.dest_dy = pawn.dy * increase_factor;
-            sparkle_data.dest_x = pawn.x - ( pawn.dx * increase_factor ) / 2;
-            sparkle_data.dest_y = pawn.y - ( pawn.dy * increase_factor ) / 2;
+            var return_data = { ...sparkle_data }
+            sparkle_data.dest_dx = sparkle_data.dx * increase_factor;
+            sparkle_data.dest_dy = sparkle_data.dy * increase_factor;
+            sparkle_data.dest_x = sparkle_data.x - (sparkle_data.dest_dx / 2);
+            sparkle_data.dest_y = sparkle_data.y - (sparkle_data.dest_dy / 2);
 
-            await Client.createImage(sparkle_data)
-            await Client.moveImage(sparkle_data)
+            return_data.dest_dx = sparkle_data.dx
+            return_data.dest_dy = sparkle_data.dy;
+            return_data.dest_x = sparkle_data.x;
+            return_data.dest_y = sparkle_data.y;
 
-            return_data.dest_dx = pawn.dx
-            return_data.dest_dy = pawn.dy
-            return_data.dest_x = pawn.x
-            return_data.dest_y = pawn.y;
             return_data.x = sparkle_data.dest_x;
             return_data.y = sparkle_data.dest_y;
             return_data.dx = sparkle_data.dest_dx;
             return_data.dy = sparkle_data.dest_dy;
+
+            await Client.createImage(sparkle_data)
+            await Client.moveImage(sparkle_data)
 
             await Client.moveImage(return_data)
             await Client.removeImage(return_data.img_name)
@@ -440,23 +441,23 @@ jQuery(function ($) {
 
         // =============================================
 
-        updatePlayerCardCount: function(data){
+        updatePlayerCardCount: function (data) {
             document.getElementById("player_cards_remaining").innerHTML = data;
         },
 
         updateInfectionCounter: function (data) {
             var text = ""
-            var totals = {'yellow': 0, 'red':0, 'blue': 0, 'black': 0}
+            var totals = { 'yellow': 0, 'red': 0, 'blue': 0, 'black': 0 }
             for (const ic of data) {
                 text += '<p style="margin-top: 0px; margin-bottom: 0px; margin-left: 5px; margin-right: 5px; text-align: left; '
-                text += ' font-weight: ' + (ic.num == 3 ? 'bold': 'null') + "; ";
+                text += ' font-weight: ' + (ic.num == 3 ? 'bold' : 'null') + "; ";
                 text += ' color: ' + Client.text_colours[ic.colour] + '; ">' + ic.city_name
                 text += '<span style="float:right;">' + ic.num + '</span></p>'
                 totals[ic.colour] += ic.num;
             }
             Client.$infectionCounterLog.html(text)
-            for (const [k,v] of Object.entries(totals)){
-                document.getElementById(k + '_cubes_counter').innerHTML = v+'/24'
+            for (const [k, v] of Object.entries(totals)) {
+                document.getElementById(k + '_cubes_counter').innerHTML = v + '/24'
             }
         },
 
@@ -494,9 +495,9 @@ jQuery(function ($) {
             new_message.innerHTML = data.message;
             if (Object.keys(data).includes("style")) {
                 for (const [key, value] of Object.entries(data.style)) {
-                    if (key == "color"){
+                    if (key == "color") {
                         new_message.style[key] = Client.text_colours[value]
-                    } else {    
+                    } else {
                         new_message.style[key] = value;
                     }
                 }
@@ -644,20 +645,20 @@ jQuery(function ($) {
                     var label = document.createElement("label");
                     label.setAttribute("for", id);
                     label.style.color = Client.text_colours[colour];
-                    
+
                     if (colour && colour.toLowerCase() == "yellow")
                         label.style.backgroundColor = "#bfbfbd"
-                    
+
                     label.textContent = o;
                     label.setAttribute("class", "has-tooltip")
 
                     var tooltip = null;
                     if (Object.keys(Client.action_tooltips).includes(o)) {
                         tooltip = Client.action_tooltips[o];
-                    } else if (Object.keys(Client.event_card_tooltips).includes(o)){
+                    } else if (Object.keys(Client.event_card_tooltips).includes(o)) {
                         tooltip = Client.event_card_tooltips[o];
                     }
-                    if (tooltip != null){
+                    if (tooltip != null) {
                         var wrapper_span = document.createElement("span")
                         wrapper_span.setAttribute("class", "tooltip-wrapper")
                         var tooltip_span = document.createElement("span")

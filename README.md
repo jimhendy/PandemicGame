@@ -1,7 +1,6 @@
 # PandemicGame
 
 TODO:
-* Flash player pawn when hovering over role reminder?
 * > 6 Research stations should be build by moving one
 * Download font to provide from static directory
 * Match font to game font on board (irsa thin)
