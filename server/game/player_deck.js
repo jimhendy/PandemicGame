@@ -3,7 +3,7 @@ const { array_from_objects_list } = require("./utils");
 const utils = require("./utils");
 
 class PlayerDeck {
-    constructor(io, game_id, queue, game, markers, cities, n_epidemics = 5) {
+    constructor(io, game_id, queue, game, markers, cities, n_epidemics=4) {
         this.io = io;
         this.game_id = game_id;
         this.queue = queue;
@@ -13,7 +13,7 @@ class PlayerDeck {
         this.markers = markers;
         this.cities = cities;
         this.n_epidemics = n_epidemics;
-
+        
         this.deck_location = [0.599, 0.73];
         this.discard_location = [0.732, 0.73];
 

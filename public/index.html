@@ -8,7 +8,7 @@
     <!--<link href="//db.onlinewebfonts.com/c/ed09b50712bb1277477b1536e8747d9d?family=Isra-Regular" rel="stylesheet" type="text/css"/>-->
     <!--<link href="//db.onlinewebfonts.com/c/63137a821976b7fdfcf941ab1528cb19?family=AG_Helvetica" rel="stylesheet" type="text/css"/>-->
 
-<!--
+    <!--
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
 -->
@@ -50,9 +50,9 @@
     <img class="logo" src="/images/pandemic_landing_image.jpg" style="width:80%; height:50vh; margin-bottom: 3vh;">
     <form id="player_details_form">
         <input id="passcode_input" autocomplete="off" placeholder="Passcode" style="margin-bottom: 1%;">
-        </br>
+        <br>
         <input id="playername_input" autocomplete="off" placeholder="Player Name" style="margin-bottom: 1%">
-        </br>
+        <br>
         <button id="enter_game_button" disabled=true>Enter Game</button>
     </form>
 </div>
@@ -75,6 +75,18 @@
     <h3>Please choose a role</h3>
     <div id="role-choice-cards-div" style="margin-bottom: 5%"></div>
     <button id="player-ready-button" disabled=true>Start Game</button>
+    <br>
+    <div style="margin-top: 5vh;">
+        <p>Select the number of Epidemic Cards in the game</p>
+        <form id="select_n_epidemic_cards" style="display: flex; flex-direction: row; justify-content: center;">
+            <label for="n_epidemics_radio_4">4</label>
+            <input type="radio" id="n_epidemics_radio_4" style="margin-right:5vw;" value=4 name="n_epidemics_choice">
+            <label for="n_epidemics_radio_5">5</label>
+            <input type="radio" id="n_epidemics_radio_5" style="margin-right:5vw;" value=5 name="n_epidemics_choice">
+            <label for="n_epidemics_radio_6">6</label>
+            <input type="radio" id="n_epidemics_radio_6" value=6 name="n_epidemics_choice">
+        </form>
+    </div>
 </div>
 </script>
 
@@ -105,11 +117,21 @@
         <div id="blockingDiv"
             style="width:100%; height:100vh; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;">
         </div>
-        <div id="yellow_cubes_counter" style="position: absolute; left: 32.8%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: yellow">0/24</div>
-        <div id="red_cubes_counter" style="position: absolute; left: 37.4%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: red">0/24</div>
-        <div id="blue_cubes_counter" style="position: absolute; left: 42.0%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: #5257ff">0/24</div>
-        <div id="black_cubes_counter" style="position: absolute; left: 46.2%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: black">0/24</div>
-        <div id="player_cards_remaining" style="position: absolute; left: 60%; top: 96%; width: 10%; height: 3%; text-align: center; color: #b4b4b4;"></div>
+        <div id="yellow_cubes_counter"
+            style="position: absolute; left: 32.8%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: yellow">
+            0/24</div>
+        <div id="red_cubes_counter"
+            style="position: absolute; left: 37.4%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: red">
+            0/24</div>
+        <div id="blue_cubes_counter"
+            style="position: absolute; left: 42.0%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: #5257ff">
+            0/24</div>
+        <div id="black_cubes_counter"
+            style="position: absolute; left: 46.2%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: black">
+            0/24</div>
+        <div id="player_cards_remaining"
+            style="position: absolute; left: 60%; top: 96%; width: 10%; height: 3%; text-align: center; color: #b4b4b4;">
+        </div>
         <div id="gameOverDiv"
             style="text-align:center; width:100%; height: 100vh; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
             <h1 style="background-color: white;">Game Over</h1>
@@ -129,12 +151,12 @@
             <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 0.2vh; height: 1.8vh;">Current
                 Turn: <span id="current_player" style="font-weight: bold;"></span></p>
         </div>
-        <div id="player_card_store" style="overflow: hidden; position: relative; height: 46vh; margin-top: 0.5vh;"></div>
+        <div id="player_card_store" style="overflow: hidden; position: relative; height: 46vh; margin-top: 0.5vh;">
+        </div>
         <div id="player_selection_area"
             style="display: block; height: 0px; overflow-y: scroll; margin: 0px; transition: height 500ms linear; border-style: solid; border-width: 0px;">
         </div>
-        <div id="game_log" class="log-box"
-            style="height: calc(35vh - 2px); transition: height 500ms linear;">
+        <div id="game_log" class="log-box" style="height: calc(35vh - 2px); transition: height 500ms linear;">
             <p style="font-weight: bold;" class="log-message">Game Started</p>
         </div>
         <div id="infection_counter" class="log-box">Infection Counter</div>

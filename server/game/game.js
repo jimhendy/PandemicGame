@@ -9,12 +9,12 @@ const { array_from_objects_list } = require("./utils")
 
 class PandemicGame {
 
-    constructor(io, game_id, pandemic) {
-
-        this.io = io;
-        this.game_id = game_id;
+    constructor(pandemic) {
 
         this.pandemic = pandemic;
+
+        this.io = this.pandemic.io;
+        this.game_id = this.pandemic.game_id;
 
         this.players = [];
 
@@ -55,7 +55,7 @@ class PandemicGame {
         this.diseases = Diseases.create_new_diseases(this.io, this.game_id, this.queue);
         this.cities = Cities.create_cities(this.io, this.game_id, this.queue, this.diseases, this.markers);
         this.infection_deck = new InfectionDeck(this.io, this.game_id, this.queue, this.cities, this.players, this.diseases, this.markers)
-        this.player_deck = new PlayerDeck(this.io, this.game_id, this.queue, this, this.markers, this.cities)
+        this.player_deck = new PlayerDeck(this.io, this.game_id, this.queue, this, this.markers, this.cities, this.pandemic.n_epidemics)
 
         this.add_research_station(this.starting_city)
         for (var p of this.players) {
@@ -170,7 +170,7 @@ class PandemicGame {
             )
         } else {
             for (var i=0; i<this.markers.infection_rate(); i++){
-                await this.infection_deck.draw();
+                this.infection_deck.draw();
                 await this.queue.run_until_empty();
             }
         }
@@ -180,7 +180,8 @@ class PandemicGame {
     async resolve_epidemic() {
         this.epidemics++;
         this.markers.increase_infection_rate();
-        await this.infection_deck.draw(true); // Infect stage
+        this.infection_deck.draw(true); // Infect stage
+        this.update_infection_count();
         await this.queue.run_until_empty();
 
         this.pandemic.allow_players_to_use_event_cards("Resilient Population");

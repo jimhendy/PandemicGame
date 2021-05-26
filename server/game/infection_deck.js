@@ -154,42 +154,37 @@ class InfectionDeck {
         }
     }
 
-    async draw(epidemic_draw = false) {
-        return new Promise(
-            resolve => {
-                if (!this.deck.length) {
-                    this.deck = this.discarded;
-                    this.discarded = [];
-                    utils.shuffle(this.deck);
-                    this._create_deck_image();
-                    this._remove_discarded_image();
-                }
+    draw(epidemic_draw = false) {
+        if (!this.deck.length) {
+            this.deck = this.discarded;
+            this.discarded = [];
+            utils.shuffle(this.deck);
+            this._create_deck_image();
+            this._remove_discarded_image();
+        }
 
-                if (epidemic_draw)
-                    var city_name = this.deck.shift(); // "pop" from the front
-                else
-                    var city_name = this.deck.pop();
-                var colour = this.cities[city_name].native_disease_colour;
-                var n_cubes = epidemic_draw ? 3 : 1;
-                var log_message = null;
-                var ignore_cities = this._get_protected_cities(colour);
+        if (epidemic_draw)
+            var city_name = this.deck.shift(); // "pop" from the front
+        else
+            var city_name = this.deck.pop();
+        var colour = this.cities[city_name].native_disease_colour;
+        var n_cubes = epidemic_draw ? 3 : 1;
+        var log_message = null;
+        var ignore_cities = this._get_protected_cities(colour);
 
-                if (this.diseases[colour].eradicated) {
-                    log_message = { message: city_name + " was NOT infected as disease is eradicated", style: { color: colour } };
-                    n_cubes = 0;
-                } else if (ignore_cities.includes(city_name)) {
-                    log_message = { message: city_name + " was NOT infected as it is protected", style: { color: colour } };
-                    n_cubes = 0;
-                }
+        if (this.diseases[colour].eradicated) {
+            log_message = { message: city_name + " was NOT infected as disease is eradicated", style: { color: colour } };
+            n_cubes = 0;
+        } else if (ignore_cities.includes(city_name)) {
+            log_message = { message: city_name + " was NOT infected as it is protected", style: { color: colour } };
+            n_cubes = 0;
+        }
 
-                this._infect_city(city_name, n_cubes, ignore_cities, log_message);
+        this._infect_city(city_name, n_cubes, ignore_cities, log_message);
 
-                if (!this.deck.length) {
-                    this._remove_deck_image();
-                }
-                resolve();
-            }
-        )
+        if (!this.deck.length) {
+            this._remove_deck_image();
+        }
     }
 
     _get_protected_cities(colour) {

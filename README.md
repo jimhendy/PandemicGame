@@ -6,12 +6,8 @@ TODO:
 * Download font to provide from static directory
 * Match font to game font on board (irsa thin)
 
-* Restart game button in selection page / another page with current game/new game
-
 * log file
 * Random state and log actions for replication
-
-* Capitalise disease colours when asking question
 
 * Font sizes should be in %/vh, still having issue with overflow of divs from top right (current city etc)
 

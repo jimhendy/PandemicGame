@@ -21,6 +21,7 @@ class Pandemic {
         this.game = null;
         this.initial_deal_complete = false;
         this.initial_clients_deals = 0;
+        this.n_epidemics = 5;
 
         // Bind Events
         this.assess_player_options = this.assess_player_options.bind(this);
@@ -77,6 +78,15 @@ class Pandemic {
         this.reduce_player_hand_size_response = this.reduce_player_hand_size_response.bind(this);
         this._discard_cards = this._discard_cards.bind(this);
 
+        this.set_number_of_epidemic_cards = this.set_number_of_epidemic_cards.bind(this);
+
+    }
+
+    set_number_of_epidemic_cards(number){
+        this.n_epidemics = number;
+        this.io.to(this.game_id).emit(
+            "clientAction", {function: "incoming_change_n_epidemic_cards", args: this.n_epidemics}
+        )
     }
 
     add_user(data, socket) {
@@ -124,7 +134,7 @@ class Pandemic {
     // =============================================  Starting Game
 
     start_game() {
-        this.game = new Game(this.io, this.game_id, this);
+        this.game = new Game(this);
         for (const p of Object.values(this.users)) {
             this.game.add_player(p);
         }
@@ -419,7 +429,7 @@ class Pandemic {
                             player_name: player.player_name,
                             action: "Discover A Cure",
                             destination: city.city_name,
-                            disease_colour: colour,
+                            disease_colour: utils.toTitleCase(colour),
                             discard_card_name: c,
                             discard_card_name__n_choices: player.n_cards_to_cure,
                             discard_card_name__checkboxes: true,
@@ -714,7 +724,7 @@ class Pandemic {
 
     player_cure(data) {
         var player = this._player_by_name(data.player_name);
-        var colour = data.disease_colour;
+        var colour = data.disease_colour.toLowerCase();
         var disease = this.game.diseases[colour];
         this.io.in(this.game_id).emit(
             "logMessage",

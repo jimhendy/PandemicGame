@@ -19,6 +19,8 @@ jQuery(function ($) {
             IO.socket.on("series_actions", Client.series_actions);
 
             IO.socket.on("logMessage", Client.logMessage);
+
+            IO.socket.on("reloadPage", () => {location=location;});
         },
 
         onConnected: function () {
@@ -43,7 +45,8 @@ jQuery(function ($) {
             player_name: null,
             current_page: null,
             player_cards: {},
-            loaction: null
+            loaction: null,
+            n_epidemics: null
         },
         images: {},
         question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "infection_deck_card_name", "pick_up_card_name"],
@@ -168,6 +171,7 @@ jQuery(function ($) {
             Client.$gameArea.html(Client.$roleChoiceScreen);
             Client.data.current_page = "role_choice";
             Client.updateRoles(data);
+            IO.socket.emit("tell_me_n_epidemics")
         },
 
         updateRoles: function (data) {
@@ -225,6 +229,18 @@ jQuery(function ($) {
             Client.$doc.on("submit", "#player_details_form", Client.playerJoinForm);
             Client.$doc.on("click", ".role-card", Client.roleCardSelected);
             Client.$doc.on("click", "#player-ready-button", Client.waitForOtherRoles)
+            Client.$doc.on("change", '#select_n_epidemic_cards', Client.change_n_epidemic_cards)
+        },
+
+        change_n_epidemic_cards: function(event) {
+            event.preventDefault();
+            var number = $('input[name="n_epidemics_choice"]:checked').val();
+            IO.socket.emit("change_n_epidemic_cards", number)
+        },
+
+        incoming_change_n_epidemic_cards: function(number){
+            if (Client.data.current_page == "role_choice")
+                document.getElementById("n_epidemics_radio_" + number).checked = true;
         },
 
         waitForOtherRoles: function () {
