@@ -133,7 +133,7 @@ class Pandemic {
 
     // =============================================  Starting Game
 
-    start_game() {
+    async start_game() {
         this.game = new Game(this);
         for (const p of Object.values(this.users)) {
             this.game.add_player(p);
@@ -144,6 +144,8 @@ class Pandemic {
             { function: 'startGame', args: this._role_choice_data() }
         );
         this.game.initial_game_setup();
+        await this.game.queue.run_until_empty(); 
+
         this.game.new_player_turn();
         this.game.queue.add_task(
             this.assess_player_options,
@@ -888,7 +890,6 @@ class Pandemic {
         // current player's turn over, move on the next player
         await this.game.infect_cities();
         await this.game.queue.run_until_empty();
-        console.log("deal complete")
 
         this.game.new_player_turn();
         this.assess_player_options();

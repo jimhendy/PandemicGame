@@ -389,6 +389,39 @@ jQuery(function ($) {
             );
         },
 
+        flashPawn: async function(img_name){
+            var pawn = Client.images[img_name].data;
+            var increase_factor = 5;
+
+            var sparkle_data = {...pawn}
+            delete sparkle_data['canvas']
+            delete sparkle_data['ctx']
+            sparkle_data['animationCanvas'] = true
+            sparkle_data['img_name'] += "_sparkle"
+            sparkle_data.dt = 0.5
+            var return_data = {...sparkle_data}
+
+            sparkle_data.dest_dx = pawn.dx * increase_factor;
+            sparkle_data.dest_dy = pawn.dy * increase_factor;
+            sparkle_data.dest_x = pawn.x - ( pawn.dx * increase_factor ) / 2;
+            sparkle_data.dest_y = pawn.y - ( pawn.dy * increase_factor ) / 2;
+
+            await Client.createImage(sparkle_data)
+            await Client.moveImage(sparkle_data)
+
+            return_data.dest_dx = pawn.dx
+            return_data.dest_dy = pawn.dy
+            return_data.dest_x = pawn.x
+            return_data.dest_y = pawn.y;
+            return_data.x = sparkle_data.dest_x;
+            return_data.y = sparkle_data.dest_y;
+            return_data.dx = sparkle_data.dest_dx;
+            return_data.dy = sparkle_data.dest_dy;
+
+            await Client.moveImage(return_data)
+            await Client.removeImage(return_data.img_name)
+        },
+
         _addCtxAndCanvas: function (data) {
             if (data.blinkCanvas) {
                 data.ctx = Client.$ctxBlink;

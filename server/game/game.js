@@ -73,9 +73,15 @@ class PandemicGame {
         this.current_player.used_special_action_this_turn = false;
         this.queue.add_task(
             () => this.io.to(this.game_id).emit(
-                "logMessage",
-                { message: "It's " + this.current_player.player_name + "'s turn" }
-            ), null, 0, "Logging new player turn"
+                "parallel_actions",
+                {
+                    parallel_actions_args: [
+                        {function: "logMessage", args: { message: "It's " + this.current_player.player_name + "'s turn" }},
+                        {function: "flashPawn", args: "pawn_" + this.current_player.role_name}
+                    ],
+                    return: true
+                }
+            ), null, "all", "Logging new player turn", 
         )
         this.player_used_actions = 0;
     }
