@@ -42,6 +42,7 @@ class PandemicGame {
         this.infect_cities = this.infect_cities.bind(this);
         this.resolve_epidemic = this.resolve_epidemic.bind(this);
         this.gameOver = this.gameOver.bind(this);
+        this.remove_research_station = this.remove_research_station.bind(this);
     }
 
     add_player(data) {
@@ -110,6 +111,29 @@ class PandemicGame {
             },
             null, "all", "Updating infection count"
         )
+    }
+
+    remove_research_station(city_name){
+        this.queue.add_task(
+            (cn) => {
+                this.n_research_stations--;
+                var city = this.cities[cn];
+                city.remove_research_station();
+                this.research_station_city_names = this.research_station_city_names.filter(
+                    c => c != cn
+                )
+                this.io.in(this.game_id).emit(
+                    "parallel_actions",
+                    {
+                        parallel_actions_args: [
+                            {function: "removeImage", args: "research_station_" + cn},
+                            {function: "logMessage", args: {message: "Research station removed from " + cn}}
+                        ],
+                        return: true
+                    }
+                )
+            }
+        , city_name, "all", "Removing research station from " + city_name)
     }
 
     add_research_station(city_name) {

@@ -34,6 +34,7 @@ class City {
         this._add_cube_image = this._add_cube_image.bind(this);
         this.check_connections = this.check_connections.bind(this);
         this.add_research_station = this.add_research_station.bind(this);
+        this.remove_research_station = this.remove_research_station.bind(this);
     };
 
     add_cube(cities, colour = null, ignore_cities = null, send_log_message=false) {
@@ -146,6 +147,10 @@ class City {
 
     add_research_station() {
         this.has_research_station = true;
+    }
+
+    remove_research_station(){
+        this.has_research_station = false;
     }
 }
 

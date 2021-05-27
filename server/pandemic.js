@@ -327,32 +327,38 @@ class Pandemic {
 
     _assess_build_research_station(actions, player, city) {
         if (city.has_research_station) return;
+        var remove_stations = [null];
         if (this.game.research_station_city_names.length >= this.game.max_n_research_stations) {
-            // Technically the rules allow us to move a research station in this case ** TODO
-            return;
+            remove_stations = this.game.research_station_city_names;
         }
-        if (player.role_name == "Operations Expert") {
-            actions.push(
-                {
-                    action: "Build Research Station",
-                    player_name: player.player_name,
-                    response_function: "player_build_research_station",
-                    destination: city.city_name
-                }
-            )
-        } else {
-            // Normal roles
-            for (const c of player.player_cards) {
-                if (c.card_name == city.city_name) {
-                    actions.push(
-                        {
-                            action: "Build Research Station",
-                            discard_card_name: c.card_name,
-                            player_name: player.player_name,
-                            response_function: "player_build_research_station",
-                            destination: city.city_name
-                        }
-                    )
+        for (const remove_city_name of remove_stations){
+            if (player.role_name == "Operations Expert") {
+                actions.push(
+                    {
+                        action: "Build Research Station",
+                        player_name: player.player_name,
+                        response_function: "player_build_research_station",
+                        destination: city.city_name,
+                        remove_research_station_city_name: remove_city_name,
+                        remove_research_station_city_name__title: "Select a research station to remove"
+                    }
+                )
+            } else {
+                // Normal roles
+                for (const c of player.player_cards) {
+                    if (c.card_name == city.city_name) {
+                        actions.push(
+                            {
+                                action: "Build Research Station",
+                                discard_card_name: c.card_name,
+                                player_name: player.player_name,
+                                response_function: "player_build_research_station",
+                                destination: city.city_name,
+                                remove_research_station_city_name: remove_city_name,
+                                remove_research_station_city_name__title: "Select a research station to remove"
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -717,6 +723,9 @@ class Pandemic {
 
     player_build_research_station(data) {
         var player = this._player_by_name(data.player_name)
+        if (data.remove_research_station_city_name){
+            this.game.remove_research_station(data.remove_research_station_city_name)
+        }
         var city_name = data.destination;
         this.game.add_research_station(city_name);
         this._discard_cards(player, data)

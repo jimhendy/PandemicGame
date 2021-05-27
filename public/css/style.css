@@ -130,7 +130,28 @@ html{
     width: 0px;
     height: 0px;
   }
+  .immediate-tooltip-wrapper {
+    position: absolute;
+    visibility: hidden;
+    opacity: 0;
+    width: 0px;
+    height: 0px;
+  }
   .has-tooltip:hover .tooltip-wrapper {
+    visibility: visible;
+    opacity: 1;
+    /*
+    transition: opacity 1s linear 1s;
+    transition: visibility 0s linear 0s;
+    transition: z-index 0s linear 0s;
+    */
+    
+    transition-delay: 1.5s;
+    transition-duration: 1s;
+    
+  }
+  
+  .has-tooltip:hover .immediate-tooltip-wrapper {
     visibility: visible;
     opacity: 1;
     /*
@@ -143,7 +164,7 @@ html{
     transition-duration: 1s;
     */
   }
-  
+
   .tooltip {
     display: block;
     position: relative;

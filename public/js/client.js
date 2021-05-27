@@ -49,7 +49,7 @@ jQuery(function ($) {
             n_epidemics: null
         },
         images: {},
-        question_order: ["action", "player_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "infection_deck_card_name", "pick_up_card_name"],
+        question_order: ["action", "player_name", "remove_research_station_city_name", "destination", "disease_colour", "share_direction", "discard_card_name", "response", "infection_deck_card_name", "pick_up_card_name"],
         default_titles: {
             "action": "Pick an action",
             "player_name": "Pick a player",
@@ -314,7 +314,7 @@ jQuery(function ($) {
             var role_reminder_div = document.getElementById('player-role-reminder');
 
             var wrapper_span = document.createElement("span")
-            wrapper_span.setAttribute("class", "tooltip-wrapper")
+            wrapper_span.setAttribute("class", "immediate-tooltip-wrapper")
 
             var tooltip_span = document.createElement("span")
             tooltip_span.setAttribute("class", "tooltip")
@@ -418,7 +418,6 @@ jQuery(function ($) {
 
             await Client.createImage(sparkle_data)
             await Client.moveImage(sparkle_data)
-
             await Client.moveImage(return_data)
             await Client.removeImage(return_data.img_name)
         },
