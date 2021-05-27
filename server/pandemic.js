@@ -83,7 +83,7 @@ class Pandemic {
     }
 
     set_number_of_epidemic_cards(number){
-        this.n_epidemics = number;
+        this.n_epidemics = parseInt(number);
         this.io.to(this.game_id).emit(
             "clientAction", {function: "incoming_change_n_epidemic_cards", args: this.n_epidemics}
         )
