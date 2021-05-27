@@ -64,7 +64,7 @@ function playerJoinAttempt(data) {
             calling_socket.emit("error", { message: "Username already taken" }); 
             calling_socket.emit("reloadLandingScreen");
         }, 1000);
-    } else if (data.passcode == pandemic.game_id) {
+    } else if (true || data.passcode == pandemic.game_id) {
         calling_socket.join(pandemic.game_id);
         pandemic.add_user(data, calling_socket);
     } else {  

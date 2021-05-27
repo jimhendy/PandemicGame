@@ -392,7 +392,7 @@ jQuery(function ($) {
         flashPawn: async function (img_name) {
             var pawn = Client.images[img_name].data;
             var increase_factor = 5;
-            
+
             var sparkle_data = { ...pawn }
             delete sparkle_data['canvas']
             delete sparkle_data['ctx']
@@ -806,6 +806,49 @@ jQuery(function ($) {
             document.getElementById("gameOverDiv").style.display = "block";
             document.getElementById("game-over-message").textContent = data.message;
             document.getElementById("game-over-img").src = "./images/gifs/win.gif"
+        },
+
+        diseaseEradicated: async function (disease_colour) {
+            await Client._disease_progress(disease_colour, false)
+        },
+
+        diseaseCured: async function (disease_colour) {
+            await Client._disease_progress(disease_colour, true)
+        },
+
+        _disease_progress(colour, cured = true) {
+            var times = {
+                true: {
+                    "red": 1560,
+                    "black": 6800,
+                    "yellow": 2870,
+                    "blue": 5390
+                },
+                false: {
+                    "red": 3300,
+                    "blue": 3610,
+                    "yellow": 5330,
+                    "black": 2040
+                }
+            }
+            var div = document.getElementById("gifsDiv")
+            var img = document.createElement("img")
+            img.setAttribute("src", "./images/gifs/" + (cured ? "cured" : "eradicate") + "_" + colour + ".gif")
+            div.appendChild(img)
+            div.style.opacity = 1;
+            return new Promise(
+                resolve => {
+                    var id = setInterval(
+                        () => {
+                            div.style.opacity = 0;
+                            div.removeChild(img)
+                            clearInterval(id);
+                            resolve();
+                        },
+                        times[cured][colour]
+                    );
+                }
+            )
         }
 
 

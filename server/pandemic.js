@@ -745,7 +745,8 @@ class Pandemic {
             player.discard_card(c);
         this.game.player_deck.discard(data.answers.discard_card_name, player);
         disease.cure();
-
+        //await this.game.queue.run_until_empty();
+        
         for (const p of this.game.players){
             if (p.role_name == "Medic") {
                 if (this.game.cities[p.city_name].disease_cubes[colour] > 0) {
@@ -868,7 +869,7 @@ class Pandemic {
             this.game.player_used_actions++;
         var player = this.game.current_player;
 
-        this.check_disease_status();
+        await this.check_disease_status();
         this.check_game_status()
 
         var all_actions_used = this.game.player_used_actions >= player.actions_per_turn
@@ -905,12 +906,13 @@ class Pandemic {
         this.game.queue.start();
     }
 
-    check_disease_status() {
+    async check_disease_status() {
         for (const d of Object.values(this.game.diseases)) {
             if (d.eradicated)
                 continue;
             if (d.cured && d.cubes_on_board == 0) {
                 d.eradicate();
+                await this.game.queue.run_until_empty();
             }
         }
     }

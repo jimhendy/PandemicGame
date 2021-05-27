@@ -1,7 +1,7 @@
 const utils = require("./utils")
 
 class Disease {
-    constructor(io, game_id, queue, colour, x_loc){
+    constructor(io, game_id, queue, colour, x_loc) {
         this.io = io;
         this.game_id = game_id;
         this.queue = queue;
@@ -24,7 +24,7 @@ class Disease {
             "clientAction",
             {
                 function: "createImage",
-                args:{
+                args: {
                     img_type: "vial",
                     img_name: this.img_name,
                     image_file: this.vial_file,
@@ -43,9 +43,9 @@ class Disease {
         this.eradicate = this.eradicate.bind(this);
     }
 
-    add_cube(){
+    add_cube() {
         this.cubes_on_board++;
-        if (this.cubes_on_board > this.total_cubes){
+        if (this.cubes_on_board > this.total_cubes) {
             this.queue.add_task(
                 () => this.io.in(this.game_id).emit("clientAction", { function: "gameLose", args: { message: utils.toTitleCase(this.colour) + " disease attempted to add more cubes than are provided in the game. Game Lost" } }),
                 null, "game_over", "Game over as we have run out of " + this.colour + " cubes."
@@ -53,24 +53,26 @@ class Disease {
         }
     }
 
-    remove_cube(){
+    remove_cube() {
         this.cubes_on_board--;
     }
 
-    cure(){
+    cure() {
         this.cured = true;
         this.queue.add_task(
             () => {
                 this.io.in(this.game_id).emit(
-                    "parallel_actions",
+                    "series_actions",
                     {
-                        parallel_actions_args: [
+                        series_actions_args: [
                             {
                                 function: "logMessage",
                                 args: {
-                                    message: "The " + this.colour + " disease is cured!",
-                                    fontWeight: "bold",
-                                    color: this.colour
+                                    message: "* The " + this.colour + " disease is cured! *",
+                                    style: {
+                                        fontWeight: "bold",
+                                        color: this.colour
+                                    }
                                 }
                             },
                             {
@@ -80,7 +82,8 @@ class Disease {
                                     dest_y: this.y_loc_cured_frac,
                                     dt: 1
                                 }
-                            }
+                            },
+                            {function: "diseaseCured", args: this.colour}
                         ],
                         return: true
                     }
@@ -90,20 +93,22 @@ class Disease {
         );
     }
 
-    eradicate(){
+    eradicate() {
         this.eradicated = true;
         this.queue.add_task(
             () => {
                 this.io.in(this.game_id).emit(
-                    "parallel_actions",
+                    "series_actions",
                     {
-                        parallel_actions_args: [
+                        series_actions_args: [
                             {
                                 function: "logMessage",
                                 args: {
-                                    message: "The " + this.colour + " disease is ERADICATED!",
-                                    fontWeight: "bold",
-                                    color: this.colour
+                                    message: "** The " + this.colour + " disease is ERADICATED! **",
+                                    style:{
+                                        fontWeight: "bold",
+                                        color: this.colour
+                                    }
                                 }
                             },
                             {
@@ -112,7 +117,8 @@ class Disease {
                                     img_name: this.img_name,
                                     new_image_file: this.vial_file_eradicated
                                 }
-                            }
+                            },
+                            { function: "diseaseEradicated", args: this.colour }
                         ],
                         return: true
                     }
@@ -124,7 +130,7 @@ class Disease {
 }
 
 module.exports = {
-    create_new_diseases: function(io, game_id, queue){
+    create_new_diseases: function (io, game_id, queue) {
         return {
             "yellow": new Disease(io, game_id, queue, "yellow", 0.328),
             "red": new Disease(io, game_id, queue, "red", 0.374),
@@ -132,6 +138,6 @@ module.exports = {
             "black": new Disease(io, game_id, queue, "black", 0.462)
         }
     },
-    
+
     Disease: Disease
 }
