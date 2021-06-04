@@ -222,7 +222,7 @@ class PandemicGame {
         await this.queue.run_until_empty();
         
         this.pandemic.allow_players_to_use_event_cards(); // Allow other cards
-        this.queue.running = true;
+        await this.queue.run_until_empty();
     }
 
     gameOver() {

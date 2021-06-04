@@ -40,15 +40,17 @@ class PlayerDeck {
         utils.shuffle(this.deck);
 
         /*
-        utils.bring_card_to_front(this.deck, "Forecast")
+        
+        utils.bring_card_to_front(this.deck, "Milan")
         utils.bring_card_to_front(this.deck, "London")
         utils.bring_card_to_front(this.deck, "Paris")
-        utils.bring_card_to_front(this.deck, "Resilient Population")
+        utils.bring_card_to_front(this.deck, "Essen")
         
-        utils.bring_card_to_front(this.deck, "Government Grant")
+        utils.bring_card_to_front(this.deck, "Madrid")
         utils.bring_card_to_front(this.deck, "Washington")
         utils.bring_card_to_front(this.deck, "New York")
         utils.bring_card_to_front(this.deck, "Chicago")
+        
         */
 
         this.io.in(this.game_id).emit(
@@ -107,6 +109,7 @@ class PlayerDeck {
         }
         this.epidemic_cards_in_deck = true;
         //utils.bring_card_to_front(this.deck, "Epidemic")
+        //utils.bring_card_to_front(this.deck, "Airlift")
         //utils.bring_card_to_front(this.deck, "Epidemic")
 
     }

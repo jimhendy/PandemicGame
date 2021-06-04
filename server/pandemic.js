@@ -1012,16 +1012,20 @@ class Pandemic {
             move_proposal: data
         }
 
-        this.io.to(moving_player.socket_id).emit(
-            "clientAction",
-            {
-                function: "enableActions",
-                args:
-                    [
-                        Object.assign({ ...action }, { response: "Yes" }),
-                        Object.assign({ ...action }, { response: "No" })
-                    ]
-            }
+        this.game.queue.add_task(
+            () => {
+                this.io.to(moving_player.socket_id).emit(
+                    "clientAction",
+                    {
+                        function: "enableActions",
+                        args:
+                            [
+                                Object.assign({ ...action }, { response: "Yes" }),
+                                Object.assign({ ...action }, { response: "No" })
+                            ]
+                    }
+                )
+            }, null, 1, "Waiting for " + moving_player.player_name + " to respond to move request"
         )
     }
 
@@ -1045,7 +1049,8 @@ class Pandemic {
                 "logMessage",
                 { message: data.move_proposal.player_name_being_moved + " refused the move" }
             )
-            this.assess_player_options();
+            if (!data.move_proposal.skip_check_next)
+                this.assess_player_options();
         }
     }
 
