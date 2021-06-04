@@ -240,8 +240,8 @@ jQuery(function ($) {
             "/images/gifs/lose.gif"
         ],
 
-        init: function () {
-            Client.cacheElements();
+        init: async function () {
+            await Client.cacheElements();
             Client.showLandingScreen();
             Client.bindEvents();
         },
@@ -294,8 +294,10 @@ jQuery(function ($) {
 
         // ====================================================================
 
-        cacheElements: function () {
+        cacheElements: async function () {
             Client.$doc = $(document);
+
+            await Client.preload_all_images();
 
             // Templates
             Client.$gameArea = $('#gameArea');
@@ -393,7 +395,6 @@ jQuery(function ($) {
         waitForOtherRoles: function () {
             Client.$gameArea.html(Client.$waitingForRolesTemplate);
             Client.data.current_page = "waiting_for_roles";
-            Client.preload_all_images();
             IO.socket.emit("waiting_for_other_roles");
         },
 
@@ -413,11 +414,14 @@ jQuery(function ($) {
             $('#player-ready-button').attr("disabled", false);
         },
 
-        preload_all_images: function () {
+        preload_all_images: async function () {
             var images = new Array()
             for (const s of Client.all_image_files) {
                 var img = new Image();
                 img.src = s;
+                await new Promise(
+                    resolve => img.onload(resolve())
+                )
                 images.push(img);
             }
         },
