@@ -486,6 +486,7 @@ jQuery(function ($) {
             var img_div = document.createElement("div")
             var role_img = document.createElement("img")
             role_img.setAttribute("src", "/images/game/roles/Role - " + Client.data.role + ".jpg")
+            role_img.setAttribute("width", "50%")
             img_div.appendChild(role_img)
             tooltip_span.appendChild(img_div)
             tooltip_span.appendChild(document.createElement("br"))
