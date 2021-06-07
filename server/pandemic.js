@@ -955,7 +955,7 @@ class Pandemic {
                     discard_card_name__checkboxes: true,
                     discard_card_name__cancel_button: event_cards.length,
                     action: "Discard",
-                    action__title: "Max hand size exceeded",
+                    action__title: "Max hand size exceeded by " + n_discard,
                     response_function: "reduce_player_hand_size_response"
 
                 }
