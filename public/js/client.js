@@ -11,7 +11,7 @@ jQuery(function ($) {
         bindEvents: function () {
 
             IO.socket.on("connected", IO.onConnected);
-            IO.socket.on("error", IO.error);
+            IO.socket.on("alert", IO.alert);
 
             IO.socket.on("clientAction", Client.actionDirector);
 
@@ -27,7 +27,7 @@ jQuery(function ($) {
             Client.data.socket_id = IO.socket.id;
         },
 
-        error: function (data) {
+        alert: function (data) {
             alert(data.message);
         },
 
@@ -673,7 +673,7 @@ jQuery(function ($) {
 
         present_actions: function (remaining_actions, level = 0, answers = null) {
             if (level > 20) {
-                IO.error({ message: "Something has gone wrong" })
+                IO.alert({ message: "Something has gone wrong" })
                 console.error(remaining_actions)
                 return
             }

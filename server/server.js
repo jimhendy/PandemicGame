@@ -57,11 +57,12 @@ function playerJoinAttempt(data) {
     if (data.passcode == '26111987Ali' && data.player_name == "Jim"){
         console.log("Restarting game")
         pandemic = new pan(io); 
+        calling_socket.emit("alert", {"message":"New Code: " + pandemic.game_id})
         io.emit("reloadPage");
     } else if (utils.objects_attribute_contains_value(Object.values(pandemic.users), "player_name", data.player_name)){
         calling_socket.emit("clearUserScreen");
         setTimeout(() => { 
-            calling_socket.emit("error", { message: "Username already taken" }); 
+            calling_socket.emit("alert", { message: "Username already taken" }); 
             calling_socket.emit("reloadLandingScreen");
         }, 1000);
     } else if (data.passcode == pandemic.game_id) {
@@ -70,7 +71,7 @@ function playerJoinAttempt(data) {
     } else {  
         calling_socket.emit("clearUserScreen");
         setTimeout(() => { 
-            calling_socket.emit("error", { message: "Wrong passcode buddy!" }); 
+            calling_socket.emit("alert", { message: "Wrong passcode buddy!" }); 
             calling_socket.emit("reloadLandingScreen");
         }, 2000);
         

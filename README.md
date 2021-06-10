@@ -2,6 +2,8 @@
 
 TODO:
 
+* Remove all other player options as soon as forecast is selected (currently can use forecast to investigate cards and then current player can start action so we know the upcoming infection cards without using the forecast card)
+
 * Download font to provide from static directory
 * Match font to game font on board (irsa thin)
 
