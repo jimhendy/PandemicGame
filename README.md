@@ -1,5 +1,7 @@
 # PandemicGame
 
+Little lockdown project to learn javascript. Feedback would be greatly appreciated.
+
 TODO:
 
 * Remove all other player options as soon as forecast is selected (currently can use forecast to investigate cards and then current player can start action so we know the upcoming infection cards without using the forecast card)
