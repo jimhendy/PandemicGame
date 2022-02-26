@@ -6,6 +6,7 @@
   "dependencies": {
     "console-stamp": "^3.0.2",
     "express": "^4.17.1",
+    "npm": "^7.20.1",
     "socket.io": "^4.0.1"
   },
   "main": "app.js",

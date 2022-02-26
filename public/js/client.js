@@ -9,31 +9,18 @@ jQuery(function ($) {
         },
 
         bindEvents: function () {
-
             IO.socket.on("connected", IO.onConnected);
             IO.socket.on("alert", IO.alert);
-
             IO.socket.on("clientAction", Client.actionDirector);
-
             IO.socket.on("parallel_actions", Client.parallel_actions);
             IO.socket.on("series_actions", Client.series_actions);
-
             IO.socket.on("logMessage", Client.logMessage);
-
             IO.socket.on("reloadPage", () => { location = location; });
         },
 
-        onConnected: function () {
-            Client.data.socket_id = IO.socket.id;
-        },
-
-        alert: function (data) {
-            alert(data.message);
-        },
-
-        actionComplete: function () {
-            IO.socket.emit("action_complete")
-        }
+        onConnected: function () { Client.data.socket_id = IO.socket.id; },
+        alert: function (data) { alert(data.message); },
+        actionComplete: function () { IO.socket.emit("action_complete") }
 
     };
 

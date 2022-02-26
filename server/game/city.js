@@ -204,8 +204,8 @@ module.exports = {
             new City(io, game_id, queue, diseases, markers, "Manila", "red", [0.874, 0.562], ["Taipei", "Ho Chi Minh City", "San Francisco", "Sydney", "Hong Kong"]),
             new City(io, game_id, queue, diseases, markers, "Seoul", "red", [0.856, 0.299], ["Beijing", "Tokyo", "Shanghai"]),
             new City(io, game_id, queue, diseases, markers, "Shanghai", "red", [0.798, 0.371], ["Beijing", "Seoul", "Hong Kong", "Taipei", "Tokyo"]),
-            new City(io, game_id, queue, diseases, markers, "Osaka", "red", [0.908, 0.412], ["Tokyo", "Taipei"]),
             new City(io, game_id, queue, diseases, markers, "Sydney", "red", [0.914, 0.76], ["Jakarta", "Manila", "Los Angeles"]),
+            new City(io, game_id, queue, diseases, markers, "Osaka", "red", [0.908, 0.412], ["Tokyo", "Taipei"]),
             new City(io, game_id, queue, diseases, markers, "Taipei", "red", [0.858, 0.44], ["Osaka", "Shanghai", "Hong Kong", "Manila"]),
             new City(io, game_id, queue, diseases, markers, "Tokyo", "red", [0.903, 0.337], ["Seoul", "Shanghai", "Osaka", "San Francisco"])
 
