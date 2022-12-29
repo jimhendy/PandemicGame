@@ -1,10 +1,21 @@
-version: "3"
+version: "3.7"
+
 services:
+
   pandemic:
     container_name: pandemic
-    restart: always
+    restart: unless-stopped
     build: .
     environment:
-      - PORT=3000
+      - PORT=${PORT}
+      - VIRTUAL_PORT=${PORT}
+      - VIRTUAL_HOST=pandemic.jimhendy.com
+      - LETSENCRYPT_HOST=pandemic.jimhendy.com
+    networks: 
+      - net
     ports:
-      - "3000:3000"
+      - ${PORT}:${PORT}
+
+networks:
+  net:
+    external: true
