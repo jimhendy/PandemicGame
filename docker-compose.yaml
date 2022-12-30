@@ -3,19 +3,17 @@ version: "3.7"
 services:
 
   pandemic:
-    container_name: pandemic
+    container_name: ${CONTAINER_NAME}
     restart: unless-stopped
     build: .
     environment:
       - PORT=${PORT}
       - VIRTUAL_PORT=${PORT}
-      - VIRTUAL_HOST=pandemic.jimhendy.com
-      - LETSENCRYPT_HOST=pandemic.jimhendy.com
+      - VIRTUAL_HOST=${CONTAINER_NAME}.jimhendy.com
+      - LETSENCRYPT_HOST=${CONTAINER_NAME}.jimhendy.com
     networks: 
-      - net
-    ports:
-      - ${PORT}:${PORT}
+      - reverse-proxy-net
 
 networks:
-  net:
+  reverse-proxy-net:
     external: true
