@@ -1,19 +1,18 @@
-version: "3.7"
-
 services:
 
   pandemic:
     container_name: ${CONTAINER_NAME}
     restart: unless-stopped
     build: .
+    env_file: secrets.env
     environment:
       - PORT=${PORT}
-      - VIRTUAL_PORT=${PORT}
-      - VIRTUAL_HOST=${CONTAINER_NAME}.jimhendy.com
-      - LETSENCRYPT_HOST=${CONTAINER_NAME}.jimhendy.com
-    networks: 
-      - reverse-proxy-net
 
-networks:
-  reverse-proxy-net:
-    external: true
+  cloudflared:
+    container_name: ${CONTAINER_NAME}-tunnel
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file: secrets.env
+    depends_on:
+      - pandemic

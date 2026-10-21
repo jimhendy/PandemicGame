@@ -2,6 +2,7 @@
 require('console-stamp')(console, 'HH:MM:ss.l');
 
 const path = require('path');
+const crypto = require('crypto');
 const http = require('http');
 const express = require('express');
 const socketIO = require('socket.io');
@@ -10,10 +11,29 @@ const utils = require("./game/utils")
 
 const publicPath = path.join(__dirname, '/../public');
 const port = process.env.PORT || 3000;
+const appPassword = process.env.APP_PASSWORD;
+
+// HTTP basic auth (any username) when APP_PASSWORD is set
+function isAuthorised(req) {
+    if (!appPassword) return true;
+    const [scheme, encoded] = (req.headers.authorization || '').split(' ');
+    if (scheme !== 'Basic' || !encoded) return false;
+    const decoded = Buffer.from(encoded, 'base64').toString();
+    const supplied = crypto.createHash('sha256').update(decoded.slice(decoded.indexOf(':') + 1)).digest();
+    const expected = crypto.createHash('sha256').update(appPassword).digest();
+    return crypto.timingSafeEqual(supplied, expected);
+}
+
 let app = express();
 let server = http.createServer(app);
-let io = socketIO(server);
+let io = socketIO(server, {
+    allowRequest: (req, callback) => callback(null, isAuthorised(req))
+});
 
+app.use((req, res, next) => {
+    if (isAuthorised(req)) return next();
+    res.set('WWW-Authenticate', 'Basic realm="Pandemic"').status(401).send('Authentication required');
+});
 app.use(express.static(publicPath));
 
 server.listen(port, () => {
