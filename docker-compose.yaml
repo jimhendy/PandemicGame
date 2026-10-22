@@ -1,16 +1,30 @@
+# Limits the damage if a container is compromised: no writes outside /tmp, no
+# Linux capabilities, and caps on memory and processes.
+x-hardened: &hardened
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  pids_limit: 256
+  mem_limit: 256m
+
 services:
 
   pandemic:
+    <<: *hardened
     container_name: ${CONTAINER_NAME}
     restart: unless-stopped
     build: .
+    user: node
+    tmpfs: [/tmp, /home/node/.npm]       # npm writes its logs here
+    mem_limit: 512m
     env_file: secrets.env
     environment:
       - PORT=${PORT}
 
   cloudflared:
+    <<: *hardened
     container_name: ${CONTAINER_NAME}-tunnel
-    image: cloudflare/cloudflared:latest
+    image: cloudflare/cloudflared:2026.10.1
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     env_file: secrets.env

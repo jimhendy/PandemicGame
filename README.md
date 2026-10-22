@@ -26,8 +26,12 @@ Locally:
 $ node server/server.js
 
 Via Cloudflare tunnel (docker):
-1. Put `APP_PASSWORD` and `TUNNEL_TOKEN` in `secrets.env` (gitignored)
+1. Put these in `secrets.env` (gitignored; `.env` is committed, so no secrets there):
+   - `APP_PASSWORD`: the site password
+   - `SECRET_KEY`: signs the login cookie, e.g. `openssl rand -hex 32`
+   - `RESET_PASSWORD`: entered as the game code, starts a new game and shows its code
+   - `TUNNEL_TOKEN`: from the Cloudflare Zero Trust dashboard
 2. In the Cloudflare dashboard, give the tunnel a public hostname (e.g. pandemic.jimhendy.com) pointing at `http://pandemic:3001`
 3. $ docker compose up -d --build
 
-When APP_PASSWORD is set the site uses HTTP basic auth (any username).
+When APP_PASSWORD is set the site asks for it once, then remembers the browser with a cookie for a year.
