@@ -1,27 +1,36 @@
 const utils = require("./game/utils")
 const Game = require('./game/game');
-const { objects_attribute_contains_value, dict_from_objects, array_from_objects_list } = require("./game/utils");
-const disease = require("./game/disease");
+const GameIO = require("./game/game_io");
+const { city_definitions } = require("./game/city");
+
+const ALL_ROLES = [
+    "Contingency Planner",
+    "Dispatcher",
+    "Medic",
+    "Operations Expert",
+    "Quarantine Specialist",
+    "Researcher",
+    "Scientist"
+];
+const MAX_PLAYERS = 4;
+const LOG_LIMIT = 500;
 
 class Pandemic {
-    constructor(io) {
-        this.io = io;
-        this.game_id = Math.floor(Math.random() * 99999999);
-        console.info("Game ID: " + this.game_id);
-        this.all_roles = [
-            "Contingency Planner",
-            "Dispatcher",
-            "Medic",
-            "Operations Expert",
-            "Quarantine Specialist",
-            "Researcher",
-            "Scientist"
-        ]
-        this.users = {}; // socket_id to client data
+    constructor(io, game_id, title, host_pid, on_change) {
+        this.game_id = game_id;
+        this.title = title;
+        this.host = host_pid;
+        this.on_change = on_change; // tells the lobby its list of games is out of date
+        this.io = new GameIO(io, game_id, this._on_broadcast.bind(this));
+        this.all_roles = ALL_ROLES;
+        this.members = new Map(); // pid -> {name, role, ready, sockets}, in joining order
+        this.phase = "lobby"; // then "playing", then "over"
         this.game = null;
-        this.initial_deal_complete = false;
-        this.initial_clients_deals = 0;
         this.n_epidemics = 5;
+        this.pending = new Map(); // pid -> actions they've been offered and not yet answered
+        this.log = []; // log messages so far, for players who reconnect
+        this.game_over = null;
+        this.updated = Date.now();
 
         // Bind Events
         this.assess_player_options = this.assess_player_options.bind(this);
@@ -77,74 +86,279 @@ class Pandemic {
         this.reduce_player_hand_size = this.reduce_player_hand_size.bind(this);
         this.reduce_player_hand_size_response = this.reduce_player_hand_size_response.bind(this);
         this._discard_cards = this._discard_cards.bind(this);
-
-        this.set_number_of_epidemic_cards = this.set_number_of_epidemic_cards.bind(this);
-
+        this._perform_move = this._perform_move.bind(this);
+        this.on_settle = this.on_settle.bind(this);
     }
 
-    set_number_of_epidemic_cards(number){
-        this.n_epidemics = parseInt(number);
-        this.io.to(this.game_id).emit(
-            "clientAction", {function: "incoming_change_n_epidemic_cards", args: this.n_epidemics}
-        )
+    // =============================================  Before the game: joining, roles, ready
+
+    join(pid, name) {
+        if (this.members.has(pid)) return;
+        if (this.phase != "lobby") throw new Error("That game has already started.");
+        if (this.members.size >= MAX_PLAYERS) throw new Error("That game is full.");
+        this.members.set(pid, { name: this._unique_name(pid, name), role: null, ready: false, sockets: new Set() });
+        this._lobby_changed();
     }
 
-    add_user(data, socket) {
-        this.users[data.socket_id] = data;
-        console.info('Player "' + data.player_name + '" joining game');
-        socket.emit("clientAction", { function: "showRoleChoiceScreen", args: this._role_choice_data() });
+    leave(pid) {
+        if (this.phase != "lobby" || !this.members.has(pid)) return;
+        this.members.delete(pid);
+        if (this.host == pid) this.host = this.members.keys().next().value || null;
+        this._lobby_changed();
     }
 
-    _role_choice_data() {
-        return {
-            assigned_roles: utils.dict_from_objects(
-                Object.values(this.users),
-                "player_name", "role"
-            ),
-            all_roles: this.all_roles
-        }
+    rename(pid, name) {
+        var member = this.members.get(pid);
+        if (!member || this.phase != "lobby") return;
+        member.name = this._unique_name(pid, name);
+        this._lobby_changed();
     }
 
-    remove_user(socket_id) {
-        console.info('User has disconnected.');
-        if (Object.keys(this.users).includes(socket_id)) {
-            delete this.users[socket_id];
-            // TODO emit user lost?
-        }
+    _unique_name(pid, name) {
+        var taken = [...this.members].filter(([p]) => p != pid).map(([p, m]) => m.name);
+        var unique = name;
+        for (var n = 2; taken.includes(unique); n++) unique = name + " " + n;
+        return unique;
     }
 
-    assign_role(data) {
-        this.users[data.socket_id].role = data.role;
-        this.io.in(this.game_id).emit("clientAction", { function: 'updateRoles', args: this._role_choice_data() });
+    set_role(pid, role) {
+        var member = this.members.get(pid);
+        if (!member || this.phase != "lobby" || !this.all_roles.includes(role)) return;
+        for (const [p, m] of this.members)
+            if (p != pid && m.role == role) return; // someone else has it
+        member.role = role;
+        member.ready = false;
+        this._lobby_changed();
     }
 
-    player_waiting(socket_id) {
-        this.users[socket_id].ready_to_play = true;
-        for (const [key, value] of Object.entries(this.users)) {
-            if (!value.ready_to_play)
-                return
-        }
+    set_epidemics(pid, number) {
+        number = parseInt(number);
+        if (!this.members.has(pid) || this.phase != "lobby" || ![4, 5, 6].includes(number)) return;
+        this.n_epidemics = number;
+        this._lobby_changed();
+    }
+
+    set_ready(pid, ready) {
+        var member = this.members.get(pid);
+        if (!member || this.phase != "lobby" || (ready && !member.role)) return;
+        member.ready = !!ready;
+        this._lobby_changed();
+    }
+
+    // Everyone has a role, and everyone but the host has said they're ready
+    can_start() {
+        return [...this.members].every(([pid, m]) => m.role && (m.ready || pid == this.host));
+    }
+
+    start(pid) {
+        if (this.phase != "lobby") return;
+        if (pid != this.host) throw new Error("Only the host can start the game.");
+        if (!this.can_start()) throw new Error("Everyone needs to pick a role and be ready first.");
         this.start_game();
     }
 
-    action_complete() {
-        this.game.queue.add_response();
+    lobby_state(pid) {
+        return {
+            game_id: this.game_id,
+            title: this.title,
+            epidemics: this.n_epidemics,
+            all_roles: this.all_roles,
+            max_players: MAX_PLAYERS,
+            can_start: this.can_start(),
+            members: [...this.members].map(([p, m]) => ({
+                name: m.name, role: m.role, ready: m.ready, online: m.sockets.size > 0, host: p == this.host, you: p == pid
+            }))
+        }
+    }
+
+    _lobby_changed() {
+        this.updated = Date.now();
+        if (this.phase == "lobby")
+            for (const pid of this.members.keys())
+                this.io.to(this._room(pid)).emit("game_lobby", this.lobby_state(pid));
+        this.on_change();
+    }
+
+    _room(pid) { return this.game_id + ":" + pid; }
+
+    // =============================================  Connections
+
+    attach(socket, pid) {
+        socket.join(this.game_id);
+        var member = this.members.get(pid);
+        if (member) {
+            socket.join(this._room(pid));
+            member.sockets.add(socket.id);
+        }
+        if (this.phase == "lobby") {
+            this._lobby_changed();
+        } else {
+            this.sync(socket, pid);
+            this._presence_changed();
+        }
+    }
+
+    detach(socket, pid) {
+        var member = this.members.get(pid);
+        if (!member || !member.sockets.delete(socket.id) || member.sockets.size) return;
+        if (this.phase == "lobby") {
+            this._lobby_changed();
+        } else {
+            if (this.game) this.game.queue.drop(pid); // don't wait for them
+            // If they were being offered the chance to play an event card, they'd rather not
+            var decline = (this.pending.get(pid) || []).find((a) => a.response_function == "player_response_cancel");
+            if (decline) this.handle_response(pid, { ...decline, answers: {} });
+            this._presence_changed();
+        }
+    }
+
+    connected_player_pids() {
+        return [...this.members].filter(([pid, m]) => m.sockets.size > 0).map(([pid]) => pid);
+    }
+
+    _presence_changed() {
+        if (this.game) this.io.to(this.game_id).emit("players", this.players_info());
+        this.on_change();
+    }
+
+    // The queue has caught up (or is waiting for someone), so the players panel is accurate
+    on_settle() {
+        this.io.to(this.game_id).emit("players", this.players_info());
+    }
+
+    // Everything a player needs to draw the game from scratch, e.g. after a refresh
+    sync(socket, pid) {
+        var player = this._player_by_pid(pid);
+        socket.emit("sync", {
+            game_id: this.game_id,
+            title: this.title,
+            cities: city_definitions,
+            me: player ? { name: player.player_name, role: player.role_name, city: player.city_name } : null,
+            hand: player ? player.player_cards : [],
+            images: this.game.board_images(),
+            infection_count: this.game.infection_count(),
+            cards_remaining: this.game.player_deck.remaining_message(),
+            players: this.players_info(),
+            log: this.log,
+            game_over: this.game_over
+        });
+        if (player && this.pending.has(pid))
+            socket.emit("clientAction", { function: "enableActions", args: this.pending.get(pid) });
+    }
+
+    players_info() {
+        var current = this.game.current_player;
+        return {
+            players: this.game.players.map((p) => ({
+                name: p.player_name,
+                role: p.role_name,
+                city: p.city_name,
+                online: (this.members.get(p.pid)?.sockets.size || 0) > 0,
+                current: p == current,
+                cards: p.player_cards.map((c) => ({
+                    name: c.card_name,
+                    colour: c.is_city ? this.game.cities[c.city_name].native_disease_colour : null
+                })),
+                extra_card: p.contingency_planner_event_card_name
+            })),
+            turn: current ? { player: current.player_name, used: this.game.player_used_actions, total: current.actions_per_turn } : null
+        };
+    }
+
+    _on_broadcast(event, data, logs) {
+        this.log.push(...logs);
+        if (this.log.length > LOG_LIMIT) this.log.splice(0, this.log.length - LOG_LIMIT);
+        if (event == "clientAction" && (data.function == "gameWin" || data.function == "gameLose")) {
+            this.phase = "over";
+            this.game_over = { win: data.function == "gameWin", message: data.args.message };
+            this.pending.clear();
+            this.updated = Date.now();
+            this.on_change();
+        }
+    }
+
+    // A player answered one of the choices they were offered
+    handle_response(pid, data) {
+        if (this.phase != "playing" || !data) return;
+        var offered = this.pending.get(pid) || [];
+        if (!offered.some((a) => a.response_function == data.response_function)) {
+            console.warn("Ignoring an answer to a question nobody asked: " + data.response_function);
+            return;
+        }
+        this.pending.clear(); // answering hides everyone's choices
+        this.updated = Date.now();
+        this.action_response(data);
+    }
+
+    // A player's client finished an animation
+    handle_complete(pid) {
+        if (this.game) this.game.queue.add_response(pid);
+    }
+
+    _prompt(player, actions) {
+        this.pending.set(player.pid, actions);
+        this.io.to(player.room).emit("clientAction", { function: "enableActions", args: actions });
+    }
+
+    _show_gif(kind) {
+        this.game.queue.add_task(
+            () => this.io.in(this.game_id).emit("clientAction", { function: "showGif", args: kind, return: true }),
+            null, "all", "Showing " + kind + " gif"
+        )
+    }
+
+    // =============================================  The games list
+
+    summary(pid) {
+        var status;
+        if (this.phase == "lobby")
+            status = "Waiting for players · " + this.members.size + "/" + MAX_PLAYERS;
+        else if (this.phase == "over")
+            status = this.game_over && this.game_over.win ? "Won!" : "Lost";
+        else
+            status = "In progress · turn " + (this.game.round + 1);
+        return {
+            id: this.game_id,
+            title: this.title,
+            phase: this.phase,
+            status: status,
+            mine: this.members.has(pid),
+            players: [...this.members.values()].map((m) => ({ name: m.name, role: m.role, online: m.sockets.size > 0 })),
+            can_delete: this.can_delete(pid),
+            updated: this.updated
+        };
+    }
+
+    // The host can always delete; anyone in it once it's over or nobody's playing it
+    can_delete(pid) {
+        if (pid == this.host) return true;
+        return this.members.has(pid) && (this.phase == "over" || this.connected_player_pids().length == 0);
+    }
+
+    destroy(message) {
+        if (this.game) this.game.queue.game_over = true;
+        this.phase = "over";
+        this.pending.clear();
+        this.io.to(this.game_id).emit("gone", { message: message });
     }
 
     // =============================================  Starting Game
 
     async start_game() {
+        this.phase = "playing";
+        this.updated = Date.now();
         this.game = new Game(this);
-        for (const p of Object.values(this.users)) {
-            this.game.add_player(p);
-        }
+        for (const [pid, m] of this.members)
+            this.game.add_player({ player_name: m.name, role: m.role, pid: pid });
 
         this.io.in(this.game_id).emit(
             "clientAction",
-            { function: 'startGame', args: this._role_choice_data() }
+            { function: 'startGame', args: { game_id: this.game_id, title: this.title, cities: city_definitions } }
         );
+        this.on_change();
+        this._show_gif("start");
         this.game.initial_game_setup();
-        await this.game.queue.run_until_empty(); 
+        await this.game.queue.run_until_empty();
 
         this.game.new_player_turn();
         this.game.queue.add_task(
@@ -157,6 +371,8 @@ class Pandemic {
     }
 
     async assess_player_options() {
+        if (this.game.queue.game_over)
+            return;
         var player = this.game.current_player;
         var city_name = player.city_name;
         var city = this.game.cities[city_name];
@@ -188,14 +404,14 @@ class Pandemic {
 
 
         // Consider event cards from other players
-        var other_player_actions = {}
+        var other_player_actions = [];
         for (const p of this.game.players) {
             if (p == player)
                 continue
             var p_actions = [];
             this._assess_all_event_cards(p_actions, p, false);
             if (p_actions.length) {
-                other_player_actions[p.socket_id] = p_actions;
+                other_player_actions.push([p, p_actions]);
             }
         }
 
@@ -204,14 +420,9 @@ class Pandemic {
         // Queue should be empty after this is run
         this.game.queue.add_task(
             () => {
-                this.io.to(player.socket_id).emit(
-                    "clientAction", { function: "enableActions", args: actions, return: false }
-                )
-                for (const [sid, a] of Object.entries(other_player_actions)) {
-                    this.io.to(sid).emit(
-                        "clientAction", { function: "enableActions", args: a, return: false }
-                    )
-                }
+                this._prompt(player, actions);
+                for (const [p, a] of other_player_actions)
+                    this._prompt(p, a);
             },
             null, 0, "Enabling player options", false, true
         )
@@ -254,12 +465,51 @@ class Pandemic {
         )
     }
 
+    _remaining_actions() {
+        return Math.max(1, this.game.current_player.actions_per_turn - this.game.player_used_actions);
+    }
+
+    // Every city within the actions left this turn, by the shortest route (one action per step)
+    _drive_paths(start, max_steps) {
+        var paths = {};
+        var frontier = [[start, []]];
+        var seen = new Set([start]);
+        while (frontier.length) {
+            var [name, path] = frontier.shift();
+            if (path.length >= max_steps) continue;
+            for (const next of this.game.cities[name].adjacent_city_names) {
+                if (seen.has(next)) continue;
+                seen.add(next);
+                paths[next] = path.concat([next]);
+                frontier.push([next, paths[next]]);
+            }
+        }
+        return paths;
+    }
+
+    _is_drive_path(start, path, max_steps) {
+        if (!Array.isArray(path) || !path.length || path.length > max_steps) return false;
+        var previous = start;
+        for (const name of path) {
+            var city = this.game.cities[previous];
+            if (!city || !city.adjacent_city_names.includes(name)) return false;
+            previous = name;
+        }
+        return true;
+    }
+
     _assess_drive_ferry(actions, player, city, response_function = "player_move") {
-        for (const c of city.adjacent_city_names) {
+        var paths = Object.entries(this._drive_paths(city.city_name, this._remaining_actions()));
+        paths.sort((a, b) => a[1].length - b[1].length || a[0].localeCompare(b[0]));
+        for (const [c, path] of paths) {
             actions.push(
                 {
                     player_name: player.player_name,
                     destination: c,
+                    destination__colour: this.game.cities[c].native_disease_colour,
+                    destination__label: c + (path.length > 1 ? " (" + path.length + " actions)" : ""),
+                    path: path,
+                    actions_cost: path.length,
                     action: "Drive/Ferry",
                     response_function: response_function,
                     current_player_name: this.game.current_player.player_name
@@ -367,14 +617,23 @@ class Pandemic {
     _assess_treat_disease(actions, player, city) {
         for (const [colour, current_cubes] of Object.entries(city.disease_cubes)) {
             if (current_cubes > 0) {
-                actions.push(
-                    {
-                        action: "Treat Disease",
-                        disease_colour: utils.toTitleCase(colour),
-                        player_name: player.player_name,
-                        response_function: "player_treat_disease"
-                    }
-                )
+                // The Medic, or a cured disease, clears every cube in one action
+                var clears_all = player.role_name == "Medic" || this.game.diseases[colour].cured;
+                var most = clears_all ? 1 : Math.min(current_cubes, this._remaining_actions());
+                for (var n = 1; n <= most; n++) {
+                    actions.push(
+                        {
+                            action: "Treat Disease",
+                            disease_colour: utils.toTitleCase(colour),
+                            treat_count: n,
+                            treat_count__title: "How many cubes?",
+                            treat_count__label: clears_all ? "All of them (1 action)" : n + (n == 1 ? " cube (1 action)" : " cubes (" + n + " actions)"),
+                            actions_cost: n,
+                            player_name: player.player_name,
+                            response_function: "player_treat_disease"
+                        }
+                    )
+                }
             }
         }
     }
@@ -612,10 +871,17 @@ class Pandemic {
         for (const p of this.game.players) {
             if (p == player) continue;
             var player_city = this.game.cities[p.city_name];
-            this._assess_drive_ferry(actions, p, player_city, response_function)
-            this._assess_direct_flight(actions, p, player_city, player_cards, response_function)
-            this._assess_charter_flight(actions, p, player_city, player_cards, response_function)
-            this._assess_shuttle_flight(actions, p, player_city, response_function)
+            var moves = [];
+            this._assess_drive_ferry(moves, p, player_city, response_function)
+            this._assess_direct_flight(moves, p, player_city, player_cards, response_function)
+            this._assess_charter_flight(moves, p, player_city, player_cards, response_function)
+            this._assess_shuttle_flight(moves, p, player_city, response_function)
+            for (const m of moves) {
+                m.player_name__title = "Pick a player to move";
+                m.player_name_being_moved = p.player_name;
+                m.player_name_causing_move = player.player_name;
+                actions.push(m);
+            }
         }
     }
 
@@ -671,7 +937,7 @@ class Pandemic {
 
         // Add the next task to the queue to keep task order but don't expect any responses as server side methods
         this.game.queue.add_task(
-            this[data.response_function],
+            (d) => this._run_action(d),
             data,
             0,
             "Player action - " + data.response_function
@@ -680,10 +946,28 @@ class Pandemic {
         this.game.queue.start();
     }
 
-    _add_check_end_turn_to_queue(costs_an_action = true) {
+    // Event cards are free; everything else costs an action
+    _action_cost(data) {
+        return data.costs_an_action === false ? 0 : 1;
+    }
+
+    // Runs a player's action. If it fails, offer them their choices again rather than leave the game stuck.
+    _run_action(data) {
+        var recover = (err) => {
+            console.error("Action " + data.response_function + " failed", err);
+            this.assess_player_options();
+        };
+        try {
+            Promise.resolve(this[data.response_function](data)).catch(recover);
+        } catch (err) {
+            recover(err);
+        }
+    }
+
+    _add_check_end_turn_to_queue(cost = 1) {
         this.game.queue.add_task(
             this._check_end_of_user_turn,
-            costs_an_action,
+            cost,
             0,
             "Checking end of user turn"
         )
@@ -698,27 +982,60 @@ class Pandemic {
             { message: player.player_name + " is too scared to do anything and passes" }
         )
         this.game.player_used_actions = player.actions_per_turn + 1;
+        this._show_gif("pass");
         this._add_check_end_turn_to_queue();
     }
 
     player_move(data) {
-
         var player = this._player_by_name(data.player_name)
-        this.io.in(this.game_id).emit("logMessage",
-            { message: this.game.current_player.player_name + " moves (" + data.action + ") to " + data.destination }
-        )
         if (data.action == "Research Station to any city")
             player.used_special_action_this_turn = true;
 
-        this._discard_cards(player, data)
-        this._move_pawn(data.destination, player);
+        var cost = this._perform_move(player, data, () => this._discard_cards(player, data));
+        if (cost === null) {
+            this._add_check_end_turn_to_queue(0); // ask again
+            return;
+        }
         if (!data.skip_check_next)
-            this._add_check_end_turn_to_queue(data.costs_an_action !== false);
+            this._add_check_end_turn_to_queue(cost);
+    }
+
+    // Moves the pawn (step by step when driving) and returns the actions it cost, or null if the move is invalid
+    _perform_move(player, data, discard) {
+        var path = [data.destination];
+        var cost = this._action_cost(data);
+        if (data.action == "Drive/Ferry") {
+            path = Array.isArray(data.path) ? data.path : [data.destination];
+            if (!this._is_drive_path(player.city_name, path, this._remaining_actions())) {
+                console.warn("Ignoring a drive along an invalid route");
+                return null;
+            }
+            cost = path.length;
+        } else if (!this.game.cities[data.destination]) {
+            return null;
+        }
+
+        var mover = this.game.current_player;
+        var who = mover == player ? player.player_name : mover.player_name + " moves " + player.player_name;
+        var message = path.length > 1
+            ? who + (mover == player ? " drives" : " by road") + " to " + data.destination + " via " + path.slice(0, -1).join(", ") + " (" + path.length + " actions)"
+            : who + (mover == player ? " moves" : "") + " (" + data.action + ") to " + data.destination;
+        this.io.in(this.game_id).emit("logMessage", { message: message });
+
+        if (data.action == "Airlift") this._show_gif("airlift");
+        discard();
+        for (const city_name of path)
+            this._move_pawn(city_name, player, path.length > 1 ? 0.6 : 1);
+        return cost;
     }
 
     player_treat_disease(data) {
-        this._treat_disease_for_free(data.disease_colour.toLowerCase());
-        this._add_check_end_turn_to_queue();
+        var colour = data.disease_colour.toLowerCase();
+        var city = this.game.cities[this.game.current_player.city_name];
+        var count = Math.max(1, Math.min(parseInt(data.treat_count) || 1, city.disease_cubes[colour], this._remaining_actions()));
+        for (var i = 0; i < count; i++)
+            this._treat_disease_for_free(colour);
+        this._add_check_end_turn_to_queue(count);
     }
 
     player_build_research_station(data) {
@@ -730,7 +1047,7 @@ class Pandemic {
         this.game.add_research_station(city_name);
         this._discard_cards(player, data)
         if (!data.skip_check_next)
-            this._add_check_end_turn_to_queue(data.costs_an_action !== false);
+            this._add_check_end_turn_to_queue(this._action_cost(data));
     }
 
     player_cure(data) {
@@ -760,10 +1077,11 @@ class Pandemic {
 
     player_skip_next_infection_step(data) {
         this.game.skip_infection_step = true;
+        this._show_gif("quiet_night");
         var player = this._player_by_name(data.player_name)
         this._discard_cards(player, data)
         if (!data.skip_check_next)
-            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
+            this._add_check_end_turn_to_queue(this._action_cost(data))
     }
 
 
@@ -772,7 +1090,7 @@ class Pandemic {
         var player = this._player_by_name(data.player_name);
         this._discard_cards(player, data)
         if (!data.skip_check_next)
-            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
+            this._add_check_end_turn_to_queue(this._action_cost(data))
     }
 
     player_forecast(data) {
@@ -780,7 +1098,7 @@ class Pandemic {
         var player = this._player_by_name(data.player_name);
         this._discard_cards(player, data)
         if (!data.skip_check_next)
-            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
+            this._add_check_end_turn_to_queue(this._action_cost(data))
     }
 
     player_response_cancel(data) {
@@ -793,7 +1111,7 @@ class Pandemic {
         var card_data = this.game.player_deck.pick_up_discarded_event_card(data, player);
         player.pick_up_discarded_event_card(data, card_data);
         if (!data.skip_check_next)
-            this._add_check_end_turn_to_queue(data.costs_an_action !== false)
+            this._add_check_end_turn_to_queue(this._action_cost(data))
     }
 
     // ======================================== Utils
@@ -826,16 +1144,21 @@ class Pandemic {
     }
 
 
+    _player_by_pid(pid) {
+        if (!this.game) return null;
+        return this.game.players.find((p) => p.pid == pid) || null;
+    }
+
     _player_by_name(player_name) {
         for (const p of this.game.players)
             if (p.player_name == player_name)
                 return p
     }
 
-    _move_pawn(destination, player = null) {
+    _move_pawn(destination, player = null, dt = 1) {
         var player = player == null ? this.game.current_player : player;
         var city = this.game.cities[destination]
-        player.move_pawn(city);
+        player.move_pawn(city, dt);
         if (player.role_name == "Medic") {
             for (const [colour, d] of Object.entries(this.game.diseases)) {
                 if (d.cured && city.disease_cubes[colour] > 0) {
@@ -864,9 +1187,8 @@ class Pandemic {
 
     // =============================================== End of turn utils
 
-    async _check_end_of_user_turn(costs_an_action = true) {
-        if (costs_an_action)
-            this.game.player_used_actions++;
+    async _check_end_of_user_turn(cost = 1) {
+        this.game.player_used_actions += cost;
         var player = this.game.current_player;
 
         await this.check_disease_status();
@@ -884,12 +1206,14 @@ class Pandemic {
             }
         }
 
-        while (player.too_many_cards()) {
+        while (player.too_many_cards() && !this.game.queue.game_over) {
             this.reduce_player_hand_size(player);
             await this.game.queue.run_until_empty(); // Ensure cards are removed before continuing
         }
 
         // Next step
+        if (this.game.queue.game_over)
+            return;
         if (all_actions_used)
             this.end_player_turn();
         else
@@ -900,6 +1224,8 @@ class Pandemic {
         // current player's turn over, move on the next player
         await this.game.infect_cities();
         await this.game.queue.run_until_empty();
+        if (this.game.queue.game_over)
+            return;
 
         this.game.new_player_turn();
         this.assess_player_options();
@@ -965,9 +1291,7 @@ class Pandemic {
         this._assess_all_event_cards(actions, player, true);
 
         this.game.queue.add_task(
-            () => this.io.to(player.socket_id).emit(
-                "clientAction", { function: "enableActions", args: actions }
-            ),
+            () => this._prompt(player, actions),
             null,
             1,
             "Reducing player card hand size for " + player.player_name,
@@ -1014,17 +1338,10 @@ class Pandemic {
 
         this.game.queue.add_task(
             () => {
-                this.io.to(moving_player.socket_id).emit(
-                    "clientAction",
-                    {
-                        function: "enableActions",
-                        args:
-                            [
-                                Object.assign({ ...action }, { response: "Yes" }),
-                                Object.assign({ ...action }, { response: "No" })
-                            ]
-                    }
-                )
+                this._prompt(moving_player, [
+                    Object.assign({ ...action }, { response: "Yes" }),
+                    Object.assign({ ...action }, { response: "No" })
+                ])
             }, null, 1, "Waiting for " + moving_player.player_name + " to respond to move request"
         )
     }
@@ -1038,12 +1355,13 @@ class Pandemic {
             var moving_player = this._player_by_name(data.move_proposal.player_name_being_moved)
             var causing_player = this._player_by_name(data.move_proposal.player_name_causing_move)
 
-            this._discard_cards(causing_player, data.move_proposal)
-            this._move_pawn(data.move_proposal.destination, moving_player);
+            var cost = this._perform_move(moving_player, data.move_proposal, () => this._discard_cards(causing_player, data.move_proposal));
             await this.game.queue.run_until_empty();
 
-            if (!data.move_proposal.skip_check_next)
-                this._check_end_of_user_turn(data.move_proposal.costs_an_action !== false);
+            if (cost === null)
+                this.assess_player_options();
+            else if (!data.move_proposal.skip_check_next)
+                this._check_end_of_user_turn(cost);
         } else {
             this.io.in(this.game_id).emit(
                 "logMessage",
@@ -1073,17 +1391,10 @@ class Pandemic {
             share_proposal: data
         }
 
-        this.io.to(other_player.socket_id).emit(
-            "clientAction",
-            {
-                function: "enableActions",
-                args:
-                    [
-                        Object.assign({ ...action }, { response: "Yes" }),
-                        Object.assign({ ...action }, { response: "No" })
-                    ]
-            }
-        )
+        this._prompt(other_player, [
+            Object.assign({ ...action }, { response: "Yes" }),
+            Object.assign({ ...action }, { response: "No" })
+        ])
     }
 
     async player_share_knowledge_response(data) {
@@ -1122,7 +1433,9 @@ class Pandemic {
     // Special option to use any event cards between infect and intensify epidemic stages
 
     allow_players_to_use_event_cards(event_name = null) {
+        var online = this.connected_player_pids();
         for (const p of this.game.players) {
+            if (!online.includes(p.pid)) continue; // nobody there to decide
             var actions = [];
             if (event_name == "Resilient Population")
                 this._assess_resilient_population_event_card(actions, p, true, false)
@@ -1147,13 +1460,7 @@ class Pandemic {
                             "logMessage",
                             { message: p.player_name + " has a chance to use an event card..." }
                         )
-                        this.io.to(p.socket_id).emit(
-                            "clientAction",
-                            {
-                                function: "enableActions",
-                                args: player_actions
-                            }
-                        )
+                        this._prompt(p, player_actions)
                     },
                     [actions], 1, "Asking " + p.player_name + " if they want to use their event card during this special time", false, true
                 )

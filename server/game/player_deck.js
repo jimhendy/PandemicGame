@@ -148,7 +148,7 @@ class PlayerDeck {
                 animationCanvas: true
             }
         )
-        var remainig_deck_message = this.deck.length + (this.epidemic_cards_in_deck ? 0 : this.n_epidemics) + " remaining"
+        var remainig_deck_message = this.remaining_message()
 
         if (card.is_epidemic) {
             // Do epidemic
@@ -173,9 +173,10 @@ class PlayerDeck {
                             function: "logMessage",
                             args: {
                                 message: "An Epidemic card was drawn!",
-                                fontWeight: "bold"
+                                style: { fontWeight: "bold" }
                             }
-                        }],
+                        },
+                        { function: "showGif", args: "epidemic" }],
                         return: true
                     }
                 ),
@@ -197,7 +198,7 @@ class PlayerDeck {
             this.queue.add_task(
                 () => {
                     // Receiving player card
-                    this.io.to(player.socket_id).emit(
+                    this.io.to(player.room).emit(
                         "parallel_actions",
                         {
                             parallel_actions_args: [{
@@ -219,7 +220,7 @@ class PlayerDeck {
                         }
                     );
                     // Other players
-                    this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                    this.io.others(player).emit(
                         "parallel_actions",
                         {
                             parallel_actions_args: [{
@@ -243,6 +244,32 @@ class PlayerDeck {
                 null, "all", "Dealing " + card.card_name + " to " + player.player_name
             )
         }
+    }
+
+    remaining_message() {
+        return this.deck.length + (this.epidemic_cards_in_deck ? 0 : this.n_epidemics) + " remaining";
+    }
+
+    // The deck and the top of the discard pile, as they currently stand
+    image_data() {
+        var images = [];
+        if (this.deck.length) {
+            images.push({
+                img_type: "card",
+                img_name: "player_deck",
+                image_file: "images/game/player_cards/Back Player Card.gif",
+                x: this.deck_location[0],
+                y: this.deck_location[1],
+                dx: this.card_width_frac,
+                dy: this.card_height_frac,
+                cardCanvas: true
+            });
+        }
+        if (this.discard_pile.length) {
+            var top = this.discard_pile[this.discard_pile.length - 1];
+            images.push(Object.assign(this.emit_data(top), { x: this.discard_location[0], y: this.discard_location[1] }));
+        }
+        return images;
     }
 
     emit_data(card) {
@@ -312,7 +339,7 @@ class PlayerDeck {
                     }
 
                     // Receiving player card
-                    this.io.to(player.socket_id).emit(
+                    this.io.to(player.room).emit(
                         "parallel_actions",
                         {
                             parallel_actions_args: [{
@@ -331,7 +358,7 @@ class PlayerDeck {
                         }
                     );
                     // Other players
-                    this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                    this.io.others(player).emit(
                         "parallel_actions",
                         {
                             parallel_actions_args: [{
@@ -392,7 +419,7 @@ class PlayerDeck {
                     }
                 );
                 // Receiving player card
-                this.io.to(take_player.socket_id).emit(
+                this.io.to(take_player.room).emit(
                     "series_actions",
                     {
                         series_actions_args: [
@@ -406,7 +433,7 @@ class PlayerDeck {
                     }
                 );
                 // Player giving card
-                this.io.to(give_player.socket_id).emit(
+                this.io.to(give_player.room).emit(
                     "series_actions",
                     {
                         series_actions_args: [
@@ -421,7 +448,7 @@ class PlayerDeck {
                 );
             },
             // Remaining args for add_task
-            null, 2, message_text
+            null, [take_player.pid, give_player.pid], message_text
         );
     }
 
@@ -461,7 +488,7 @@ class PlayerDeck {
         this.queue.add_task(
             () => {
                 // This player
-                this.io.to(player.socket_id).emit(
+                this.io.to(player.room).emit(
                     "series_actions",
                     {
                         series_actions_args: tasks.concat(
@@ -477,7 +504,7 @@ class PlayerDeck {
                     }
                 )
                 // Other players
-                this.io.sockets.sockets.get(player.socket_id).to(this.game_id).emit(
+                this.io.others(player).emit(
                     "series_actions",
                     {
                         series_actions_args: tasks.concat(

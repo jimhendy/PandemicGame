@@ -138,6 +138,19 @@ class InfectionDeck {
         this.discarded.push(city_name);
     }
 
+    // The deck and the top of the discard pile, as they currently stand
+    image_data() {
+        var images = [];
+        if (this.deck.length)
+            images.push(this._infection_deck_image_data());
+        if (this.discarded.length) {
+            var top = this._discard_card_data(this.cities[this.discarded[this.discarded.length - 1]]);
+            Object.assign(top, { x: top.dest_x, y: top.dest_y, cardCanvas: true, animationCanvas: false });
+            images.push(top);
+        }
+        return images;
+    }
+
     _discard_card_data(city) {
         return {
             img_type: "card",

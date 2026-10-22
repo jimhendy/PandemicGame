@@ -1,182 +1,148 @@
-<html>
+<!doctype html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <!--<link href="//db.onlinewebfonts.com/c/bbadabe39d5a02f8287c3ad092f49e76?family=IsraThin-Regular" rel="stylesheet" type="text/css"/>-->
-    <!--<link href="//db.onlinewebfonts.com/c/ed09b50712bb1277477b1536e8747d9d?family=Isra-Regular" rel="stylesheet" type="text/css"/>-->
-    <!--<link href="//db.onlinewebfonts.com/c/63137a821976b7fdfcf941ab1528cb19?family=AG_Helvetica" rel="stylesheet" type="text/css"/>-->
-
-    <!--
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
--->
+    <!-- Games live at /g/<id>, but image paths from the server are relative to the root -->
+    <base href="/">
+    <title>Pandemic</title>
+    <link rel="icon" type="image/ico" href="/images/favicon.ico">
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <link href="/css/style.css" rel="stylesheet" type="text/css">
-    <title>Pandemic</title>
-    <link rel="shortcut icon" type="image/ico" href="images/favicon.ico">
-
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <style>
-        #sortable {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            text-align: center;
-        }
-
-        #sortable li {
-            margin: 0 3px 3px 3px;
-            background-color: #bfbfbd;
-        }
-    </style>
-    <!--<script src="https://code.jquery.com/jquery-1.12.4.js"></script>-->
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <link href="/css/style.css" rel="stylesheet" type="text/css">
 </head>
 
-
-
-<body style="width: 100vw; margin:0px;">
-    <div id="gameArea" class="unselectable" style="width: 100%; margin:0px;"></div>
+<body>
+    <div id="gameArea" class="unselectable"></div>
+    <div id="toasts"></div>
 </body>
 
-<script id="landing-screen-template" type="text/template">
-    <!-- LANDING SCREEN where user can enter details -->
-<div style="text-align:center; margin-top: 3vh; width: 100%; height: 97vh;">
-    <img class="logo" src="/images/pandemic_landing_image.jpg" style="width:80%; height:50vh; margin-bottom: 3vh;">
-    <form id="player_details_form">
-        <input id="passcode_input" autocomplete="off" placeholder="Game code" style="margin-bottom: 1%;">
-        <br>
-        <input id="playername_input" autocomplete="off" placeholder="Player Name" style="margin-bottom: 1%">
-        <br>
-        <button id="enter_game_button" disabled=true>Enter Game</button>
-    </form>
-</div>
-<script>
-    $('#passcode_input, #playername_input').on("keyup", test_enable_enter_button);
-    function test_enable_enter_button() {
-        if ($('#playername_input').val().length > 0 && $('#passcode_input').val().length > 0) {
-            $('#enter_game_button').prop("disabled", false);
-        } else {
-            $('#enter_game_button').prop("disabled", true);
-        }
-    }
-</script>
-</script>
-
-
-<script id="role-choice-screen-template" type="text/template">
-    <!-- User now logged in, choose a character role -->
-<div style="text-align:center; margin-top: 3vh; margin:0px; width:100%; height: 97vh;">
-    <h3>Please choose a role</h3>
-    <div id="role-choice-cards-div"></div>
-    <br>
-    <div style="margin-top: 5vh; margin-bottom: 2vh;">
-        <p>Select the number of Epidemic Cards in the game</p>
-        <form id="select_n_epidemic_cards" style="display: flex; flex-direction: row; justify-content: center;">
-            <label for="n_epidemics_radio_4">4</label>
-            <input type="radio" id="n_epidemics_radio_4" style="margin-right:5vw;" value=4 name="n_epidemics_choice">
-            <label for="n_epidemics_radio_5">5</label>
-            <input type="radio" id="n_epidemics_radio_5" style="margin-right:5vw;" value=5 name="n_epidemics_choice">
-            <label for="n_epidemics_radio_6">6</label>
-            <input type="radio" id="n_epidemics_radio_6" value=6 name="n_epidemics_choice">
-        </form>
+<script id="lobby-template" type="text/template">
+<!-- The games list -->
+<div class="lobby">
+    <header class="lobby-head">
+        <img src="/images/pandemic_landing_image.jpg" alt="">
+        <div>
+            <h1>PANDEMIC</h1>
+            <p>Four diseases, one planet, no pressure.</p>
+        </div>
+    </header>
+    <div class="lobby-forms">
+        <section class="panel">
+            <h2>You</h2>
+            <form id="name_form" class="row">
+                <input id="name_input" maxlength="20" placeholder="Your name" autocomplete="off" required>
+                <button class="btn">Save</button>
+            </form>
+            <p class="muted small" id="name_status"></p>
+        </section>
+        <section class="panel">
+            <h2>New game</h2>
+            <form id="create_form" class="row">
+                <input id="title_input" maxlength="40" placeholder="Game name (optional)" autocomplete="off">
+                <button class="btn btn-primary">Create game</button>
+            </form>
+            <p class="muted small">Then share the link with up to three friends.</p>
+        </section>
     </div>
-    <br>
-    <button id="player-ready-button" disabled=true>Start Game</button>
+    <section>
+        <h2>Games</h2>
+        <div id="games_list" class="games"></div>
+    </section>
 </div>
 </script>
 
-
-<script id="waiting-for-role-choices-template" type="text/template">
-    <!-- Spinner to wait on other player's role choice-->
-<div style="text-align:center; padding-top: 3vh; margin:0px; width:100%; height: 97vh;">
-    <div class="loader" style="margin-left: auto; margin-right: auto; margin-bottom: 5%"></div>
-    <div>Waiting for other players...</div>
+<script id="game-lobby-template" type="text/template">
+<!-- Choosing roles before the game starts -->
+<div class="game-lobby">
+    <header class="game-lobby-head">
+        <div>
+            <a href="/" class="back">&larr; Games</a>
+            <h1 id="game_lobby_title"></h1>
+        </div>
+        <div class="row">
+            <button class="btn" id="copy_link_button">Copy invite link</button>
+            <button class="btn" id="leave_button">Leave</button>
+        </div>
+    </header>
+    <div class="game-lobby-grid">
+        <section class="panel">
+            <h2>Players</h2>
+            <ul id="members_list" class="members"></ul>
+            <h2>Epidemics</h2>
+            <form id="select_n_epidemic_cards" class="epidemics">
+                <label><input type="radio" name="n_epidemics_choice" value="4"> 4 <span class="muted">intro</span></label>
+                <label><input type="radio" name="n_epidemics_choice" value="5"> 5 <span class="muted">standard</span></label>
+                <label><input type="radio" name="n_epidemics_choice" value="6"> 6 <span class="muted">heroic</span></label>
+            </form>
+            <div class="row lobby-buttons">
+                <button class="btn" id="player-ready-button" disabled>I'm ready</button>
+                <button class="btn btn-primary" id="start-game-button" disabled>Start game</button>
+            </div>
+            <p class="muted small" id="start_hint"></p>
+        </section>
+        <section>
+            <h2>Pick a role</h2>
+            <div id="role-choice-cards-div" class="roles"></div>
+        </section>
+    </div>
 </div>
 </script>
-
 
 <script id="game-board-template" type="text/template">
-    <!-- Game Board -->
-<div style="margin:0px; width:100%; height:100vh; display:flex;">
-    <div id="board_div" style="display:inline-block; width: 80%; height: 100vh; position:relative;">
-        <img src="images/game/Board_1.jpg"
-            style="width:100%; height:100vh; position:absolute; z-index:-1; top:0; left:0; opacity:0.8;">
-        <canvas id="boardCanvas" width=2056 height=2056
-            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
-        <canvas id="cubeCanvas" width=2056 height=2056
-            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
-        <canvas id="cardCanvas" width=2056 height=2056
-            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
-        <canvas id="animationCanvas" width=2056 height=2056
-            style="width:100%; height:100vh; position:absolute; top:0;"></canvas>
-        <div id="blockingDiv"
-            style="width:100%; height:100vh; position:absolute; top:0; opacity: 0; z-index: 99; background-color: white; transition: visibility 0s, opacity 2s linear;">
-        </div>
-        <div id="gifsDiv"
-            style="width:100%; height:100vh; position:absolute; top:0; opacity: 0; z-index: 99; display: flex; align-items: center; justify-content: center;">
-        </div>
-        <div id="yellow_cubes_counter"
-            style="position: absolute; left: 32.8%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: yellow">
-            0/24</div>
-        <div id="red_cubes_counter"
-            style="position: absolute; left: 37.4%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: red">
-            0/24</div>
-        <div id="blue_cubes_counter"
-            style="position: absolute; left: 42.0%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: #5257ff">
-            0/24</div>
-        <div id="black_cubes_counter"
-            style="position: absolute; left: 46.2%; top: 96%; width: 2.5%; height: 3%; text-align: center; color: black">
-            0/24</div>
-        <div id="player_cards_remaining"
-            style="position: absolute; left: 60%; top: 96%; width: 10%; height: 3%; text-align: center; color: #b4b4b4;">
-        </div>
-        <div id="gameOverDiv"
-            style="text-align:center; width:100%; height: 100vh; z-index: 100; display: none; position: absolute; top: 0; transition: visibility 0s, opacity 2s linear;">
-            <h1 style="background-color: white;">Game Over</h1>
-            <div id="game-over-message" style="background-color: white;"></div>
-            <img id="game-over-img" style="margin-top: 5vh; height: 40vh;">
+<!-- Game Board -->
+<div class="board-screen">
+    <div id="board_div">
+        <img src="/images/game/Board_1.jpg" class="board-image" alt="">
+        <canvas id="boardCanvas" width=2056 height=2056></canvas>
+        <canvas id="cubeCanvas" width=2056 height=2056></canvas>
+        <canvas id="cardCanvas" width=2056 height=2056></canvas>
+        <canvas id="animationCanvas" width=2056 height=2056></canvas>
+        <canvas id="highlightCanvas"></canvas>
+        <div id="city_hover" class="city-hover"></div>
+        <div id="gifsDiv" class="gif-overlay"></div>
+        <div id="yellow_cubes_counter" class="cube-counter" style="left: 32.8%; color: yellow">0/24</div>
+        <div id="red_cubes_counter" class="cube-counter" style="left: 37.4%; color: red">0/24</div>
+        <div id="blue_cubes_counter" class="cube-counter" style="left: 42.0%; color: #5257ff">0/24</div>
+        <div id="black_cubes_counter" class="cube-counter" style="left: 46.2%; color: #c9c9c9">0/24</div>
+        <div id="player_cards_remaining" class="cube-counter" style="left: 60%; width: 10%; color: #b4b4b4;"></div>
+        <div id="gameOverDiv" class="game-over">
+            <div class="game-over-card">
+                <h1 id="game-over-title">Game Over</h1>
+                <p id="game-over-message"></p>
+                <img id="game-over-img" alt="">
+                <div class="row">
+                    <a class="btn btn-primary" href="/">Back to games</a>
+                    <button class="btn" id="game-over-close">Look at the board</button>
+                </div>
+            </div>
         </div>
     </div>
-    <div id="status_div" style="display: flex; flex-direction: column; width:20%; height:100vh; overflow: hidden">
-        <div style="height: 4vh;">
-            <div
-                style="display: flex; margin-top: 0px; margin-left: 2%; margin-right: 2%; margin-bottom: 0.2vh; height: 1.8vh;">
-                <p style="text-align: left; margin: 0px; width: 50%;">
-                    City: <span id="player_location" style="font-weight: bold;">Atlanta</span></p>
-                <p style="color: #0645AD; text-decoration:underline; text-decoration-style: dotted; text-align: right; width: 50%; margin: 0px;"
-                    id="player-role-reminder" class="has-tooltip"></p>
-            </div>
-            <p style="text-align: left; margin-top: 0px; margin-left: 2%; margin-bottom: 0.2vh; height: 1.8vh;">Current
-                Turn: <span id="current_player" style="font-weight: bold;"></span></p>
+    <div id="status_div">
+        <div class="status-head">
+            <a href="/" class="back">&larr; Games</a>
+            <span id="game_title" class="game-title"></span>
         </div>
-        <div id="player_card_store" style="overflow: hidden; position: relative; height: 46vh; margin-top: 0.5vh;">
+        <div class="status-me">
+            <span>City: <strong id="player_location">Atlanta</strong></span>
+            <span id="player-role-reminder" class="has-tooltip role-link"></span>
         </div>
-        <div id="player_selection_area"
-            style="display: block; height: 0px; overflow-y: scroll; margin: 0px; transition: height 500ms linear; border-style: solid; border-width: 0px;">
-        </div>
-        <div id="game_log" class="log-box" style="height: calc(35vh - 2px); transition: height 500ms linear;">
-            <p style="font-weight: bold;" class="log-message">Game Started</p>
-        </div>
+        <div id="turn_banner" class="turn-banner"></div>
+        <div id="players_panel" class="players-panel"></div>
+        <div id="player_card_store"></div>
+        <div id="player_selection_area"></div>
+        <div id="game_log" class="log-box"></div>
         <div id="infection_counter" class="log-box">Infection Counter</div>
     </div>
 </div>
 </script>
-<!--
-<script id="game-over-template" type="text/template">
-    
-</script>
--->
 
-<script src="js/utils.js"></script>
-<script src="js/images.js"></script>
-<script src="js/client.js"></script>
-
-
+<script src="/js/utils.js"></script>
+<script src="/js/images.js"></script>
+<script src="/js/client.js"></script>
 
 </html>

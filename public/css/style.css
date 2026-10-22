@@ -1,197 +1,239 @@
-/*
-@import url(//db.onlinewebfonts.com/c/bbadabe39d5a02f8287c3ad092f49e76?family=IsraThin-Regular);
-@font-face {font-family: "IsraThin-Regular"; src: url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.eot"); src: url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.woff") format("woff"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/bbadabe39d5a02f8287c3ad092f49e76.svg#IsraThin-Regular") format("svg"); }
-*/
-/*
-@import url(//db.onlinewebfonts.com/c/ed09b50712bb1277477b1536e8747d9d?family=Isra-Regular);
-@font-face {font-family: "Isra-Regular"; src: url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.eot"); src: url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.woff") format("woff"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/ed09b50712bb1277477b1536e8747d9d.svg#Isra-Regular") format("svg"); }
-*/
-/*
-@import url(//db.onlinewebfonts.com/c/63137a821976b7fdfcf941ab1528cb19?family=AG_Helvetica);
-@font-face {font-family: "AG_Helvetica"; src: url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.eot"); src: url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.eot?#iefix") format("embedded-opentype"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.woff2") format("woff2"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.woff") format("woff"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.ttf") format("truetype"), url("//db.onlinewebfonts.com/t/63137a821976b7fdfcf941ab1528cb19.svg#AG_Helvetica") format("svg"); }
-*/
-
-/*@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap');*/
-
-html{
-    /*font-variant: small-caps;*/
-    /*font-family: "AG_Helvetica", 'Arial', 'Helvetica', sans-serif;*/
-    /*font-family: 'Roboto', sans-serif;*/
-    /*font-family: 'Arial', 'sans-serif';*/
-    font-family: 'Isra-Regular';
-    font-size: 1.1vw;  /*Isra*/
-    font-size: 0.9vw; /* Arial */
+:root {
+    --bg: #071526;
+    --panel: #0d2238;
+    --panel-2: #10294a;
+    --line: rgba(120, 200, 255, 0.18);
+    --text: #e6eef8;
+    --muted: #8ea5bf;
+    --accent: #4fd1ff;
+    --red: #e0533d;
+    --red-2: #f06a52;
+    --good: #4ade80;
 }
 
-
-/* Centered text */
-.centered {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+html {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
 }
 
-/* role cards for player choice */
-
-.role-card:hover{
-    opacity: 1;
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(1200px 700px at 50% 0%, #10345a 0%, transparent 70%), var(--bg);
+    color: var(--text);
 }
 
-.role-card{
-    opacity: 0.5;
-    margin-bottom: 5px;
-    margin-right: 10px;
-    margin-left: 10px;
-    width: calc(100% - 20px);
+a { color: var(--accent); }
+h1, h2 { margin: 0 0 12px; }
+h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: .85em; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+input[type=text], input:not([type]) {
+    font: inherit;
+    color: var(--text);
+    background: rgba(0, 0, 0, .3);
+    border: 1px solid rgba(255, 255, 255, .2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    flex: 1;
+    min-width: 0;
+}
+input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79, 209, 255, .2); }
+
+.btn {
+    font: 600 .95rem system-ui, sans-serif;
+    color: var(--text);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 14px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--red-2); border-color: var(--red-2); }
+.btn-danger { color: #ff9a8a; }
+.btn-sm { padding: 4px 10px; font-size: .85rem; }
+
+.panel {
+    background: rgba(13, 34, 56, .85);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
 }
 
-.role-card-unavailable{
-    filter: grayscale(100%); 
-    opacity: 0.3;
+/* ---------------------------------------------------------------- Lobby */
+
+.lobby, .game-lobby { max-width: 1000px; margin: 0 auto; padding: 24px 16px 48px; box-sizing: border-box; }
+.lobby-head { display: flex; gap: 20px; align-items: center; margin-bottom: 24px; }
+.lobby-head img { width: 220px; max-width: 40%; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, .5); }
+.lobby-head h1 { font-size: 2.6rem; letter-spacing: .12em; color: #cfe9ff; text-shadow: 0 0 18px rgba(79, 209, 255, .6); }
+.lobby-head p { margin: 0; color: var(--muted); }
+.lobby-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 28px; }
+
+.games { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.game-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; display: flex; flex-direction: column; }
+.game-card.mine { border-color: rgba(79, 209, 255, .5); }
+.game-card.done { opacity: .7; }
+.game-card a { color: inherit; text-decoration: none; padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.game-card a:hover { background: rgba(79, 209, 255, .06); border-radius: 12px 12px 0 0; }
+.gc-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.gc-head strong { font-size: 1.1rem; }
+.badge { font-size: .75rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.gc-players { display: flex; flex-wrap: wrap; gap: 6px; }
+.gc-player { font-size: .85rem; background: rgba(255, 255, 255, .06); border-radius: 999px; padding: 2px 9px; display: inline-flex; gap: 6px; align-items: center; }
+.gc-status { font-size: .85rem; color: var(--muted); }
+.gc-controls { padding: 0 14px 12px; display: flex; gap: 8px; align-items: center; }
+.empty { color: var(--muted); }
+
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; border: 1px solid rgba(0, 0, 0, .4); }
+.online { width: 7px; height: 7px; border-radius: 50%; display: inline-block; background: #4b5d73; flex: none; }
+.online.on { background: var(--good); box-shadow: 0 0 6px var(--good); }
+
+/* ---------------------------------------------------------------- Game lobby */
+
+.game-lobby-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.game-lobby-head h1 { font-size: 2rem; margin: 6px 0 0; }
+.back { font-size: .9rem; text-decoration: none; }
+.game-lobby-grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 20px; align-items: start; }
+@media (max-width: 760px) { .game-lobby-grid { grid-template-columns: 1fr; } }
+.members { list-style: none; margin: 0 0 20px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.members li { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, .04); border-radius: 8px; padding: 8px 10px; }
+.members .name { font-weight: 600; }
+.members .role { color: var(--muted); font-size: .85rem; margin-left: auto; text-align: right; }
+.ready-tag { font-size: .75rem; color: var(--good); }
+.epidemics { display: flex; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+.epidemics label { cursor: pointer; }
+.lobby-buttons { margin-bottom: 6px; }
+
+.roles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.role-card-container { position: relative; text-align: center; }
+.role-card { width: 100%; border-radius: 10px; cursor: pointer; opacity: .75; transition: transform .15s, opacity .15s; display: block; }
+.role-card:hover { opacity: 1; transform: translateY(-3px); }
+.role-card-unavailable { filter: grayscale(100%); opacity: .3; cursor: default; }
+.role-card-unavailable:hover { opacity: .3; transform: none; }
+.role-card-chosen { opacity: 1; box-shadow: 0 0 0 3px var(--accent), 0 8px 30px rgba(79, 209, 255, .35); }
+.role-player-name { position: absolute; left: 0; right: 0; bottom: 12%; font-weight: 700; color: #fff; text-shadow: 0 2px 6px #000; font-size: 1.1rem; }
+.role-help { font-size: .82rem; color: var(--muted); margin: 6px 2px 0; text-align: left; line-height: 1.35; }
+
+/* ---------------------------------------------------------------- Board */
+
+html.on-board { font-size: clamp(11px, .85vw, 16px); }
+html.on-board body { overflow: hidden; }
+.board-screen { display: flex; width: 100%; height: 100vh; }
+#board_div { position: relative; width: 80%; height: 100vh; }
+#board_div canvas, .board-image { position: absolute; top: 0; left: 0; width: 100%; height: 100vh; }
+.board-image { opacity: .85; }
+#highlightCanvas { cursor: default; }
+.cube-counter { position: absolute; top: 96%; width: 2.5%; height: 3%; text-align: center; font-weight: 700; pointer-events: none; }
+
+.city-hover {
+    position: absolute; pointer-events: none; display: none; transform: translate(-50%, -140%);
+    background: rgba(5, 15, 28, .92); border: 1px solid var(--line); border-radius: 6px; padding: 3px 8px;
+    font-size: .85rem; white-space: nowrap; z-index: 20;
 }
 
-.role-card-chosen{
-    opacity: 1;
+.gif-overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0; transition: opacity .25s; z-index: 50;
 }
+.gif-overlay.show { opacity: 1; }
+.gif-overlay img { height: 42vh; max-width: 70%; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, .7); }
 
-.role-card-container {
-    position: relative;
-    text-align: center;
-    width: 100%;
-    margin: 0%;
-    display: flex;
-}
+.game-over { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(3, 10, 20, .7); z-index: 100; }
+.game-over.show { display: flex; }
+.game-over-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px 28px; text-align: center; max-width: 80%; }
+.game-over-card img { height: 38vh; max-width: 100%; border-radius: 10px; margin: 8px 0 16px; }
+.game-over-card .row { justify-content: center; }
 
-.role-player-name{
-    color:#0317fc;
-    font-weight: bold;
-    font-size: 2vw;
+#status_div {
+    display: flex; flex-direction: column; width: 20%; height: 100vh; overflow: hidden;
+    background: var(--panel); border-left: 1px solid var(--line); box-sizing: border-box;
 }
+.status-head { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px 2px; }
+.game-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-me { display: flex; justify-content: space-between; padding: 0 8px 4px; gap: 6px; }
+.role-link { color: var(--accent); text-decoration: underline dotted; cursor: help; text-align: right; }
+.turn-banner { margin: 2px 6px; padding: 5px 8px; border-radius: 8px; background: rgba(255, 255, 255, .05); font-weight: 600; }
+.turn-banner.mine { background: rgba(224, 83, 61, .25); box-shadow: inset 0 0 0 1px var(--red); }
+
+.players-panel { padding: 2px 6px; display: flex; flex-direction: column; gap: 3px; max-height: 24vh; overflow-y: auto; }
+.pp-player { border-radius: 6px; padding: 3px 5px; background: rgba(255, 255, 255, .03); }
+.pp-player.current { background: rgba(79, 209, 255, .1); box-shadow: inset 2px 0 0 var(--accent); }
+.pp-head { display: flex; gap: 5px; align-items: center; font-size: .9em; }
+.pp-head .pp-name { font-weight: 700; }
+.pp-head .pp-where { margin-left: auto; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-cards { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+.chip { font-size: .72em; border-radius: 3px; padding: 0 4px; line-height: 1.5; color: #111; white-space: nowrap; }
+.chip.yellow { background: #f5d742; }
+.chip.red { background: #ef4b4b; color: #fff; }
+.chip.blue { background: #5b7cff; color: #fff; }
+.chip.black { background: #222; color: #ddd; border: 1px solid #555; }
+.chip.event { background: #c9b8ff; }
+
+#player_card_store { overflow: hidden; position: relative; flex: 1 1 auto; min-height: 18vh; margin-top: 4px; }
+.player-hand-card { width: 60%; height: 50%; position: absolute; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, .5); }
+.player-hand-card:hover { z-index: 15; }
+
+#player_selection_area {
+    height: 0; overflow-y: auto; margin: 0; transition: height 300ms ease;
+    background: var(--panel-2); border-top: 1px solid var(--line); padding: 0 8px;
+    flex: none;
+}
+#player_selection_area h3 { font-size: 1em; margin: 6px 0; color: #fff; }
+#player_selection_area label { display: inline-block; padding: 2px 4px; border-radius: 4px; cursor: pointer; }
+#player_selection_area input { cursor: pointer; }
+.selection-buttons { display: flex; justify-content: center; gap: 8px; margin: 8px 0 10px; position: sticky; bottom: 0; background: var(--panel-2); padding: 6px 0; }
+
+.log-box {
+    height: 15vh; flex: none; box-sizing: border-box;
+    border-top: 1px solid var(--line);
+    overflow-x: hidden; overflow-y: auto;
+    background: rgba(0, 0, 0, .25);
+    color: #c2d0df;
+    line-height: 1.3;
+    padding: 2px 0;
+}
+#game_log { height: 22vh; transition: height 300ms ease; }
+.log-message { margin: 0 4px; font-size: .92em; }
+
+#sortable { list-style-type: none; margin: 0; padding: 0; width: 100%; text-align: center; }
+#sortable li { margin: 0 3px 3px 3px; background-color: #bfbfbd; cursor: grab; }
+
+/* ---------------------------------------------------------------- Toasts */
+
+#toasts { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; z-index: 1000; pointer-events: none; }
+.toast {
+    background: rgba(5, 15, 28, .96); border: 1px solid var(--accent); color: var(--text);
+    border-radius: 10px; padding: 10px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    animation: toast-in .2s ease-out; max-width: 80vw;
+}
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } }
+
+/* ---------------------------------------------------------------- Tooltips */
+
+.has-tooltip { display: inline; }
+.tooltip-wrapper, .immediate-tooltip-wrapper { position: absolute; visibility: hidden; opacity: 0; width: 0; height: 0; }
+.has-tooltip:hover .tooltip-wrapper { visibility: visible; opacity: 1; transition-delay: 1s; transition-duration: .5s; }
+.has-tooltip:hover .immediate-tooltip-wrapper { visibility: visible; opacity: 1; }
+.tooltip {
+    display: block; position: relative; top: 2em; right: 50%; margin: 10px;
+    color: #fff; background: #050d18; border: 1px solid var(--line);
+    text-align: center; border-radius: 8px; box-shadow: 4px 3px 14px rgba(0, 0, 0, .6); z-index: 100; padding: 6px;
+    font-weight: normal; text-decoration: none;
+}
+.action-tooltip { width: 23vw; right: 15vw; height: auto; }
+
+.unselectable { user-select: none; -webkit-user-select: none; }
 
 /* Loading spinner */
 .loader {
-    border: 16px solid #f3f3f3; /* Light grey */
-    border-top: 16px solid #3498db; /* Blue */
-    border-radius: 50%;
-    width: 120px;
-    height: 120px;
-    animation: spin 2s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  /* Log boxes */
-
-  .log-box {
-    width: calc(100% - 2px); 
-    height: calc(15vh - 2px); 
-    border-style: solid; 
-    border-width: 1px;
-    overflow-x: hidden;
-    overflow-y: scroll;
-    background-color: #b4b4b4; /*#373857;*/  /* #bfbfbd;*/
-    line-height: normal;
-    color: #6e706f;
-  }
-
-
-  /* player cards in hand */
-  .player-hand-card {
-      width: 60%;
-      height: 50%;
-      position: absolute;
-  }
-
-  .player-hand-card:hover {
-      z-index: 15;
-  }
-
-/* log messages */
-.log-message{
-    margin-top: 0px;
-    margin-bottom: 0px;
-    margin-left: 3px;
+    border: 10px solid rgba(255, 255, 255, .1); border-top: 10px solid var(--accent);
+    border-radius: 50%; width: 70px; height: 70px; animation: spin 1.2s linear infinite; margin: 30vh auto 0;
 }
-
-
-/* Tooltips */
-
-  .has-tooltip {
-    display: inline;
-  }
-  .tooltip-wrapper {
-    position: absolute;
-    visibility: hidden;
-    opacity: 0;
-    width: 0px;
-    height: 0px;
-  }
-  .immediate-tooltip-wrapper {
-    position: absolute;
-    visibility: hidden;
-    opacity: 0;
-    width: 0px;
-    height: 0px;
-  }
-  .has-tooltip:hover .tooltip-wrapper {
-    visibility: visible;
-    opacity: 1;
-    /*
-    transition: opacity 1s linear 1s;
-    transition: visibility 0s linear 0s;
-    transition: z-index 0s linear 0s;
-    */
-    
-    transition-delay: 1.5s;
-    transition-duration: 1s;
-    
-  }
-  
-  .has-tooltip:hover .immediate-tooltip-wrapper {
-    visibility: visible;
-    opacity: 1;
-    /*
-    transition: opacity 1s linear 1s;
-    transition: visibility 0s linear 0s;
-    transition: z-index 0s linear 0s;
-    */
-    /*
-    transition-delay: 1.5s;
-    transition-duration: 1s;
-    */
-  }
-
-  .tooltip {
-    display: block;
-    position: relative;
-    top: 2em;
-    right: 50%;
-    margin: 10px;
-    color: #FFFFFF;
-    background: #000000;
-    text-align: center;
-    border-radius: 5px;
-    box-shadow: 4px 3px 10px #666666;
-    z-index: 100;
-  }
-
-  .action-tooltip {
-      width: 23vw;
-      right: 15vw;
-      height: auto;
-  }
-
-
-  /* selectable text is annoying when we really just need to click so don't allow selection */
-  .unselectable {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }

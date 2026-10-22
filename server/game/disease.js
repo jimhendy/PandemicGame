@@ -21,19 +21,7 @@ class Disease {
         this.img_name = "vial_" + this.colour
 
         this.io.in(this.game_id).emit(
-            "clientAction",
-            {
-                function: "createImage",
-                args: {
-                    img_type: "vial",
-                    img_name: this.img_name,
-                    image_file: this.vial_file,
-                    x: this.x_loc_frac,
-                    y: this.y_loc_frac,
-                    dx: this.dx_frac,
-                    dy: this.dy_frac
-                }
-            }
+            "clientAction", { function: "createImage", args: this.vial_image_data() }
         )
 
         // Bind Events
@@ -41,6 +29,19 @@ class Disease {
         this.remove_cube = this.remove_cube.bind(this);
         this.cure = this.cure.bind(this);
         this.eradicate = this.eradicate.bind(this);
+    }
+
+    // The vial as it currently stands: raised once cured, flipped once eradicated
+    vial_image_data() {
+        return {
+            img_type: "vial",
+            img_name: this.img_name,
+            image_file: this.eradicated ? this.vial_file_eradicated : this.vial_file,
+            x: this.x_loc_frac,
+            y: this.cured ? this.y_loc_cured_frac : this.y_loc_frac,
+            dx: this.dx_frac,
+            dy: this.dy_frac
+        }
     }
 
     add_cube() {

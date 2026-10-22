@@ -76,6 +76,17 @@ class Markers {
         }
     }
 
+    // Both markers where they currently stand
+    image_data() {
+        var outbreak = this._outbrak_marker_data();
+        outbreak.x = this.outbreak_locations[this.outbreak_loc][0];
+        outbreak.y = this.outbreak_locations[this.outbreak_loc][1];
+        var rate = this._infection_rate_marker_data();
+        rate.x = this.infection_rate_locations[this.infection_rate_loc][0];
+        rate.y = this.infection_rate_locations[this.infection_rate_loc][1];
+        return [outbreak, rate];
+    }
+
     create_outbreak_marker_locations() {
         return [
             [0.063, 0.54],

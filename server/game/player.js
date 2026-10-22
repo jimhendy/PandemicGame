@@ -2,7 +2,7 @@ const { array_from_objects_list } = require("./utils");
 
 class Player{
 
-    constructor(io, game_id, queue, player_name, role_name, socket_id, player_num){
+    constructor(io, game_id, queue, player_name, role_name, pid, player_num){
 
         this.io = io;
         this.game_id = game_id;
@@ -10,7 +10,8 @@ class Player{
 
         this.player_name = player_name;
         this.role_name = role_name;
-        this.socket_id = socket_id;
+        this.pid = pid;
+        this.room = game_id + ":" + pid; // all of this player's tabs, across reconnects
         this.actions_per_turn = 4;
         this.n_cards_to_cure = this.role_name == "Scientist" ? 4 : 5;
         this.max_hand_cards = 7;
@@ -26,6 +27,7 @@ class Player{
         this.add_player_card = this.add_player_card.bind(this);
         this.discard_card = this.discard_card.bind(this);
         this.place_pawn = this.place_pawn.bind(this);
+        this.pawn_image_data = this.pawn_image_data.bind(this);
         this.move_pawn = this.move_pawn.bind(this);
         this.too_many_cards = this.too_many_cards.bind(this);
         this.pick_up_discarded_event_card = this.pick_up_discarded_event_card.bind(this);
@@ -52,37 +54,42 @@ class Player{
     };
 
 
+    pawn_image_data(city) {
+        return {
+            img_type: "pawn",
+            img_name: "pawn_" + this.role_name,
+            image_file: "images/game/roles/Pawn " + this.role_name + ".png",
+            x: city.location[0] + 0.02,
+            y: city.location[1] - 0.01 + (0.01 * this.player_num),
+            dx: 0.015,
+            dy: 0.02
+        }
+    }
+
     place_pawn(city) {
         this.city_name = city.city_name;
         this.io.in(this.game_id).emit(
             "clientAction",
             {
                 function: "createImage",
-                args: {
-                    img_type: "pawn",
-                    img_name: "pawn_" + this.role_name,
-                    image_file: "images/game/roles/Pawn " + this.role_name + ".png",
-                    x: city.location[0] + 0.02,
-                    y: city.location[1] - 0.01 + (0.01 * this.player_num),
-                    dx: 0.015,
-                    dy: 0.02
-                },
+                args: this.pawn_image_data(city),
                 return: true
             }
         )
     }
 
-    move_pawn(city) {
+    move_pawn(city, dt = 1) {
         this.city_name = city.city_name;
+        var pawn = this.pawn_image_data(city);
         var move_args = {
-            img_name: "pawn_" + this.role_name,
-            dest_x: city.location[0] + 0.02,
-            dest_y: city.location[1] - 0.01 + (0.01 * this.player_num),
-            dt: 1
+            img_name: pawn.img_name,
+            dest_x: pawn.x,
+            dest_y: pawn.y,
+            dt: dt
         }
         this.queue.add_task(
             ()=>{
-                this.io.to(this.socket_id).emit(
+                this.io.to(this.room).emit(
                     "series_actions",
                     {
                         series_actions_args: [
@@ -93,7 +100,7 @@ class Player{
                     }
                 );
                 // Other players
-                this.io.sockets.sockets.get(this.socket_id).to(this.game_id).emit(
+                this.io.others(this).emit(
                     "clientAction",
                     {
                         function: "moveImage",

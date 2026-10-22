@@ -6,6 +6,7 @@ const express = require('express');
 
 const appPassword = process.env.APP_PASSWORD || '';
 const COOKIE = 'pandemic_auth';
+const PLAYER_COOKIE = 'pandemic_player'; // who you are, so a refresh rejoins your seat
 const MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 const MAX_FAILURES = 10;
 const FAILURE_WINDOW_MS = 10 * 60 * 1000;
@@ -53,12 +54,12 @@ function loginPage(res, next, error = '', status = 200) {
 <link rel="icon" href="/images/favicon.ico">
 <style>
 body{margin:0;min-height:100vh;display:grid;place-items:center;font:15px/1.5 system-ui,sans-serif;color:#e9eef5;
-background:radial-gradient(1200px 700px at 50% 20%,#5a1414 0%,transparent 70%),#140808;padding:16px;box-sizing:border-box}
-form{width:min(380px,100%);background:rgba(20,10,10,.85);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:32px 28px;
+background:radial-gradient(1200px 700px at 50% 20%,#10345a 0%,transparent 70%),#071526;padding:16px;box-sizing:border-box}
+form{width:min(380px,100%);background:rgba(13,34,56,.85);border-color:rgba(120,200,255,.18);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:32px 28px;
 display:flex;flex-direction:column;gap:14px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.5)}
-h1{margin:0;font-size:2.2rem;letter-spacing:.08em;color:#f3d9d0} p{margin:0;color:#c4a8a0}
+h1{margin:0;font-size:2.2rem;letter-spacing:.08em;color:#cfe9ff;text-shadow:0 0 18px rgba(79,209,255,.6)} p{margin:0;color:#8ea5bf}
 input{font:1rem system-ui,sans-serif;color:#e9eef5;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:11px 12px}
-input:focus{outline:none;border-color:#e0533d;box-shadow:0 0 0 3px rgba(224,83,61,.25)}
+input:focus{outline:none;border-color:#4fd1ff;box-shadow:0 0 0 3px rgba(79,209,255,.2)}
 button{font:600 1rem system-ui,sans-serif;background:#e0533d;color:#fff;border:0;border-radius:10px;padding:11px;cursor:pointer}
 button:hover{background:#f06a52} .err{color:#ff8a8a}
 </style></head><body><form method="post" action="/login">
@@ -91,7 +92,12 @@ function login(req, res) {
     res.redirect(safeNext(next));
 }
 
-// Routes for /login, then a gate in front of everything else.
+function playerId(req) {
+    const id = readCookie(req, PLAYER_COOKIE);
+    return /^[A-Za-z0-9_-]{16,64}$/.test(id) ? id : null;
+}
+
+// Routes for /login, then a gate in front of everything else, then a player id for everyone let in.
 function protect(app) {
     app.get('/login', (req, res) => {
         if (isAuthorised(req)) return res.redirect(safeNext(req.query.next));
@@ -102,6 +108,13 @@ function protect(app) {
         if (isAuthorised(req)) return next();
         loginPage(res, req.originalUrl);
     });
+    app.use((req, res, next) => {
+        if (!playerId(req)) {
+            res.cookie(PLAYER_COOKIE, crypto.randomBytes(18).toString('base64url'),
+                { maxAge: MAX_AGE_MS, httpOnly: true, sameSite: 'lax', secure: true });
+        }
+        next();
+    });
 }
 
-module.exports = { isAuthorised, protect, safeEqual };
+module.exports = { isAuthorised, playerId, protect, safeEqual };

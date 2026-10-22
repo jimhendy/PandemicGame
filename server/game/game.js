@@ -30,7 +30,11 @@ class PandemicGame {
 
         this.skip_infection_step = false;
 
-        this.queue = new Queue(this.io, this.game_id)
+        this.queue = new Queue(
+            () => this.pandemic.connected_player_pids(),
+            () => this.pandemic.on_settle(),
+            this.game_id
+        )
 
         // Bind functions
         this.add_player = this.add_player.bind(this);
@@ -43,12 +47,13 @@ class PandemicGame {
         this.resolve_epidemic = this.resolve_epidemic.bind(this);
         this.gameOver = this.gameOver.bind(this);
         this.remove_research_station = this.remove_research_station.bind(this);
+        this.infection_count = this.infection_count.bind(this);
+        this.board_images = this.board_images.bind(this);
     }
 
     add_player(data) {
-        var p = new Player(this.io, this.game_id, this.queue, data.player_name, data.role, data.socket_id, this.players.length);
+        var p = new Player(this.io, this.game_id, this.queue, data.player_name, data.role, data.pid, this.players.length);
         this.players.push(p);
-        this.queue.add_player();
     }
 
     initial_game_setup() {
@@ -87,30 +92,65 @@ class PandemicGame {
         this.player_used_actions = 0;
     }
 
+    infection_count() {
+        var infection_count = [];
+        for (const [city_name, city] of Object.entries(this.cities)) {
+            for (const [colour, num_colour] of Object.entries(city.disease_cubes)) {
+                if (num_colour) {
+                    infection_count.push({
+                        city_name: city_name,
+                        colour: colour,
+                        num: num_colour
+                    })
+                }
+            }
+        }
+        infection_count.sort((a, b) => (a.num > b.num) ? -1 : ((b.num > a.num) ? 1 : 0));
+        return infection_count;
+    }
+
     update_infection_count() {
         // Whole task needs to be in queued function to get count correct
         this.queue.add_task(
-            () => {
-                var infection_count = [];
-                for (const [city_name, city] of Object.entries(this.cities)) {
-                    for (const [colour, num_colour] of Object.entries(city.disease_cubes)) {
-                        if (num_colour) {
-                            infection_count.push({
-                                city_name: city_name,
-                                colour: colour,
-                                num: num_colour
-                            })
-                        }
-                    }
-                }
-                infection_count.sort((a, b) => (a.num > b.num) ? -1 : ((b.num > a.num) ? 1 : 0));
-                this.io.in(this.game_id).emit(
-                    "clientAction",
-                    { function: "updateInfectionCounter", args: infection_count, return: true }
-                )
-            },
+            () => this.io.in(this.game_id).emit(
+                "clientAction",
+                { function: "updateInfectionCounter", args: this.infection_count(), return: true }
+            ),
             null, "all", "Updating infection count"
         )
+    }
+
+    // Everything on the board as it currently stands, to redraw it for a player who reconnects
+    board_images() {
+        var images = [];
+        for (const cn of this.research_station_city_names)
+            images.push(this.station_image_data(cn));
+        images.push(...this.markers.image_data());
+        for (const d of Object.values(this.diseases))
+            images.push(d.vial_image_data());
+        for (const p of this.players)
+            if (p.city_name) // not yet placed at the very start
+                images.push(p.pawn_image_data(this.cities[p.city_name]));
+        images.push(...this.infection_deck.image_data());
+        images.push(...this.player_deck.image_data());
+        for (const city of Object.values(this.cities))
+            for (const [colour, n] of Object.entries(city.disease_cubes))
+                for (var i = 1; i <= n; i++)
+                    images.push(city.cube_image_data(i, colour));
+        return images;
+    }
+
+    station_image_data(cn) {
+        return {
+            img_type: "research_station",
+            img_name: "research_station_" + cn,
+            image_file: "images/game/Marker Research Station.png",
+            x: this.cities[cn].location[0],
+            y: this.cities[cn].location[1],
+            dx: 0.02,
+            dy: 0.02,
+            respond: true
+        }
     }
 
     remove_research_station(city_name){
@@ -146,20 +186,7 @@ class PandemicGame {
                 this.research_station_city_names.sort();
                 this.io.in(this.game_id).emit(
                     "clientAction",
-                    {
-                        function: "createImage",
-                        args: {
-                            img_type: "research_station",
-                            img_name: "research_station_" + cn,
-                            image_file: "images/game/Marker Research Station.png",
-                            x: this.cities[cn].location[0],
-                            y: this.cities[cn].location[1],
-                            dx: 0.02,
-                            dy: 0.02,
-                            respond: true
-                        },
-                        return: true
-                    }
+                    { function: "createImage", args: this.station_image_data(cn), return: true }
                 )
                 this.io.in(this.game_id).emit(
                     "clientAction",

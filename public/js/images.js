@@ -27,7 +27,9 @@ function createImage(image_file, context, x_frac, y_frac, dx_frac, dy_frac, canv
     );
 };
 
+// Images can be missing after a reconnect redraws the board mid-animation: skip them quietly
 function alter_image(image, new_image_file) {
+    if (!image) return Promise.resolve();
     return new Promise(
         resolve => {
             clearImage(image).then(
@@ -44,6 +46,7 @@ function alter_image(image, new_image_file) {
 };
 
 function clearImage(image) {
+    if (!image) return Promise.resolve();
     return new Promise(
         resolve => {
             image.data.ctx.clearRect(
@@ -97,7 +100,8 @@ function _redraw_image(image, context){
 }
 
 async function move(image, destination_x, destination_y, destination_dx, destination_dy, duration, other_images, updateInterval = 25) {
-    
+    if (!image) return;
+
     var img_object = image.img;
     var context = image.data.ctx;
     var canvas = image.data.canvas;
