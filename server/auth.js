@@ -73,6 +73,23 @@ function clientIp(req) {
     return req.headers['cf-connecting-ip'] || req.socket.remoteAddress || '?';
 }
 
+// Paths only vulnerability scanners ask for.
+const PROBE_RE = /\.(env|git|aws|ssh|htaccess)\b|wp-(admin|login|content|includes)|xmlrpc|\.php\b|phpmyadmin|cgi-bin|\/actuator|\/boaform|\/HNAP1|\.\.\/|etc\/passwd/i;
+
+// One `SECURITY {json}` line on stderr. ~/Projects/security-log.sh collects them.
+function securityEvent(event, req, extra = {}) {
+    const record = {
+        event,
+        ip: clientIp(req),
+        country: req.headers['cf-ipcountry'] || '',
+        method: req.method,
+        path: req.path,
+        ua: req.headers['user-agent'] || '',
+        ...extra,
+    };
+    process.stderr.write('SECURITY ' + JSON.stringify(record) + '\n');
+}
+
 function login(req, res) {
     const next = req.body.next;
     const ip = clientIp(req);
@@ -80,10 +97,12 @@ function login(req, res) {
     const attempts = (failures.get(ip) || []).filter((t) => now - t < FAILURE_WINDOW_MS);
     failures.set(ip, attempts);
     if (attempts.length >= MAX_FAILURES) {
+        securityEvent('locked_out', req, { login: 'site' });
         return loginPage(res, next, 'Too many wrong passwords. Try again in a few minutes.', 429);
     }
     if (!safeEqual(req.body.password || '', appPassword)) {
         attempts.push(now);
+        securityEvent('bad_password', req, { login: 'site' });
         return loginPage(res, next, "That's not it.", 401);
     }
     failures.delete(ip);
@@ -97,8 +116,12 @@ function playerId(req) {
     return /^[A-Za-z0-9_-]{16,64}$/.test(id) ? id : null;
 }
 
-// Routes for /login, then a gate in front of everything else, then a player id for everyone let in.
+// Logging for scanner probes, routes for /login, then a gate in front of everything else, then a player id for everyone let in.
 function protect(app) {
+    app.use((req, res, next) => {
+        if (PROBE_RE.test(req.path)) securityEvent('probe', req);
+        next();
+    });
     app.get('/login', (req, res) => {
         if (isAuthorised(req)) return res.redirect(safeNext(req.query.next));
         loginPage(res, req.query.next);

@@ -6,6 +6,9 @@ x-hardened: &hardened
   cap_drop: [ALL]
   pids_limit: 256
   mem_limit: 256m
+  # Logs go to the system journal, so they survive the container being recreated.
+  logging:
+    driver: journald
 
 services:
 
